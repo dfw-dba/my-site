@@ -91,11 +91,6 @@ async def test_upsert_resume_section(db_api: DatabaseAPI) -> None:
     assert isinstance(upsert_result, dict)
 
 
-@pytest.mark.xfail(
-    reason="Stored function api.delete_professional_entry has a SQL bug: "
-           "'operator does not exist: boolean > integer'",
-    strict=True,
-)
 async def test_delete_professional_entry(db_api: DatabaseAPI) -> None:
     """Inserting then deleting a professional entry succeeds."""
     entry_data = {

@@ -145,13 +145,13 @@ $$ LANGUAGE plpgsql VOLATILE;
 CREATE OR REPLACE FUNCTION api.delete_professional_entry(p_id UUID)
 RETURNS JSONB AS $$
 DECLARE
-    v_deleted BOOLEAN;
+    v_count INT;
 BEGIN
     DELETE FROM internal.professional_entries WHERE id = p_id;
-    GET DIAGNOSTICS v_deleted = ROW_COUNT;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
 
     RETURN jsonb_build_object(
-        'success', (v_deleted > 0)::BOOLEAN,
+        'success', (v_count > 0)::BOOLEAN,
         'id',      p_id
     );
 END;
