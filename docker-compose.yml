@@ -41,6 +41,8 @@ services:
       - "8000:8000"
     volumes:
       - ./backend/src:/app/src
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
     env_file:
       - .env
     depends_on:
