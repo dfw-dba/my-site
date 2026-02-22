@@ -48,7 +48,7 @@ function flattenAndSort(
 ): ProfessionalEntry[] {
   const all: ProfessionalEntry[] = [];
   for (const entryType of Object.keys(entries)) {
-    for (const entry of entries[entryType]) {
+    for (const entry of entries[entryType] ?? []) {
       all.push({ ...entry, entry_type: entry.entry_type || entryType });
     }
   }

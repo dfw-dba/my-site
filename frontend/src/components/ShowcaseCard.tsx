@@ -5,16 +5,17 @@ interface ShowcaseCardProps {
   showContent?: boolean;
 }
 
+const DEFAULT_COLOR = "bg-gray-100 text-gray-800";
+
 const categoryColors: Record<string, string> = {
   "data-engineering": "bg-emerald-100 text-emerald-800",
   "web-development": "bg-blue-100 text-blue-800",
   "machine-learning": "bg-purple-100 text-purple-800",
   devops: "bg-orange-100 text-orange-800",
-  default: "bg-gray-100 text-gray-800",
 };
 
 function getCategoryColor(category: string): string {
-  return categoryColors[category] ?? categoryColors.default;
+  return categoryColors[category] ?? DEFAULT_COLOR;
 }
 
 function formatCategoryLabel(category: string): string {
