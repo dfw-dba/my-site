@@ -36,6 +36,14 @@
 - Zero context switching required from the user
 - Go fix failing CI tests without being told how
 
+# Git Branching Rules
+
+- **NEVER commit directly to `main`**. All changes must go through a pull request.
+- Create a feature branch (`feature/<name>`) or fix branch (`fix/<name>`) for every change.
+- Push the branch, create a PR targeting `main`, and merge via the PR.
+- **Always squash merge** into `main` (`gh pr merge --squash`). No merge commits or rebase merges.
+- Branch naming: `feature/short-description` for new work, `fix/short-description` for bug fixes.
+
 # Task Management
 
 1. **Plan First**: Write plan to `tasks/todo.md` with checkable items
