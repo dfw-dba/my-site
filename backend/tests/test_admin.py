@@ -4,13 +4,13 @@ from unittest.mock import AsyncMock, MagicMock
 
 from httpx import AsyncClient
 
-
 # ── Auth ────────────────────────────────────────────────────────────────────
 
 
 async def test_admin_requires_auth(client: AsyncClient) -> None:
     """Admin endpoints return 401/422 without an X-Admin-Key header."""
-    response = await client.post("/api/admin/blog", json={"slug": "s", "title": "t", "content": "c"})
+    payload = {"slug": "s", "title": "t", "content": "c"}
+    response = await client.post("/api/admin/blog", json=payload)
     assert response.status_code in (401, 422)
 
 
@@ -93,9 +93,7 @@ async def test_create_resume_section(admin_client: AsyncClient, mock_db_api: Asy
 # ── Media ───────────────────────────────────────────────────────────────────
 
 
-async def test_upload_url(
-    admin_client: AsyncClient, mock_storage: MagicMock
-) -> None:
+async def test_upload_url(admin_client: AsyncClient, mock_storage: MagicMock) -> None:
     """POST /api/admin/media/upload-url generates a presigned URL."""
     payload = {"filename": "photo.jpg", "content_type": "image/jpeg"}
     response = await admin_client.post("/api/admin/media/upload-url", json=payload)
@@ -108,7 +106,11 @@ async def test_upload_url(
 
 async def test_register_media(admin_client: AsyncClient, mock_db_api: AsyncMock) -> None:
     """POST /api/admin/media/register registers an uploaded file and returns 200."""
-    payload = {"s3_key": "uploads/abc/photo.jpg", "filename": "photo.jpg", "content_type": "image/jpeg"}
+    payload = {
+        "s3_key": "uploads/abc/photo.jpg",
+        "filename": "photo.jpg",
+        "content_type": "image/jpeg",
+    }
     response = await admin_client.post("/api/admin/media/register", json=payload)
     assert response.status_code == 200
     assert response.json() == {"success": True}

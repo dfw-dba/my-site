@@ -12,7 +12,6 @@ from src.app.dependencies import get_db_api, get_storage
 from src.app.main import create_app
 from src.app.services.db_functions import DatabaseAPI
 
-
 # ── Real database fixtures (for stored procedure tests) ──────────────────────
 
 TEST_DATABASE_URL = os.environ.get(

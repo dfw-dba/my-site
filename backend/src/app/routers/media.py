@@ -18,8 +18,6 @@ async def list_media_albums(
 
 
 @router.get("/albums/{slug}")
-async def get_media_album(
-    slug: str, db: DatabaseAPI = Depends(get_db_api)
-) -> Any:
+async def get_media_album(slug: str, db: DatabaseAPI = Depends(get_db_api)) -> Any:
     """Get a single album with its media items."""
     return await db.get_album_with_media(slug)
