@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+
+# Build output
+frontend/dist/
+backend/dist/
+*.egg-info/
+
+# Environment & config
+.env
+config/site.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker/backend/__pycache__/
+docker/frontend/node_modules/
+
+# Testing
+coverage/
+htmlcov/
+.coverage
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# AWS CDK
+infrastructure/cdk/cdk.out/
+infrastructure/cdk/node_modules/
+
+# MinIO data
+minio-data/
+
+# UV
+.python-version
+
+# Misc
+*.log

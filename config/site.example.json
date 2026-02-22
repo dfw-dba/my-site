@@ -1,0 +1,7 @@
+{
+  "domainName": "example.com",
+  "siteName": "Your Name",
+  "siteDescription": "Personal website and portfolio",
+  "awsRegion": "us-east-1",
+  "awsAccountId": "123456789012"
+}
