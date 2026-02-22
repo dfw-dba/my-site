@@ -27,9 +27,7 @@ class DatabaseAPI:
 
     async def get_professional_timeline(self) -> Any:
         """Fetch resume entries as a chronological timeline."""
-        result = await self.session.execute(
-            text("SELECT api.get_professional_timeline()")
-        )
+        result = await self.session.execute(text("SELECT api.get_professional_timeline()"))
         return result.scalar_one()
 
     async def upsert_professional_entry(self, data: dict[str, Any]) -> Any:
