@@ -12,14 +12,12 @@ Requirements:
 import json
 import uuid
 
-import pytest
-
 from src.app.services.db_functions import DatabaseAPI
-
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _unique(prefix: str = "test") -> str:
     """Return a slug-safe unique string to avoid cross-test collisions."""

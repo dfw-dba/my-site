@@ -18,8 +18,6 @@ async def list_showcase_items(
 
 
 @router.get("/{slug}")
-async def get_showcase_item(
-    slug: str, db: DatabaseAPI = Depends(get_db_api)
-) -> Any:
+async def get_showcase_item(slug: str, db: DatabaseAPI = Depends(get_db_api)) -> Any:
     """Get a single showcase item by slug."""
     return await db.get_showcase_item(slug)
