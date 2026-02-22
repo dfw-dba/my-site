@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: mysite
+          POSTGRES_PASSWORD: localdev
+          POSTGRES_DB: mysite
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mysite -d mysite"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://mysite:localdev@localhost:5432/mysite
+      ADMIN_API_KEY: local-dev-admin-key
+      CORS_ORIGINS: http://localhost:5173
+      MINIO_ENDPOINT: http://localhost:9000
+      MEDIA_BUCKET: media
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run database init scripts
+        run: |
+          for f in database/init/0*.sql; do
+            echo "Running $f..."
+            PGPASSWORD=localdev psql -h localhost -U mysite -d mysite -f "$f"
+          done
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+        working-directory: backend
+
+      - name: Lint
+        run: uv run ruff check src tests
+        working-directory: backend
+
+      - name: Format check
+        run: uv run ruff format --check src tests
+        working-directory: backend
+
+      - name: Test
+        run: uv run pytest tests
+        working-directory: backend
+
+  frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Type check
+        run: npx tsc --noEmit
+        working-directory: frontend
+
+      - name: Test
+        run: npm test
+        working-directory: frontend
+
+      - name: Build
+        run: npm run build
+        working-directory: frontend
