@@ -1,5 +1,6 @@
 """Shared pytest fixtures for the backend test suite."""
 
+import os
 from collections.abc import AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock
 
@@ -14,7 +15,10 @@ from src.app.services.db_functions import DatabaseAPI
 
 # ── Real database fixtures (for stored procedure tests) ──────────────────────
 
-TEST_DATABASE_URL = "postgresql+asyncpg://mysite:localdev@localhost:5433/mysite"
+TEST_DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    "postgresql+asyncpg://mysite:localdev@localhost:5432/mysite",
+)
 
 
 @pytest.fixture
