@@ -20,7 +20,7 @@ export interface ResumeSection {
 }
 
 export interface ResumeData {
-  sections: ResumeSection[];
+  sections: Record<string, Record<string, unknown>>;
   entries: Record<string, ProfessionalEntry[]>;
 }
 

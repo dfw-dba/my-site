@@ -25,9 +25,9 @@ describe("Resume", () => {
     vi.mocked(useResume).mockReturnValue({
       isLoading: false,
       data: {
-        sections: [
-          { section_type: "summary", content: { text: "A summary", headline: "My Headline" } },
-        ],
+        sections: {
+          summary: { text: "A summary", headline: "My Headline" },
+        },
         entries: {
           work: [
             {

@@ -1,20 +1,14 @@
 import { useResume } from "../hooks/useApi";
 import Timeline from "../components/Timeline";
-import type { ResumeSection } from "../types";
 
-function findSection(
-  sections: ResumeSection[],
-  type: string
-): ResumeSection | undefined {
-  return sections.find((s) => s.section_type === type);
-}
+type SectionContent = Record<string, unknown>;
 
-function SummarySection({ section }: { section: ResumeSection }) {
+function SummarySection({ content }: { content: SectionContent }) {
   const text =
-    typeof section.content.text === "string" ? section.content.text : null;
+    typeof content.text === "string" ? content.text : null;
   const headline =
-    typeof section.content.headline === "string"
-      ? section.content.headline
+    typeof content.headline === "string"
+      ? content.headline
       : null;
 
   if (!text && !headline) return null;
@@ -33,8 +27,7 @@ function SummarySection({ section }: { section: ResumeSection }) {
   );
 }
 
-function SkillsSection({ section }: { section: ResumeSection }) {
-  const content = section.content as Record<string, unknown>;
+function SkillsSection({ content }: { content: SectionContent }) {
 
   // The skills content can be either:
   // - { groups: Record<string, string[]> } with named groups
@@ -85,8 +78,7 @@ function SkillsSection({ section }: { section: ResumeSection }) {
   );
 }
 
-function ContactSection({ section }: { section: ResumeSection }) {
-  const content = section.content as Record<string, unknown>;
+function ContactSection({ content }: { content: SectionContent }) {
 
   const entries = Object.entries(content).filter(
     ([, val]) => typeof val === "string" && val.length > 0
@@ -154,9 +146,7 @@ export default function Resume() {
     return <ErrorMessage message={error?.message ?? "Unknown error"} />;
   if (!data) return null;
 
-  const summarySection = findSection(data.sections, "summary");
-  const skillsSection = findSection(data.sections, "skills");
-  const contactSection = findSection(data.sections, "contact");
+  const { sections } = data;
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -167,9 +157,9 @@ export default function Resume() {
         <div className="mt-1 h-1 w-16 rounded bg-blue-600" />
       </header>
 
-      {summarySection && <SummarySection section={summarySection} />}
-      {skillsSection && <SkillsSection section={skillsSection} />}
-      {contactSection && <ContactSection section={contactSection} />}
+      {sections.summary && <SummarySection content={sections.summary} />}
+      {sections.skills && <SkillsSection content={sections.skills} />}
+      {sections.contact && <ContactSection content={sections.contact} />}
 
       {data.entries && Object.keys(data.entries).length > 0 && (
         <section>
