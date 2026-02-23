@@ -1,0 +1,83 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deployment info
+        run: |
+          echo "=== Deployment Stub ==="
+          echo "Commit:    ${{ github.event.workflow_run.head_sha }}"
+          echo "Branch:    ${{ github.event.workflow_run.head_branch }}"
+          echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "Actor:     ${{ github.event.workflow_run.actor.login }}"
+          echo ""
+          echo "This is a placeholder workflow."
+          echo "Real deployment steps will replace the commented-out sections below."
+
+      # --- Future deployment steps ---
+
+      # - name: Configure AWS credentials
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+      #     aws-region: us-east-1
+
+      # - name: Login to Amazon ECR
+      #   id: ecr-login
+      #   uses: aws-actions/amazon-ecr-login@v2
+
+      # - name: Build & push backend image
+      #   working-directory: backend
+      #   run: |
+      #     docker build -t ${{ steps.ecr-login.outputs.registry }}/mysite-backend:${{ github.event.workflow_run.head_sha }} .
+      #     docker push ${{ steps.ecr-login.outputs.registry }}/mysite-backend:${{ github.event.workflow_run.head_sha }}
+
+      # - name: Build & push frontend image
+      #   working-directory: frontend
+      #   run: |
+      #     docker build -t ${{ steps.ecr-login.outputs.registry }}/mysite-frontend:${{ github.event.workflow_run.head_sha }} .
+      #     docker push ${{ steps.ecr-login.outputs.registry }}/mysite-frontend:${{ github.event.workflow_run.head_sha }}
+
+      # - name: Run database migrations
+      #   run: |
+      #     aws ecs run-task \
+      #       --cluster mysite \
+      #       --task-definition mysite-migrate \
+      #       --overrides '{"containerOverrides":[{"name":"migrate","environment":[{"name":"DATABASE_URL","value":"${{ secrets.DATABASE_URL }}"}]}]}' \
+      #       --network-configuration '${{ secrets.ECS_NETWORK_CONFIG }}' \
+      #       --launch-type FARGATE
+
+      # - name: Deploy backend to ECS Fargate
+      #   run: |
+      #     aws ecs update-service \
+      #       --cluster mysite \
+      #       --service mysite-backend \
+      #       --force-new-deployment
+
+      # - name: Deploy frontend to S3/CloudFront
+      #   run: |
+      #     aws s3 sync frontend/dist/ s3://${{ secrets.FRONTEND_BUCKET }} --delete
+      #     aws cloudfront create-invalidation \
+      #       --distribution-id ${{ secrets.CLOUDFRONT_DIST_ID }} \
+      #       --paths "/*"
+
+      # - name: Health check
+      #   run: |
+      #     sleep 30
+      #     curl --fail --retry 5 --retry-delay 10 ${{ secrets.BACKEND_URL }}/health
+
+      # - name: Notify deployment
+      #   if: always()
+      #   run: |
+      #     echo "TODO: Send Slack/GitHub notification with deployment status"
