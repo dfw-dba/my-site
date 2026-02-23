@@ -38,7 +38,13 @@
 
 # Git Branching Rules
 
+> **HARD RULE — NO EXCEPTIONS**: Never edit, stage, or commit files while on the `main` branch.
+> Before making ANY file change (including `tasks/todo.md`, `CLAUDE.md`, or any other file),
+> you MUST first create and switch to a feature or fix branch. This applies to every change,
+> no matter how small — documentation, config, task tracking, everything.
+
 - **NEVER commit directly to `main`**. All changes must go through a pull request.
+- **NEVER edit files while on `main`**. Switch to a branch FIRST, then make edits.
 - Create a feature branch (`feature/<name>`) or fix branch (`fix/<name>`) for every change.
 - Push the branch, create a PR targeting `main`, and merge via the PR.
 - **Always squash merge** into `main` (`gh pr merge --squash`). No merge commits or rebase merges.
