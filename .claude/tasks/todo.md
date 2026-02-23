@@ -8,7 +8,7 @@
 - [x] 1.5 Database init SQL scripts
 - [x] 1.6 Docker files (backend, frontend) + docker-compose.yml
 - [x] 1.7 GitHub Actions (ci.yml, deploy.yml stubs)
-- [ ] 1.8 .claude/ commands & .pre-commit-config.yaml
+- [x] 1.8 .claude/ commands & .pre-commit-config.yaml
 - [x] 1.9 Verify: `docker compose up -d` → all 4 services healthy → health check 200
 
 ## Sprint 2: Database "API" Layer
