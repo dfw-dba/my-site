@@ -52,6 +52,10 @@
 4. **Explain Changes**: High-level summary at each step
 5. **Document Results**: Add review section to `tasks/todo.md`
 6. **Capture Lessons**: Update `tasks/lessons.md` after corrections
+7. **Sync with GitHub Project**: Keep `tasks/todo.md` and the `my-site` GitHub Project in sync:
+   - When creating a todo item in `tasks/todo.md`, also create a corresponding item in the `my-site` GitHub Project
+   - When marking a todo item complete in `tasks/todo.md`, also mark it done in the `my-site` GitHub Project
+   - Use `gh project` commands to manage project items
 
 # Core Principles
 
