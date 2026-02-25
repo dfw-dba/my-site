@@ -45,7 +45,15 @@
 - [x] 5.4 Frontend component + page tests
 - [x] 5.5 Verify: all tests pass
 
-## Sprint 6–9: AWS CDK, CI/CD, MCP, Admin UI (future)
+## Sprint 6: Resume Content Update
+- [x] 6.1 Replace placeholder resume_sections seed data with real content (summary, skills, contact)
+- [x] 6.2 Replace placeholder professional_entries seed data with real work history (5 positions)
+- [x] 6.3 Remove placeholder education entry
+- [x] 6.4 Rebuild database and verify API responses
+- [x] 6.5 Verify frontend Resume page renders correctly with real data
+- [x] 6.6 Run existing tests to confirm no regressions
+
+## Sprint 7–9: AWS CDK, CI/CD, MCP, Admin UI (future)
 
 ---
 

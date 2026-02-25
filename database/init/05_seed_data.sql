@@ -9,56 +9,80 @@ INSERT INTO internal.professional_entries
 VALUES
     (
         'work',
-        'Senior Data Engineer',
-        'Cascade Analytics',
-        'Seattle, WA',
-        '2022-03-01',
+        'Sr Database Engineer',
+        'Verra Mobility',
         NULL,
-        'Lead architect for the company''s real-time data platform serving 50M+ events per day.',
-        '["Designed and deployed a streaming pipeline reducing end-to-end latency from 15 minutes to under 30 seconds",
-          "Mentored a team of 4 junior engineers through quarterly architecture reviews",
-          "Drove adoption of infrastructure-as-code, eliminating manual provisioning entirely"]'::jsonb,
-        '["Apache Kafka", "Apache Spark", "Python", "Terraform", "AWS", "PostgreSQL", "dbt"]'::jsonb,
+        '2024-03-01',
+        NULL,
+        'Architecting and optimizing highly scalable database solutions for enterprise systems, providing technical leadership for a single-tenant architecture on AWS. Building a database-as-API layer using Hasura REST endpoints on top of PostgreSQL functions.',
+        '["Designed and implemented single-tenant database architecture on AWS supporting enterprise-scale workloads",
+          "Built database-as-API layer using Hasura REST endpoints backed by PostgreSQL functions",
+          "Providing technical leadership on database architecture decisions across engineering teams"]'::jsonb,
+        '["PostgreSQL", "Hasura", "AWS", "REST APIs", "Database Architecture"]'::jsonb,
         1
     ),
     (
         'work',
-        'Data Engineer',
-        'Nimbus Health',
-        'Portland, OR',
-        '2019-06-15',
-        '2022-02-28',
-        'Built ETL pipelines and analytics infrastructure for a healthcare SaaS platform.',
-        '["Migrated legacy SSIS packages to Airflow, cutting pipeline failures by 70%",
-          "Implemented HIPAA-compliant data warehouse on Snowflake",
-          "Created self-service BI dashboards used daily by 200+ clinical staff"]'::jsonb,
-        '["Python", "Apache Airflow", "Snowflake", "Docker", "AWS", "Tableau"]'::jsonb,
+        'Database Administrator',
+        'American Specialty Health',
+        NULL,
+        '2023-11-01',
+        '2024-03-01',
+        'Database administration for enterprise SQL Server environments, leading encryption migration efforts and cloud migration initiatives.',
+        '["Led migration from Vormetric DSM to native SQL Server Transparent Data Encryption",
+          "Assisted in migrating on-premises SQL Server databases to Azure",
+          "Provided 24/7 on-call production support for critical database systems"]'::jsonb,
+        '["SQL Server", "Azure", "Transparent Data Encryption", "Database Migration"]'::jsonb,
         2
     ),
     (
         'work',
-        'Junior Software Developer',
-        'BrightPath Software',
-        'Portland, OR',
-        '2017-08-01',
-        '2019-06-01',
-        'Full-stack development on internal tools and client-facing web applications.',
-        '["Developed a React-based admin dashboard that consolidated 5 legacy tools into one",
-          "Wrote comprehensive integration tests improving release confidence"]'::jsonb,
-        '["JavaScript", "React", "Node.js", "PostgreSQL", "Docker"]'::jsonb,
+        'Data Engineer',
+        'StoneEagle',
+        NULL,
+        '2020-08-01',
+        '2023-11-01',
+        'BI application development and DevOps pipeline engineering within the database services team, delivering data warehouse solutions and CI/CD automation for database deployments.',
+        '["Added partitioning to the warehouse data model, reducing post-period close processing from 72 hours to 12 hours",
+          "Built CI/CD pipelines using SQL Server Data Tools, SQLPackage.exe, YAML, and PowerShell in Azure DevOps",
+          "Converted Azure Data Factory pipelines to SSIS packages as part of a cloud migration from Azure to AWS",
+          "Developed back-end processes for data warehousing, cube processing, and SSRS report delivery",
+          "Mentored new hires and participated in technical screening for the Data Services team"]'::jsonb,
+        '["SQL Server", "SSIS", "SSRS", "Azure DevOps", "YAML", "PowerShell", "Azure Data Factory", "Data Warehousing", "SSAS"]'::jsonb,
         3
     ),
     (
-        'education',
-        'B.S. Computer Science',
-        'Oregon State University',
-        'Corvallis, OR',
-        '2013-09-01',
-        '2017-06-15',
-        'Focus on distributed systems and database theory. Graduated cum laude.',
-        '["Dean''s List — 6 semesters", "Capstone: distributed log aggregation system"]'::jsonb,
-        '[]'::jsonb,
+        'work',
+        'SQL Server Database Engineer',
+        'LoanBeam',
+        NULL,
+        '2019-12-01',
+        '2020-08-01',
+        'Led design and development of database systems, with responsibility for performance optimization, data modeling, and CI/CD process development.',
+        '["Designed physical and logical database models aligned with business requirements",
+          "Mentored development team on data modeling best practices and performant T-SQL",
+          "Built CI/CD pipelines using Visual Studio, SQL Server Data Tools, and Azure DevOps",
+          "Delivered database solutions for both internal and client-facing applications"]'::jsonb,
+        '["SQL Server", "T-SQL", "SSDT", "Azure DevOps", "Database Design", "CI/CD"]'::jsonb,
         4
+    ),
+    (
+        'work',
+        'Lead Sr SQL Server Database Administrator',
+        'GameStop',
+        NULL,
+        '2012-09-01',
+        '2019-12-01',
+        'Led the SQL Server database team supporting an international ERP system across 20+ instances ranging from megabytes to terabytes. Managed performance tuning, replication, backups, recovery procedures, and 24/7 on-call support.',
+        '["Migrated and upgraded SQL Server 2008 R2 to 2016 across multiple clustered instances",
+          "Reduced ETL job run times by 50% through change tracking and asynchronous data loading",
+          "Improved data warehouse performance by realigning fact table and cube partition schemes to eliminate excessive I/O",
+          "Led GDPR project to migrate and encrypt customer data across international Navision databases using PowerShell, BCP, and parallelism",
+          "Redesigned purge routines with Service Broker, eliminating transaction log growth issues",
+          "Overhauled index maintenance using T-SQL and PowerShell parallel workflows to shorten maintenance windows",
+          "Published article on SQLServerCentral.com"]'::jsonb,
+        '["SQL Server", "T-SQL", "SSIS", "SSRS", "SSAS", "PowerShell", "Clustering", "Transactional Replication", "BCP", "SSDT", "Azure DevOps"]'::jsonb,
+        5
     );
 
 -- ============================================================
@@ -69,25 +93,24 @@ VALUES
     (
         'summary',
         '{
-            "text": "Data engineer with 7+ years of experience building scalable pipelines, real-time streaming platforms, and analytics infrastructure. Passionate about clean architecture, developer experience, and turning messy data into reliable products."
+            "text": "Seasoned database engineer with over a decade of hands-on experience architecting, optimizing, and managing SQL Server and PostgreSQL environments across enterprise systems. Track record of delivering high-impact database migrations, performance tuning, CI/CD automation, and data warehouse solutions. Published author on SQLServerCentral.com."
         }'::jsonb
     ),
     (
         'skills',
         '{
-            "languages": ["Python", "SQL", "JavaScript", "TypeScript", "Bash"],
-            "data": ["Apache Kafka", "Apache Spark", "Airflow", "dbt", "Snowflake", "PostgreSQL"],
-            "cloud": ["AWS (S3, Lambda, ECS, Glue, Redshift)", "Terraform", "Docker", "GitHub Actions"],
-            "web": ["React", "Next.js", "Node.js", "Tailwind CSS"]
+            "databases": ["MSSQL", "PostgreSQL", "SQL Server (2008 R2 through 2016+)", "Analysis Services (SSAS)", "Snowflake"],
+            "development": ["T-SQL", "Python", "PowerShell", "YAML", "SSIS", "SSRS", "SSDT"],
+            "devops_cloud": ["Azure DevOps", "AWS", "Azure", "CI/CD Pipelines", "Docker", "Git", "Terraform"],
+            "architecture": ["Database Design", "Performance Tuning", "Data Warehousing", "Transactional Replication", "Clustering", "Partitioning", "Hasura", "Database-as-API"],
+            "tools": ["Red-Gate", "SQL Server Data Tools", "SQLPackage.exe", "Azure Data Factory", "BCP"]
         }'::jsonb
     ),
     (
         'contact',
         '{
-            "email": "jason@example.com",
-            "location": "Seattle, WA",
-            "github": "https://github.com/jason",
-            "linkedin": "https://linkedin.com/in/jason"
+            "linkedin": "https://www.linkedin.com/in/jason-rowland-6712097",
+            "github": "https://github.com/dfw-dba"
         }'::jsonb
     );
 
