@@ -14,11 +14,11 @@ VALUES
         NULL,
         '2024-03-01',
         NULL,
-        'Architecting and optimizing highly scalable database solutions for enterprise systems, providing technical leadership for a single-tenant architecture on AWS. Building a database-as-API layer using Hasura REST endpoints on top of PostgreSQL functions.',
-        '["Designed and implemented single-tenant database architecture on AWS supporting enterprise-scale workloads",
-          "Built database-as-API layer using Hasura REST endpoints backed by PostgreSQL functions",
-          "Providing technical leadership on database architecture decisions across engineering teams"]'::jsonb,
-        '["PostgreSQL", "Hasura", "AWS", "REST APIs", "Database Architecture"]'::jsonb,
+        'Architect and optimize highly scalable PostgreSQL solutions within a single-tenant AWS architecture, delivering a database-as-API layer through Hasura REST endpoints backed by PL/pgSQL functions.',
+        '["Designed and implemented a single-tenant database architecture on AWS, enabling isolated, enterprise-scale workloads per client",
+          "Built a database-as-API layer using Hasura REST endpoints and role-based access control, reducing back-end development cycles",
+          "Drove database architecture decisions across engineering teams, establishing standards for schema design, indexing, and query performance"]'::jsonb,
+        '["PostgreSQL", "Hasura", "AWS", "Hasura REST APIs", "Hasura RBAC", "Database Modeling", "PL/pgSQL"]'::jsonb,
         1
     ),
     (
@@ -28,10 +28,10 @@ VALUES
         NULL,
         '2023-11-01',
         '2024-03-01',
-        'Database administration for enterprise SQL Server environments, leading encryption migration efforts and cloud migration initiatives.',
-        '["Led migration from Vormetric DSM to native SQL Server Transparent Data Encryption",
-          "Assisted in migrating on-premises SQL Server databases to Azure",
-          "Provided 24/7 on-call production support for critical database systems"]'::jsonb,
+        'Administered enterprise SQL Server environments, spearheading encryption modernization and cloud migration initiatives for healthcare data systems.',
+        '["Led migration from Vormetric DSM to native SQL Server Transparent Data Encryption, strengthening data-at-rest security while reducing operational complexity",
+          "Executed on-premises SQL Server to Azure migration, coordinating cutover planning and validation across development and infrastructure teams",
+          "Maintained 24/7 on-call production support for mission-critical database systems serving healthcare operations"]'::jsonb,
         '["SQL Server", "Azure", "Transparent Data Encryption", "Database Migration"]'::jsonb,
         2
     ),
@@ -42,12 +42,12 @@ VALUES
         NULL,
         '2020-08-01',
         '2023-11-01',
-        'BI application development and DevOps pipeline engineering within the database services team, delivering data warehouse solutions and CI/CD automation for database deployments.',
-        '["Added partitioning to the warehouse data model, reducing post-period close processing from 72 hours to 12 hours",
-          "Built CI/CD pipelines using SQL Server Data Tools, SQLPackage.exe, YAML, and PowerShell in Azure DevOps",
-          "Converted Azure Data Factory pipelines to SSIS packages as part of a cloud migration from Azure to AWS",
-          "Developed back-end processes for data warehousing, cube processing, and SSRS report delivery",
-          "Mentored new hires and participated in technical screening for the Data Services team"]'::jsonb,
+        'Delivered BI solutions and database DevOps automation within the Data Services team, engineering data warehouse pipelines and CI/CD workflows for enterprise database deployments.',
+        '["Implemented table partitioning across the warehouse data model, cutting post-period-close processing from 72 hours to 12 hours — an 83% reduction",
+          "Engineered CI/CD pipelines using SQL Server Data Tools, SQLPackage.exe, YAML, and PowerShell in Azure DevOps, enabling repeatable, automated database deployments",
+          "Migrated Azure Data Factory pipelines to SSIS packages during a cloud-to-cloud transition from Azure to AWS, ensuring zero data loss",
+          "Developed back-end ETL processes for data warehousing, OLAP cube processing, and automated SSRS report delivery",
+          "Mentored new hires on data engineering practices and led technical screening interviews for the Data Services team"]'::jsonb,
         '["SQL Server", "SSIS", "SSRS", "Azure DevOps", "YAML", "PowerShell", "Azure Data Factory", "Data Warehousing", "SSAS"]'::jsonb,
         3
     ),
@@ -58,11 +58,11 @@ VALUES
         NULL,
         '2019-12-01',
         '2020-08-01',
-        'Led design and development of database systems, with responsibility for performance optimization, data modeling, and CI/CD process development.',
-        '["Designed physical and logical database models aligned with business requirements",
-          "Mentored development team on data modeling best practices and performant T-SQL",
-          "Built CI/CD pipelines using Visual Studio, SQL Server Data Tools, and Azure DevOps",
-          "Delivered database solutions for both internal and client-facing applications"]'::jsonb,
+        'Owned end-to-end database design and development for a fintech platform, driving performance optimization, data modeling, and CI/CD adoption across the engineering organization.',
+        '["Designed normalized physical and logical database models translating complex mortgage-lending business rules into scalable schemas",
+          "Mentored the development team on data modeling best practices and performant T-SQL, elevating overall query quality",
+          "Established CI/CD pipelines using Visual Studio, SQL Server Data Tools, and Azure DevOps, bringing version control and automated deployment to database changes",
+          "Delivered database solutions powering both internal operations and client-facing loan-processing applications"]'::jsonb,
         '["SQL Server", "T-SQL", "SSDT", "Azure DevOps", "Database Design", "CI/CD"]'::jsonb,
         4
     ),
@@ -73,14 +73,14 @@ VALUES
         NULL,
         '2012-09-01',
         '2019-12-01',
-        'Led the SQL Server database team supporting an international ERP system across 20+ instances ranging from megabytes to terabytes. Managed performance tuning, replication, backups, recovery procedures, and 24/7 on-call support.',
-        '["Migrated and upgraded SQL Server 2008 R2 to 2016 across multiple clustered instances",
-          "Reduced ETL job run times by 50% through change tracking and asynchronous data loading",
-          "Improved data warehouse performance by realigning fact table and cube partition schemes to eliminate excessive I/O",
-          "Led GDPR project to migrate and encrypt customer data across international Navision databases using PowerShell, BCP, and parallelism",
-          "Redesigned purge routines with Service Broker, eliminating transaction log growth issues",
-          "Overhauled index maintenance using T-SQL and PowerShell parallel workflows to shorten maintenance windows",
-          "Published article on SQLServerCentral.com"]'::jsonb,
+        'Led a SQL Server database team supporting an international ERP system spanning 20+ instances from megabytes to multi-terabyte scale. Directed performance tuning, replication topology, disaster recovery, and 24/7 production operations.',
+        '["Planned and executed SQL Server 2008 R2 to 2016 migrations across multiple clustered instances with zero unplanned downtime",
+          "Reduced ETL run times by 50% by implementing change tracking and asynchronous data loading patterns",
+          "Improved data warehouse query performance by realigning fact table and OLAP cube partition schemes, eliminating excessive I/O",
+          "Led enterprise GDPR compliance initiative, migrating and encrypting customer data across international Navision databases using PowerShell, BCP, and parallel execution",
+          "Eliminated recurring transaction log growth incidents by redesigning purge routines with Service Broker for asynchronous processing",
+          "Overhauled index maintenance strategy using T-SQL and PowerShell parallel workflows, reclaiming hours from nightly maintenance windows",
+          "Published technical article on SQLServerCentral.com"]'::jsonb,
         '["SQL Server", "T-SQL", "SSIS", "SSRS", "SSAS", "PowerShell", "Clustering", "Transactional Replication", "BCP", "SSDT", "Azure DevOps"]'::jsonb,
         5
     );
@@ -93,17 +93,18 @@ VALUES
     (
         'summary',
         '{
-            "text": "Seasoned database engineer with over a decade of hands-on experience architecting, optimizing, and managing SQL Server and PostgreSQL environments across enterprise systems. Track record of delivering high-impact database migrations, performance tuning, CI/CD automation, and data warehouse solutions. Published author on SQLServerCentral.com."
+            "text": "Database engineer with 12+ years of experience architecting, optimizing, and operating SQL Server and PostgreSQL environments at enterprise scale. Proven track record delivering high-impact database migrations, performance tuning, CI/CD automation, and data warehouse solutions. Published author on SQLServerCentral.com."
         }'::jsonb
     ),
     (
         'skills',
         '{
-            "databases": ["MSSQL", "PostgreSQL", "SQL Server (2008 R2 through 2016+)", "Analysis Services (SSAS)", "Snowflake"],
+            "databases": ["MSSQL", "PostgreSQL", "SQL Server", "Analysis Services (SSAS)"],
             "development": ["T-SQL", "Python", "PowerShell", "YAML", "SSIS", "SSRS", "SSDT"],
-            "devops_cloud": ["Azure DevOps", "AWS", "Azure", "CI/CD Pipelines", "Docker", "Git", "Terraform"],
+            "devops_cloud": ["Azure DevOps", "CI/CD Pipelines", "Docker", "Git"],
             "architecture": ["Database Design", "Performance Tuning", "Data Warehousing", "Transactional Replication", "Clustering", "Partitioning", "Hasura", "Database-as-API"],
-            "tools": ["Red-Gate", "SQL Server Data Tools", "SQLPackage.exe", "Azure Data Factory", "BCP"]
+            "cloud": ["Azure Data Factory", "AWS Aurora Serverless"],
+            "tools": ["Red-Gate", "SQL Server Data Tools", "SQLPackage.exe", "BCP"]
         }'::jsonb
     ),
     (
