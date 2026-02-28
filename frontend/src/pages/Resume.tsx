@@ -1,5 +1,6 @@
 import { useResume } from "../hooks/useApi";
 import Timeline from "../components/Timeline";
+import ProfileImage from "../components/ProfileImage";
 
 type SectionContent = Record<string, unknown>;
 
@@ -150,11 +151,14 @@ export default function Resume() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <header className="mb-10">
-        <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-          Resume
-        </h1>
-        <div className="mt-1 h-1 w-16 rounded bg-blue-600" />
+      <header className="mb-10 flex flex-col sm:flex-row items-start gap-6">
+        <ProfileImage />
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+            Resume
+          </h1>
+          <div className="mt-1 h-1 w-16 rounded bg-blue-600" />
+        </div>
       </header>
 
       {sections.summary && <SummarySection content={sections.summary} />}
