@@ -2,16 +2,17 @@ import { useTheme } from "../hooks/useTheme";
 
 export default function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
+  const isDark = theme === "dark";
 
   return (
     <button
       onClick={toggleTheme}
-      className="p-2 rounded-md text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors"
-      aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+      className="flex items-center gap-3 w-full px-2 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+      aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
     >
-      {theme === "dark" ? (
+      {isDark ? (
         <svg
-          className="w-5 h-5"
+          className="w-5 h-5 shrink-0"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -25,7 +26,7 @@ export default function ThemeToggle() {
         </svg>
       ) : (
         <svg
-          className="w-5 h-5"
+          className="w-5 h-5 shrink-0"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -38,6 +39,9 @@ export default function ThemeToggle() {
           />
         </svg>
       )}
+      <span className="text-sm font-medium">
+        {isDark ? "Light Mode" : "Dark Mode"}
+      </span>
     </button>
   );
 }
