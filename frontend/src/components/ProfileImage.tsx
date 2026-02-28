@@ -14,7 +14,7 @@ export default function ProfileImage({ src, alt = "Profile photo" }: ProfileImag
     <img
       src={src}
       alt={alt}
-      className="h-36 w-36 rounded-full border-2 border-gray-200 dark:border-gray-700 object-cover"
+      className="h-56 w-36 rounded-2xl border-2 border-gray-200 dark:border-gray-700 object-cover"
     />
   );
 }

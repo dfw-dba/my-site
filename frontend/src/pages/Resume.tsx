@@ -151,14 +151,17 @@ export default function Resume() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <header className="mb-10 flex flex-col sm:flex-row items-start gap-6">
-        <ProfileImage />
-        <div>
-          <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-            Resume
-          </h1>
-          <div className="mt-1 h-1 w-16 rounded bg-blue-600" />
+      <header className="relative mb-10">
+        <div className="absolute -left-44 top-0 hidden lg:block">
+          <ProfileImage src="/profile.jpg" />
         </div>
+        <div className="mb-6 lg:hidden">
+          <ProfileImage src="/profile.jpg" />
+        </div>
+        <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+          Resume
+        </h1>
+        <div className="mt-1 h-1 w-16 rounded bg-blue-600" />
       </header>
 
       {sections.summary && <SummarySection content={sections.summary} />}
