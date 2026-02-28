@@ -10,3 +10,16 @@
 - [x] 6.6 Run tests to confirm no regressions
 - [x] 6.7 Add dark theme with toggle (defaults to dark) — PR #16
 - [x] 6.8 Add profile image placeholder to Resume page — PR #17
+
+---
+
+# Sprint 7 — Profile Photo
+
+## Tasks
+
+- [x] 7.1 Replace profile placeholder with real photo on Resume page
+  - Add `profile.jpg` to `frontend/public/`
+  - Pass `src="/profile.jpg"` to `<ProfileImage />` in `frontend/src/pages/Resume.tsx`
+  - Mount `frontend/public` volume in `docker-compose.yml` so dev container serves static assets
+  - Change profile image shape from circle to portrait rounded rectangle (`h-56 w-36 rounded-2xl`) in `ProfileImage.tsx`
+  - Position photo to the left of content area (absolute positioned on `lg+`, inline on mobile) so page text alignment is preserved in `Resume.tsx`
