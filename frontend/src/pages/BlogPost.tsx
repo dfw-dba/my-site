@@ -18,7 +18,7 @@ export default function BlogPost() {
   if (isLoading) {
     return (
       <div className="max-w-3xl mx-auto flex justify-center py-16">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 dark:border-gray-700 border-t-blue-600" />
       </div>
     );
   }
@@ -28,7 +28,7 @@ export default function BlogPost() {
       <div className="max-w-3xl mx-auto">
         <Link
           to="/showcase/blog"
-          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6 transition-colors"
+          className="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 mb-6 transition-colors"
         >
           <svg
             className="h-4 w-4"
@@ -46,10 +46,10 @@ export default function BlogPost() {
           Back to Blog
         </Link>
         <div className="text-center py-16">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
             Post Not Found
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-400">
             The blog post you are looking for does not exist or has been removed.
           </p>
         </div>
@@ -63,7 +63,7 @@ export default function BlogPost() {
     <div className="max-w-3xl mx-auto">
       <Link
         to="/showcase/blog"
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6 transition-colors"
+        className="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 mb-6 transition-colors"
       >
         <svg
           className="h-4 w-4"
@@ -83,11 +83,11 @@ export default function BlogPost() {
 
       <article>
         <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-3">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-3">
             {post.title}
           </h1>
 
-          <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
+          <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
             <time dateTime={displayDate}>{formatDate(displayDate)}</time>
           </div>
 
@@ -96,7 +96,7 @@ export default function BlogPost() {
               {post.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="inline-block rounded-full bg-gray-100 px-3 py-0.5 text-xs font-medium text-gray-600"
+                  className="inline-block rounded-full bg-gray-100 dark:bg-gray-800 px-3 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-400"
                 >
                   {tag}
                 </span>
@@ -105,7 +105,7 @@ export default function BlogPost() {
           )}
         </header>
 
-        <div className="border-t border-gray-200 pt-8">
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-8">
           <MarkdownRenderer content={post.content} />
         </div>
       </article>

@@ -15,13 +15,13 @@ function convertMarkdown(md: string): string {
   html = html.replace(
     /```(\w*)\n([\s\S]*?)```/g,
     (_match, _lang, code) =>
-      `<pre class="bg-gray-100 rounded-lg p-4 overflow-x-auto text-sm my-4"><code>${code.trim()}</code></pre>`,
+      `<pre class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 overflow-x-auto text-sm my-4"><code>${code.trim()}</code></pre>`,
   );
 
   // Inline code: `code`
   html = html.replace(
     /`([^`\n]+)`/g,
-    '<code class="bg-gray-100 text-pink-600 rounded px-1.5 py-0.5 text-sm">$1</code>',
+    '<code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 rounded px-1.5 py-0.5 text-sm">$1</code>',
   );
 
   // Headings: # through ######
@@ -59,13 +59,13 @@ function convertMarkdown(md: string): string {
   // Horizontal rule: --- or ***
   html = html.replace(
     /^(---|\*\*\*)$/gm,
-    '<hr class="my-6 border-gray-300" />',
+    '<hr class="my-6 border-gray-300 dark:border-gray-700" />',
   );
 
   // Links: [text](url)
   html = html.replace(
     /\[([^\]]+)\]\(([^)]+)\)/g,
-    '<a href="$2" class="text-blue-600 hover:text-blue-800 underline" target="_blank" rel="noopener noreferrer">$1</a>',
+    '<a href="$2" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">$1</a>',
   );
 
   // Unordered lists: convert blocks of "- item" lines
@@ -100,7 +100,7 @@ function convertMarkdown(md: string): string {
   // Blockquotes: > text
   html = html.replace(
     /^&gt;\s+(.+)$/gm,
-    '<blockquote class="border-l-4 border-gray-300 pl-4 italic text-gray-600 my-4">$1</blockquote>',
+    '<blockquote class="border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic text-gray-600 dark:text-gray-400 my-4">$1</blockquote>',
   );
 
   // Paragraphs: wrap remaining text blocks separated by double newlines
@@ -133,7 +133,7 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
 
   return (
     <div
-      className="text-gray-800 leading-relaxed"
+      className="text-gray-800 dark:text-gray-200 leading-relaxed"
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );
