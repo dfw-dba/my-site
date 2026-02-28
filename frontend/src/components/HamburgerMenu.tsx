@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router";
+import ThemeToggle from "./ThemeToggle";
 
 export default function HamburgerMenu() {
   const [isOpen, setIsOpen] = useState(false);
@@ -8,7 +9,7 @@ export default function HamburgerMenu() {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed top-4 left-4 z-50 p-2 rounded-md bg-gray-800 text-white"
+        className="fixed top-4 left-4 z-50 p-2 rounded-md bg-gray-800 text-white dark:bg-gray-700"
         aria-label="Open menu"
       >
         <svg
@@ -36,14 +37,14 @@ export default function HamburgerMenu() {
 
       {/* Drawer */}
       <nav
-        className={`fixed top-0 left-0 z-50 h-full w-64 bg-white shadow-lg transform transition-transform duration-300 ${
+        className={`fixed top-0 left-0 z-50 h-full w-64 bg-white dark:bg-gray-900 shadow-lg transform transition-transform duration-300 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="p-4">
+        <div className="p-4 flex flex-col h-full">
           <button
             onClick={() => setIsOpen(false)}
-            className="mb-6 p-2 rounded-md hover:bg-gray-100"
+            className="mb-6 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-100"
             aria-label="Close menu"
           >
             <svg
@@ -66,7 +67,7 @@ export default function HamburgerMenu() {
               <Link
                 to="/"
                 onClick={() => setIsOpen(false)}
-                className="block text-lg font-medium text-gray-800 hover:text-blue-600"
+                className="block text-lg font-medium text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400"
               >
                 Resume
               </Link>
@@ -75,13 +76,13 @@ export default function HamburgerMenu() {
               <Link
                 to="/personal"
                 onClick={() => setIsOpen(false)}
-                className="block text-lg font-medium text-gray-800 hover:text-blue-600"
+                className="block text-lg font-medium text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400"
               >
                 Personal
               </Link>
             </li>
             <li>
-              <span className="block text-sm font-semibold text-gray-500 uppercase tracking-wide">
+              <span className="block text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                 Showcase
               </span>
               <ul className="mt-2 ml-4 space-y-2">
@@ -89,7 +90,7 @@ export default function HamburgerMenu() {
                   <Link
                     to="/showcase/blog"
                     onClick={() => setIsOpen(false)}
-                    className="block text-gray-700 hover:text-blue-600"
+                    className="block text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
                   >
                     Blog
                   </Link>
@@ -98,7 +99,7 @@ export default function HamburgerMenu() {
                   <Link
                     to="/showcase/data"
                     onClick={() => setIsOpen(false)}
-                    className="block text-gray-700 hover:text-blue-600"
+                    className="block text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
                   >
                     Data
                   </Link>
@@ -107,7 +108,7 @@ export default function HamburgerMenu() {
                   <Link
                     to="/showcase"
                     onClick={() => setIsOpen(false)}
-                    className="block text-gray-700 hover:text-blue-600"
+                    className="block text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
                   >
                     All Projects
                   </Link>
@@ -115,6 +116,10 @@ export default function HamburgerMenu() {
               </ul>
             </li>
           </ul>
+
+          <div className="mt-auto pb-4">
+            <ThemeToggle />
+          </div>
         </div>
       </nav>
     </>

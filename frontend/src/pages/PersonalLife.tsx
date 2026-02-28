@@ -6,14 +6,14 @@ function AlbumCard({ album }: { album: Album }) {
   return (
     <Link
       to={`/personal/album/${album.slug}`}
-      className="group block rounded-xl overflow-hidden border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all"
+      className="group block rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-lg transition-all"
     >
       {/* Cover image placeholder */}
-      <div className="relative aspect-[4/3] bg-gray-100">
+      <div className="relative aspect-[4/3] bg-gray-100 dark:bg-gray-800">
         {album.cover_image ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-200 group-hover:bg-gray-250">
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-200 dark:bg-gray-700 group-hover:bg-gray-250">
             <svg
-              className="w-12 h-12 text-gray-400"
+              className="w-12 h-12 text-gray-400 dark:text-gray-500"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -25,15 +25,15 @@ function AlbumCard({ album }: { album: Album }) {
                 d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z"
               />
             </svg>
-            <span className="absolute bottom-2 left-3 text-xs text-gray-500 truncate max-w-[80%]">
+            <span className="absolute bottom-2 left-3 text-xs text-gray-500 dark:text-gray-400 truncate max-w-[80%]">
               {album.cover_image.filename}
             </span>
           </div>
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
             {/* Camera icon */}
             <svg
-              className="w-16 h-16 text-gray-300"
+              className="w-16 h-16 text-gray-300 dark:text-gray-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -63,17 +63,17 @@ function AlbumCard({ album }: { album: Album }) {
       </div>
 
       {/* Card body */}
-      <div className="p-4">
+      <div className="p-4 bg-white dark:bg-gray-800">
         <div className="flex items-start justify-between gap-2 mb-2">
-          <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {album.title}
           </h3>
-          <span className="shrink-0 inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 capitalize">
+          <span className="shrink-0 inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 px-2.5 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-300 capitalize">
             {album.category}
           </span>
         </div>
         {album.description && (
-          <p className="text-gray-600 text-sm line-clamp-2">
+          <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2">
             {album.description}
           </p>
         )}
@@ -89,10 +89,10 @@ export default function PersonalLife() {
     <div className="max-w-6xl mx-auto">
       {/* Page header */}
       <div className="mb-10">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
           Personal Life
         </h1>
-        <p className="text-gray-600 text-lg">
+        <p className="text-gray-600 dark:text-gray-400 text-lg">
           A collection of moments, adventures, and the things that matter most.
         </p>
       </div>
@@ -127,7 +127,7 @@ export default function PersonalLife() {
       {error && (
         <div className="text-center py-20">
           <p className="text-red-500 mb-2">Failed to load albums.</p>
-          <p className="text-gray-500 text-sm">
+          <p className="text-gray-500 dark:text-gray-400 text-sm">
             {error instanceof Error ? error.message : "An unexpected error occurred."}
           </p>
         </div>
@@ -146,7 +146,7 @@ export default function PersonalLife() {
       {albums && albums.length === 0 && (
         <div className="text-center py-20">
           <svg
-            className="mx-auto h-16 w-16 text-gray-300 mb-4"
+            className="mx-auto h-16 w-16 text-gray-300 dark:text-gray-600 mb-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -164,8 +164,8 @@ export default function PersonalLife() {
               d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z"
             />
           </svg>
-          <p className="text-gray-500 text-lg">No albums yet.</p>
-          <p className="text-gray-400 text-sm mt-1">
+          <p className="text-gray-500 dark:text-gray-400 text-lg">No albums yet.</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">
             Albums will appear here once they are created.
           </p>
         </div>

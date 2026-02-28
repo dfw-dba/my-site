@@ -56,7 +56,7 @@ export default function PhotoGallery({ items }: PhotoGalleryProps) {
 
   if (items.length === 0) {
     return (
-      <p className="text-gray-500 text-center py-12">
+      <p className="text-gray-500 dark:text-gray-400 text-center py-12">
         No media items in this album yet.
       </p>
     );
@@ -76,7 +76,7 @@ export default function PhotoGallery({ items }: PhotoGalleryProps) {
             className="block w-full break-inside-avoid rounded-lg overflow-hidden cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           >
             <div
-              className="relative bg-gray-200"
+              className="relative bg-gray-200 dark:bg-gray-700"
               style={{
                 aspectRatio:
                   item.width && item.height
@@ -85,10 +85,10 @@ export default function PhotoGallery({ items }: PhotoGalleryProps) {
               }}
             >
               {/* Placeholder background */}
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-200 group-hover:bg-gray-300 transition-colors">
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-200 dark:bg-gray-700 group-hover:bg-gray-300 dark:group-hover:bg-gray-600 transition-colors">
                 {isVideo(item.content_type) ? (
                   <svg
-                    className="w-10 h-10 text-gray-400"
+                    className="w-10 h-10 text-gray-400 dark:text-gray-500"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -102,7 +102,7 @@ export default function PhotoGallery({ items }: PhotoGalleryProps) {
                   </svg>
                 ) : (
                   <svg
-                    className="w-10 h-10 text-gray-400"
+                    className="w-10 h-10 text-gray-400 dark:text-gray-500"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"

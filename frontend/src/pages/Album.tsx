@@ -11,7 +11,7 @@ export default function Album() {
       {/* Back link */}
       <Link
         to="/personal"
-        className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors mb-6"
+        className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors mb-6"
       >
         <svg
           className="w-4 h-4"
@@ -59,7 +59,7 @@ export default function Album() {
       {error && (
         <div className="text-center py-20">
           <p className="text-red-500 mb-2">Failed to load album.</p>
-          <p className="text-gray-500 text-sm">
+          <p className="text-gray-500 dark:text-gray-400 text-sm">
             {error instanceof Error
               ? error.message
               : "An unexpected error occurred."}
@@ -73,15 +73,15 @@ export default function Album() {
           {/* Album header */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
                 {album.title}
               </h1>
-              <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 capitalize">
+              <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 px-3 py-1 text-xs font-medium text-blue-700 dark:text-blue-300 capitalize">
                 {album.category}
               </span>
             </div>
             {album.description && (
-              <p className="text-gray-600 text-lg max-w-3xl">
+              <p className="text-gray-600 dark:text-gray-400 text-lg max-w-3xl">
                 {album.description}
               </p>
             )}
