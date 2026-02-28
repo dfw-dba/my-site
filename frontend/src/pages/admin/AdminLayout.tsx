@@ -2,7 +2,7 @@ import { Outlet } from "react-router";
 
 export default function AdminLayout() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-800">
       <header className="bg-gray-900 text-white px-6 py-4">
         <h1 className="text-xl font-semibold">Admin Panel</h1>
       </header>
