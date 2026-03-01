@@ -17,9 +17,29 @@
 
 ## Tasks
 
-- [x] 7.1 Replace profile placeholder with real photo on Resume page
+- [x] 7.1 Replace profile placeholder with real photo on Resume page — PR #19
   - Add `profile.jpg` to `frontend/public/`
   - Pass `src="/profile.jpg"` to `<ProfileImage />` in `frontend/src/pages/Resume.tsx`
   - Mount `frontend/public` volume in `docker-compose.yml` so dev container serves static assets
   - Change profile image shape from circle to portrait rounded rectangle (`h-56 w-36 rounded-2xl`) in `ProfileImage.tsx`
   - Position photo to the left of content area (absolute positioned on `lg+`, inline on mobile) so page text alignment is preserved in `Resume.tsx`
+
+---
+
+# Sprint 8 — Claude Workflow Improvements
+
+## Tasks
+
+- [x] 8.1 Sync stale GitHub Project items with todo.md
+  - Mark Sprint 6 sub-items 6.7-6.19 as Done in GitHub Project (completed in PRs #16, #17)
+  - Confirm backlog items (AWS CDK, CI/CD, MCP, Admin UI) remain Todo
+- [x] 8.2 Update CLAUDE.md Task Management rules
+  - Add "create branch immediately" as step 1 (before any planning)
+  - Add "create plan file named after branch" at `tasks/plans/<branch-name>.md`
+  - Add "finalize plan before implementation" rule
+  - Add "add todo items after plan is finalized" with detail requirement
+  - Add explicit Sync Rules subsection for todo.md ↔ GitHub Project
+- [x] 8.3 Update tasks/lessons.md with new workflow patterns
+  - Plan files named after branches, GitHub Project detail, sync at every state change, branch before planning
+- [x] 8.4 Create tasks/plans/ directory with plan file for this sprint
+  - `tasks/plans/feature-claude-workflow-improvements.md` created during planning phase
