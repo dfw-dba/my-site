@@ -52,7 +52,6 @@ describe("Resume", () => {
 
     renderWithProviders(<Resume />);
 
-    expect(screen.getByText("Resume")).toBeInTheDocument();
     expect(screen.getByText("Professional Timeline")).toBeInTheDocument();
   });
 

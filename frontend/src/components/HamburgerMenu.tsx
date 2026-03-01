@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import ThemeToggle from "./ThemeToggle";
 
 export default function HamburgerMenu() {
   const [isOpen, setIsOpen] = useState(false);
@@ -117,9 +116,6 @@ export default function HamburgerMenu() {
             </li>
           </ul>
 
-          <div className="mt-auto pb-4">
-            <ThemeToggle />
-          </div>
         </div>
       </nav>
     </>

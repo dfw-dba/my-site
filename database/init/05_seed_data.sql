@@ -102,7 +102,7 @@ VALUES
         '{
             "databases": ["MSSQL", "PostgreSQL", "SQL Server", "Analysis Services (SSAS)"],
             "development": ["T-SQL", "Python", "PowerShell", "YAML", "SSIS", "SSRS", "SSDT"],
-            "devops_cloud": ["Azure DevOps", "CI/CD Pipelines", "Docker", "Git"],
+            "devops": ["Azure DevOps", "CI/CD Pipelines", "Docker", "Git"],
             "architecture": ["Database Design", "Performance Tuning", "Data Warehousing", "Transactional Replication", "Clustering", "Partitioning", "Hasura", "Database-as-API"],
             "cloud": ["Azure Data Factory", "AWS Aurora Serverless"],
             "tools": ["Red-Gate", "SQL Server Data Tools", "SQLPackage.exe", "BCP"]
