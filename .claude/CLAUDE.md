@@ -53,16 +53,23 @@
 # Task Management
 
 ### Planning Phase
-1. **Create branch first**: Before writing any plan or editing any file, create and switch to the appropriate branch (`feature/<name>` or `fix/<name>`) based on the task context.
-2. **Plan in the branch**: Write the plan to `tasks/todo.md` with checkable items while on the branch. Each sprint item must include detailed implementation context — enough that a fresh session can implement it without re-researching. Include: what files to change, what the change does, acceptance criteria, and any technical decisions made during planning.
-3. **Sync to GitHub Project**: Immediately after updating `tasks/todo.md`, sync corresponding items to the `my-site` GitHub Project using `gh project` commands. Always update `todo.md` first, then GitHub Project.
-4. **Verify Plans**: Check in with the user before starting implementation.
+1. **Create branch immediately**: When the user says "let's plan" or initiates any change, create and switch to the appropriate branch (`feature/<name>` or `fix/<name>`) **before** any planning or file edits begin. This applies to all changes — code, docs, config, task tracking, everything.
+2. **Create plan file named after branch**: Create `tasks/plans/<branch-name>.md` and update it throughout the planning process. If plans change during discussion, edit the plan file accordingly. The plan file is the source of truth for the current sprint's implementation details.
+3. **Finalize plan before implementation**: Before starting implementation, ensure the plan file has all details needed for a fresh session to implement without re-researching: files to change, what each change does, acceptance criteria, and technical decisions.
+4. **Add todo items after plan is finalized**: Only after planning is complete and approved, add items to `tasks/todo.md` with compact but detailed descriptions. Then immediately sync to the `my-site` GitHub Project with matching detail (not just titles).
+5. **Verify Plans**: Check in with the user before starting implementation.
 
 ### Implementation Phase
-5. **Track Progress**: Mark items complete in `tasks/todo.md` as you go, then immediately mark them done in the `my-site` GitHub Project.
-6. **Explain Changes**: High-level summary at each step.
-7. **Document Results**: Add review section to `tasks/todo.md`.
-8. **Capture Lessons**: Update `tasks/lessons.md` after corrections.
+6. **Track Progress**: Mark items complete in `tasks/todo.md` as you go, then **immediately** mark them done in the `my-site` GitHub Project. Never let the two fall out of sync.
+7. **Explain Changes**: High-level summary at each step.
+8. **Document Results**: Add review section to `tasks/todo.md`.
+9. **Capture Lessons**: Update `tasks/lessons.md` after corrections.
+
+### Sync Rules
+- `tasks/todo.md` is always updated **first**, then the `my-site` GitHub Project is updated to match.
+- Any time a todo item is created, updated, or completed — mirror the change in the GitHub Project immediately.
+- GitHub Project items must include detail in the title or body, not just a bare title.
+- Use `gh project` commands to manage project items.
 
 # Core Principles
 
@@ -70,3 +77,13 @@
 - **No Laziness**: Find root causes. No temporary fixes. Senior developer standards.
 - **Minimal Impact**: Changes should only touch what's necessary. Avoid introducing bugs.
 - **Cost vs Quality**: Cost and quality, sustainable architecture are equal. If there is a discrepancy where the lowest cost will impact the quality of the site, engage in conversation to arrive at a compromise.
+
+# Claude permissions
+
+### You may run the following commands without asking:
+
+- bash ls
+- bash mkdir
+- bash gh
+- bash git
+- bash docker
