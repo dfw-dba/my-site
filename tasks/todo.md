@@ -43,3 +43,23 @@
   - Plan files named after branches, GitHub Project detail, sync at every state change, branch before planning
 - [x] 8.4 Create tasks/plans/ directory with plan file for this sprint
   - `tasks/plans/feature-claude-workflow-improvements.md` created during planning phase
+
+---
+
+# Sprint 9 — Resume Page Redesign
+
+## Tasks
+
+- [x] 9.1 Center profile image at top of page
+  - Remove absolute left positioning, use flex centering in header — `Resume.tsx`
+- [x] 9.2 Add social/contact icons below profile image
+  - Inline SVGs for LinkedIn, GitHub, Mail icons with links — `Resume.tsx`
+  - LinkedIn → existing URL, GitHub → existing URL, Email → mailto:email@jasonrowland.me
+- [x] 9.3 Remove Contact section from page
+  - Remove `<ContactSection>` render call — contact info now in header icons — `Resume.tsx`
+- [x] 9.4 Rename DEVOPS_CLOUD to DEVOPS in skills
+  - Change key `"devops_cloud"` to `"devops"` in seed data — `05_seed_data.sql`
+  - Rebuild DB to apply; add `formatGroupName` to replace underscores in display
+- [x] 9.5 Make skill groups collapsible (default collapsed)
+  - Add `useState` for expanded state, chevron toggle per group — `Resume.tsx` SkillsSection
+  - Default: all collapsed. Click to expand/collapse individual groups.
