@@ -63,3 +63,15 @@
 - [x] 9.5 Make skill groups collapsible (default collapsed)
   - Add `useState` for expanded state, chevron toggle per group — `Resume.tsx` SkillsSection
   - Default: all collapsed. Click to expand/collapse individual groups.
+- [x] 9.6 Center the Skills section
+  - Add `flex flex-col items-center` to SkillsSection wrapper, constrain group list width — `Resume.tsx`
+- [x] 9.7 Remove "Resume" title text and accent bar from header
+  - Delete `<h1>Resume</h1>` and accent bar div from header — `Resume.tsx`
+- [x] 9.8 Center "Professional Timeline" heading
+  - Add `text-center` to the h2 — `Resume.tsx`
+- [x] 9.9 Move theme toggle to top-right corner of page
+  - Remove ThemeToggle from HamburgerMenu drawer, add to MainLayout as fixed top-right element
+- [x] 9.10 Remove "Skills" heading text
+  - Delete `<h2>Skills</h2>` from SkillsSection — `Resume.tsx`
+- [x] 9.11 Left-align collapsible skill groups
+  - Remove centering classes from SkillsSection, use default left alignment — `Resume.tsx`

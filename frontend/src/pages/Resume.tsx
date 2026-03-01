@@ -83,7 +83,6 @@ function SkillsSection({ content }: { content: SectionContent }) {
 
   return (
     <section className="mb-10">
-      <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-gray-100">Skills</h2>
       <div className="space-y-2">
         {Object.entries(groups).map(([groupName, skills]) => (
           <div key={groupName}>
@@ -220,10 +219,6 @@ export default function Resume() {
             <MailIcon />
           </a>
         </div>
-        <h1 className="mt-6 text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-          Resume
-        </h1>
-        <div className="mt-1 h-1 w-16 rounded bg-blue-600" />
       </header>
 
       {sections.summary && <SummarySection content={sections.summary} />}
@@ -231,7 +226,7 @@ export default function Resume() {
 
       {data.entries && Object.keys(data.entries).length > 0 && (
         <section>
-          <h2 className="mb-6 text-xl font-semibold text-gray-900 dark:text-gray-100">
+          <h2 className="mb-6 text-xl font-semibold text-center text-gray-900 dark:text-gray-100">
             Professional Timeline
           </h2>
           <Timeline entries={data.entries} />
