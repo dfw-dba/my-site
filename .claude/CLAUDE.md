@@ -1,15 +1,17 @@
 # Workflow Orchestration
 
 ### 1. Plan Mode Default
-- Enter plan mode and use AskUserQuestionTool for ANY non-trivial task (3+ steps, architectural decisions, clarification when features are ambiguous, technical implementation, UI and UX, concerns, tradeoffs, etc)
-- If something goes sideways, STOP and re-plan immediately – don't keep pushing
-- Use plan mode for verification steps, not just building
-- Write detailed specs upfront to reduce ambiguity
-- **Create branch immediately**: When the user says "let's plan" or initiates any change, create and switch to the appropriate branch (`feature/<name>` or `fix/<name>`) **before** any planning or file edits begin. This applies to all changes — code, docs, config, task tracking, everything.
-- **Create plan file named after branch**: Create `.claude/tasks/plans/<branch-name>.md` and update it throughout the planning process. If plans change during discussion, edit the plan file accordingly. The plan file is the source of truth for the current sprint's implementation details.
-- **Finalize plan before implementation**: Before starting implementation, ensure the plan file has all details needed for a fresh session to implement without re-researching: files to change, what each change does, acceptance criteria, and technical decisions.
-- **Add todo items after plan is finalized**: Only after planning is complete and approved, add items to `.claude/tasks/todo.md` with compact but detailed descriptions. Then immediately sync to the `my-site` GitHub Project with matching detail (not just titles).
-- **Verify plans**: Check in with the user before starting implementation.
+When the user initiates any non-trivial task (3+ steps, architectural decisions, ambiguous features, UI/UX, tradeoffs):
+
+1. **Create branch FIRST**: Create and switch to `feature/<name>` or `fix/<name>` before any exploration, planning, or file edits. No exceptions.
+2. **Enter plan mode**: Explore the codebase, ask clarifying questions, and design the approach.
+3. **Write plan to `.claude/tasks/plans/<branch-name>.md`**: This is the source of truth — NOT the system-provided ephemeral plan file. Update it as plans evolve during discussion.
+4. **Finalize plan before implementation**: Ensure the plan file has all details a fresh session needs: files to change, what each change does, acceptance criteria, and technical decisions.
+5. **Add todo items to `.claude/tasks/todo.md`**: Only after the plan is approved. Use compact but detailed descriptions.
+6. **Sync todo items to the `my-site` GitHub Project**: Immediately after updating todo.md. Items must include meaningful detail, not just titles.
+7. **Prompt user to clear context**: Before starting implementation, suggest the user clear context and enable auto-accept edits for a clean implementation session.
+
+If something goes sideways during implementation, STOP and re-plan immediately.
 
 ### 2. Subagent Strategy
 - Use subagents liberally to keep main context window clean
@@ -60,6 +62,10 @@
 - **Explain Changes**: High-level summary at each step.
 - **Document Results**: Add review section to `.claude/tasks/todo.md`.
 - **Capture Lessons**: Update `.claude/tasks/lessons.md` after corrections.
+- **Pre-commit checklist**: When the user says "commit it" or confirms a commit, BEFORE running `git commit`:
+  1. Mark all completed sprint items as `[x]` in `.claude/tasks/todo.md`.
+  2. Mark matching items as Done in the `my-site` GitHub Project (`gh project`).
+  3. Then stage and commit.
 - **Sync Rules**:
   - `.claude/tasks/todo.md` is always updated **first**, then the `my-site` GitHub Project is updated to match.
   - Any time a todo item is created, updated, or completed — mirror the change in the GitHub Project immediately.

@@ -113,6 +113,26 @@
 
 ---
 
+## Sprint 10: Fix Scroll Under Header + Update Planning Workflow
+
+- [x] 10.1 Update CLAUDE.md §1 with strict numbered planning procedure
+  - Rewrite §1 as a 7-step numbered checklist: branch → plan mode → plan file → finalize → todos → GitHub sync → prompt user
+  - Ensures no planning steps are skipped in future sessions
+- [x] 10.2 Add lesson to `.claude/tasks/lessons.md` about planning checklist
+  - Document that the planning steps must be followed in strict order
+- [x] 10.3 Convert MainLayout from fixed-positioned controls to flex-column layout
+  - Root: `flex flex-col h-screen`, header in normal flow, `<main>` with `overflow-y-auto` — `MainLayout.tsx`
+- [x] 10.4 Remove `fixed` positioning from HamburgerMenu toggle button
+  - Change button from `fixed top-4 left-4 z-50` to normal flow — `HamburgerMenu.tsx`
+  - Drawer and backdrop remain `fixed` for overlay behavior
+- [x] 10.5 Verify scroll clipping and layout on mobile and desktop
+  - Narrow viewport: content clips below header controls when scrolling
+  - Hamburger drawer still works, theme toggle still works
+  - Desktop layout unchanged
+  - Run frontend tests: `cd frontend && npx vitest run` — 35/35 pass
+
+---
+
 ## Sprint 7–9: AWS CDK, CI/CD, MCP, Admin UI (future)
 
 ---
