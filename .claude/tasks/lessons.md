@@ -11,6 +11,7 @@ _Updated after each correction or insight. Review at session start._
 - **Plan files named after branches (2026-03-01)**: Create `.claude/tasks/plans/<branch-name>.md` during planning. Update it as plans evolve. This file persists in the repo and serves as the implementation spec.
 - **GitHub Project items must include detail (2026-03-01)**: When syncing to the GitHub Project, include compact but meaningful detail in the title or body — not just a task number and name.
 - **Sync todo.md and GitHub Project at every state change (2026-03-01)**: Every time a todo item is created, updated, or completed in `todo.md`, immediately mirror the change in the GitHub Project. Never batch or defer syncing.
+- **Follow the numbered planning checklist strictly (2026-03-02)**: §1 in CLAUDE.md is a strict 7-step procedure. Execute steps in order: branch → plan mode → write plan file → finalize → add todos → sync GitHub Project → prompt user to clear context. Skipping or reordering steps (e.g., entering plan mode before creating the branch, writing to ephemeral plan file instead of `.claude/tasks/plans/`) leads to missed steps downstream.
 
 ## Technical
 - **SQLAlchemy text() and PostgreSQL casts**: Use `CAST(:param AS jsonb)` not `:param::jsonb` — SQLAlchemy interprets `::jsonb` as a bind parameter named `:jsonb`.

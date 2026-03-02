@@ -4,12 +4,12 @@ import ThemeToggle from "../components/ThemeToggle";
 
 export default function MainLayout() {
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900">
-      <HamburgerMenu />
-      <div className="fixed top-4 right-4 z-50">
+    <div className="flex h-screen flex-col bg-white dark:bg-gray-900">
+      <header className="flex shrink-0 items-center justify-between px-4 py-4">
+        <HamburgerMenu />
         <ThemeToggle />
-      </div>
-      <main className="p-6 pt-16">
+      </header>
+      <main className="flex-1 overflow-y-auto p-6">
         <Outlet />
       </main>
     </div>
