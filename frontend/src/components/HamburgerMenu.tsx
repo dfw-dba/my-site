@@ -8,7 +8,7 @@ export default function HamburgerMenu() {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed top-4 left-4 z-50 p-2 rounded-md bg-gray-800 text-white dark:bg-gray-700"
+        className="p-2 rounded-md bg-gray-800 text-white dark:bg-gray-700"
         aria-label="Open menu"
       >
         <svg
