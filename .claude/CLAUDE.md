@@ -43,7 +43,7 @@ If something goes sideways during implementation, STOP and re-plan immediately.
 - Zero context switching required from the user
 - Go fix failing CI tests without being told how
 
-### 7. Git Branching Rules
+### 7. Git Branching, Commit, and Merge Rules
 
 > **HARD RULE — NO EXCEPTIONS**: Never edit, stage, or commit files while on the `main` branch.
 > Before making ANY file change (including `.claude/tasks/todo.md`, `CLAUDE.md`, or any other file),
@@ -54,7 +54,7 @@ If something goes sideways during implementation, STOP and re-plan immediately.
 - **NEVER edit files while on `main`**. Switch to a branch FIRST, then make edits.
 - Create a feature branch (`feature/<name>`) or fix branch (`fix/<name>`) for every change.
 - Push the branch, create a PR targeting `main`, and merge via the PR.
-- **Always squash merge** into `main` (`gh pr merge --squash`). No merge commits or rebase merges.
+- ***Always squash merge*** into `main` (`gh pr merge --squash`). No merge commits or rebase merges.
 - Branch naming: `feature/short-description` for new work, `fix/short-description` for bug fixes.
 
 ### 8. Task Management

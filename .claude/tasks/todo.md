@@ -133,6 +133,20 @@
 
 ---
 
+## Sprint 11: LinkedIn Recommendations Carousel + Global Social Icons
+
+- [x] 11.1 Add `'recommendations'` to `resume_sections` CHECK constraint — `database/init/02_tables.sql`
+- [x] 11.2 Add 4 LinkedIn recommendations as seed data — `database/init/05_seed_data.sql`
+- [x] 11.3 Create `RecommendationCarousel` component with slide-in-from-right animation, 8s rotation, random non-repeating selection — `frontend/src/components/RecommendationCarousel.tsx`
+- [x] 11.4 Add slide-in-right keyframe animation — `frontend/src/styles/globals.css`
+- [x] 11.5 Render carousel on Resume page between profile image and summary/skills — `frontend/src/pages/Resume.tsx`
+- [x] 11.6 Extract social icons (LinkedIn, GitHub, Mail) into shared `SocialIcons` component — `frontend/src/components/SocialIcons.tsx`
+- [x] 11.7 Move social icons to global header bar, centered between hamburger menu and theme toggle — `frontend/src/layouts/MainLayout.tsx`
+- [x] 11.8 Remove social icons from Resume page header — `frontend/src/pages/Resume.tsx`
+- [x] 11.9 Rebuild database with new seed data, verify API returns recommendations, all 35 tests pass
+
+---
+
 ## Sprint 7–9: AWS CDK, CI/CD, MCP, Admin UI (future)
 
 ---
