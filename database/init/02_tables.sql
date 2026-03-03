@@ -25,7 +25,7 @@ CREATE TABLE internal.professional_entries (
 -- ============================================================
 CREATE TABLE internal.resume_sections (
     id           UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
-    section_type VARCHAR(50) UNIQUE NOT NULL CHECK (section_type IN ('summary', 'skills', 'contact', 'about')),
+    section_type VARCHAR(50) UNIQUE NOT NULL CHECK (section_type IN ('summary', 'skills', 'contact', 'about', 'recommendations')),
     content      JSONB       NOT NULL,
     created_at   TIMESTAMPTZ DEFAULT NOW(),
     updated_at   TIMESTAMPTZ DEFAULT NOW()
