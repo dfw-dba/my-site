@@ -94,49 +94,6 @@ function SkillsSection({ content }: { content: SectionContent }) {
   );
 }
 
-function ContactSection({ content }: { content: SectionContent }) {
-
-  const entries = Object.entries(content).filter(
-    ([, val]) => typeof val === "string" && val.length > 0
-  );
-
-  if (entries.length === 0) return null;
-
-  return (
-    <section className="mb-10">
-      <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-gray-100">Contact</h2>
-      <div className="flex flex-wrap gap-x-6 gap-y-2">
-        {entries.map(([key, val]) => (
-          <div key={key} className="text-sm text-gray-700 dark:text-gray-300">
-            <span className="font-medium capitalize text-gray-500 dark:text-gray-400">
-              {key.replace(/_/g, " ")}:
-            </span>{" "}
-            {String(val).startsWith("http") ? (
-              <a
-                href={String(val)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 dark:text-blue-400 underline decoration-blue-300 dark:decoration-blue-700 hover:text-blue-800 dark:hover:text-blue-300"
-              >
-                {String(val)}
-              </a>
-            ) : String(val).includes("@") ? (
-              <a
-                href={`mailto:${String(val)}`}
-                className="text-blue-600 dark:text-blue-400 underline decoration-blue-300 dark:decoration-blue-700 hover:text-blue-800 dark:hover:text-blue-300"
-              >
-                {String(val)}
-              </a>
-            ) : (
-              <span>{String(val)}</span>
-            )}
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function LoadingSpinner() {
   return (
     <div className="flex items-center justify-center py-20">

@@ -12,10 +12,10 @@ interface RecommendationCarouselProps {
 }
 
 function pickRandom(items: Recommendation[], exclude?: Recommendation): Recommendation {
-  if (items.length <= 1) return items[0];
-  let next: Recommendation;
+  if (items.length <= 1) return items[0]!;
+  let next!: Recommendation;
   do {
-    next = items[Math.floor(Math.random() * items.length)];
+    next = items[Math.floor(Math.random() * items.length)]!;
   } while (next === exclude);
   return next;
 }
