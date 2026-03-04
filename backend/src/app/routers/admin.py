@@ -17,6 +17,25 @@ router = APIRouter()
 # ── Blog ─────────────────────────────────────────────────────────────────────
 
 
+@router.get("/blog", dependencies=[Depends(get_admin_auth)])
+async def list_blog_posts(
+    limit: int = 50,
+    offset: int = 0,
+    db: DatabaseAPI = Depends(get_db_api),
+) -> Any:
+    """List all blog posts including drafts."""
+    return await db.admin_get_blog_posts(limit=limit, offset=offset)
+
+
+@router.get("/blog/{slug}", dependencies=[Depends(get_admin_auth)])
+async def get_blog_post_admin(
+    slug: str,
+    db: DatabaseAPI = Depends(get_db_api),
+) -> Any:
+    """Get a single blog post by slug (any status)."""
+    return await db.admin_get_blog_post(slug)
+
+
 @router.post("/blog", dependencies=[Depends(get_admin_auth)])
 async def upsert_blog_post(
     body: BlogPostCreate,
@@ -68,6 +87,15 @@ async def upsert_resume_entry(
     return await db.upsert_professional_entry(body.model_dump())
 
 
+@router.delete("/resume/entry/{entry_id}", dependencies=[Depends(get_admin_auth)])
+async def delete_resume_entry(
+    entry_id: str,
+    db: DatabaseAPI = Depends(get_db_api),
+) -> Any:
+    """Delete a professional entry by ID."""
+    return await db.delete_professional_entry(entry_id)
+
+
 @router.post("/resume/section", dependencies=[Depends(get_admin_auth)])
 async def upsert_resume_section(
     body: ResumeSectionCreate,
@@ -78,6 +106,16 @@ async def upsert_resume_section(
 
 
 # ── Media ────────────────────────────────────────────────────────────────────
+
+
+@router.get("/media", dependencies=[Depends(get_admin_auth)])
+async def list_media(
+    limit: int = 50,
+    offset: int = 0,
+    db: DatabaseAPI = Depends(get_db_api),
+) -> Any:
+    """List all media items."""
+    return await db.admin_get_all_media(limit=limit, offset=offset)
 
 
 @router.post("/media/upload-url", dependencies=[Depends(get_admin_auth)])

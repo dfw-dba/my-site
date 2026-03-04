@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(gh *)",
+      "Bash(cd * && git *)",
+      "Bash(cd * && gh *)",
+      "Bash(cd * && ls *)",
+      "Bash(cd * && npm *)",
+      "Bash(* && git *)",
+      "Bash(* && gh *)",
+      "Bash(docker *)",
+      "Bash(docker compose *)",
+      "Bash(npm *)",
+      "Bash(node *)",
+      "Bash(npx *)",
+      "Bash(python *)",
+      "Bash(python3 *)",
+      "Bash(ls *)",
+      "Bash(mkdir *)",
+      "Bash(pwd)",
+      "Bash(cat *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(find *)",
+      "Bash(curl *)",
+      "Bash(uv *)",
+      "Bash(pre-commit run *)",
+      "Bash(POSTGRES_USER=* python *)",
+      "Bash(PGPASSWORD=* psql *)",
+      "Bash(cd * && *)",
+      "WebSearch"
+    ]
+  }
+}

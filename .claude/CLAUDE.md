@@ -43,7 +43,7 @@ If something goes sideways during implementation, STOP and re-plan immediately.
 - Zero context switching required from the user
 - Go fix failing CI tests without being told how
 
-### 7. Git Branching, Commit, and Merge Rules
+### 7. Git Branching, Commit, Merge, Pull Request Rules
 
 > **HARD RULE — NO EXCEPTIONS**: Never edit, stage, or commit files while on the `main` branch.
 > Before making ANY file change (including `.claude/tasks/todo.md`, `CLAUDE.md`, or any other file),
@@ -56,6 +56,7 @@ If something goes sideways during implementation, STOP and re-plan immediately.
 - Push the branch, create a PR targeting `main`, and merge via the PR.
 - ***Always squash merge*** into `main` (`gh pr merge --squash`). No merge commits or rebase merges.
 - Branch naming: `feature/short-description` for new work, `fix/short-description` for bug fixes.
+- Always wait for the CI job to finish after a push, and never suggest a PULL REQUEST if the CI workflow is failing.
 
 ### 8. Task Management
 - **Track Progress**: Mark items complete in `.claude/tasks/todo.md` as you go, then **immediately** mark them done in the `my-site` GitHub Project. Never let the two fall out of sync.
