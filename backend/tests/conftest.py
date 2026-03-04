@@ -61,7 +61,10 @@ def mock_db_api() -> AsyncMock:
 
     # Blog defaults
     mock.admin_get_blog_post.return_value = {
-        "slug": "test", "title": "Test", "content": "body", "published": False,
+        "slug": "test",
+        "title": "Test",
+        "content": "body",
+        "published": False,
     }
     mock.admin_get_blog_posts.return_value = {"posts": [], "total": 0, "limit": 50, "offset": 0}
     mock.get_blog_posts.return_value = {"posts": [], "total": 0, "limit": 20, "offset": 0}

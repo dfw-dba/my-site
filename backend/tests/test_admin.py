@@ -38,7 +38,8 @@ async def test_list_blog_posts(admin_client: AsyncClient, mock_db_api: AsyncMock
 
 
 async def test_list_blog_posts_with_pagination(
-    admin_client: AsyncClient, mock_db_api: AsyncMock,
+    admin_client: AsyncClient,
+    mock_db_api: AsyncMock,
 ) -> None:
     """GET /api/admin/blog supports limit and offset query params."""
     response = await admin_client.get("/api/admin/blog?limit=10&offset=5")
