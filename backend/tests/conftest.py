@@ -60,6 +60,13 @@ def mock_db_api() -> AsyncMock:
     mock.delete_professional_entry.return_value = {"success": True}
 
     # Blog defaults
+    mock.admin_get_blog_post.return_value = {
+        "slug": "test",
+        "title": "Test",
+        "content": "body",
+        "published": False,
+    }
+    mock.admin_get_blog_posts.return_value = {"posts": [], "total": 0, "limit": 50, "offset": 0}
     mock.get_blog_posts.return_value = {"posts": [], "total": 0, "limit": 20, "offset": 0}
     mock.get_blog_post.return_value = {"slug": "test", "title": "Test", "content": "body"}
     mock.upsert_blog_post.return_value = {"success": True}
@@ -72,6 +79,7 @@ def mock_db_api() -> AsyncMock:
     mock.delete_showcase_item.return_value = {"success": True}
 
     # Media/Albums defaults
+    mock.admin_get_all_media.return_value = {"items": [], "total": 0, "limit": 50, "offset": 0}
     mock.get_albums.return_value = []
     mock.get_album_with_media.return_value = {"slug": "test", "title": "Test", "media": []}
     mock.register_media.return_value = {"success": True}

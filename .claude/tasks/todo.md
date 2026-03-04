@@ -147,7 +147,26 @@
 
 ---
 
-## Sprint 7–9: AWS CDK, CI/CD, MCP, Admin UI (future)
+## Sprint 12: Admin UI
+
+- [x] 12.1 Backend: Add `admin_get_blog_posts`, `admin_get_all_media` SQL functions + `GET /blog`, `GET /media`, `DELETE /resume/entry/{id}` admin endpoints
+- [x] 12.2 Frontend API layer: admin types, `api.admin` namespace, `useAdminApi.ts` hooks
+- [x] 12.3 Shared admin components (11): AdminSidebar, FormInput, FormTextarea, FormSelect, FormToggle, TagInput, ListInput, DataTable, ConfirmModal, StatCard, SaveBar
+- [x] 12.4 AdminLayout rewrite (sidebar + content area) + nested routes for blog/showcase editors
+- [x] 12.5 Dashboard with Blog group (Posts/Drafts counts), Unpublished Drafts section, quick actions
+- [x] 12.6 Blog editor: list with All/Drafts/Published filter tabs, create/edit form with markdown preview
+- [x] 12.7 Showcase editor: list + create/edit form
+- [x] 12.8 Resume editor: Sections tab (JSON editor) + Entries tab (DataTable + modal form)
+- [x] 12.9 Media manager: upload zone (drag-and-drop + file picker), media grid, Albums tab with CRUD
+- [x] 12.10 Frontend tests for all admin pages (5 test files, 19 tests)
+- [x] 12.11 Fix: Add `admin_get_blog_post` endpoint so draft posts can be edited (was using public endpoint filtered to published only)
+- [x] 12.12 Add toast/inline error handling on mutation failures across all admin editors
+- [x] 12.13 Add unsaved changes warning (beforeunload + route blocker) on admin forms
+- [x] 12.14 Add mobile sidebar overlay (slide-in drawer with backdrop on small screens)
+
+---
+
+## Sprint Future Work: AWS CDK, CI/CD
 
 ---
 

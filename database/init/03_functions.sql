@@ -245,6 +245,83 @@ END;
 $$ LANGUAGE plpgsql STABLE;
 
 
+-- api.admin_get_blog_post(p_slug)
+-- Returns a single blog post by slug (any status, for admin use).
+CREATE OR REPLACE FUNCTION api.admin_get_blog_post(p_slug TEXT)
+RETURNS JSONB AS $$
+DECLARE
+    v_post JSONB;
+BEGIN
+    SELECT jsonb_build_object(
+               'id',              bp.id,
+               'slug',            bp.slug,
+               'title',           bp.title,
+               'excerpt',         bp.excerpt,
+               'content',         bp.content,
+               'tags',            bp.tags,
+               'published',       bp.published,
+               'showcase_item_id', bp.showcase_item_id,
+               'published_at',    bp.published_at,
+               'created_at',      bp.created_at,
+               'updated_at',      bp.updated_at
+           )
+      INTO v_post
+      FROM internal.blog_posts bp
+     WHERE bp.slug = p_slug;
+
+    IF v_post IS NULL THEN
+        RETURN jsonb_build_object('error', 'not_found');
+    END IF;
+
+    RETURN v_post;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+
+-- api.admin_get_blog_posts(p_limit, p_offset)
+-- Paginated listing of ALL posts (including drafts) for admin use.
+CREATE OR REPLACE FUNCTION api.admin_get_blog_posts(
+    p_limit  INT DEFAULT 50,
+    p_offset INT DEFAULT 0
+)
+RETURNS JSONB AS $$
+DECLARE
+    v_total INT;
+    v_posts JSONB;
+BEGIN
+    SELECT COUNT(*) INTO v_total FROM internal.blog_posts;
+
+    SELECT COALESCE(jsonb_agg(row_obj ORDER BY updated_at DESC), '[]'::jsonb)
+      INTO v_posts
+      FROM (
+          SELECT jsonb_build_object(
+                     'id',           bp.id,
+                     'slug',         bp.slug,
+                     'title',        bp.title,
+                     'excerpt',      bp.excerpt,
+                     'tags',         bp.tags,
+                     'published',    bp.published,
+                     'published_at', bp.published_at,
+                     'created_at',   bp.created_at,
+                     'updated_at',   bp.updated_at
+                 ) AS row_obj,
+                 bp.updated_at
+            FROM internal.blog_posts bp
+           ORDER BY bp.updated_at DESC
+           LIMIT p_limit
+          OFFSET p_offset
+      ) sub;
+
+    RETURN jsonb_build_object(
+        'posts',  v_posts,
+        'total',  v_total,
+        'limit',  p_limit,
+        'offset', p_offset
+    );
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+
 -- api.upsert_blog_post(p_data JSONB)
 CREATE OR REPLACE FUNCTION api.upsert_blog_post(p_data JSONB)
 RETURNS JSONB AS $$
@@ -557,6 +634,54 @@ BEGIN
             JOIN internal.albums a ON a.id = mi.album_id
            WHERE a.category = p_category
            ORDER BY mi.sort_order, mi.created_at
+           LIMIT p_limit
+          OFFSET p_offset
+      ) sub;
+
+    RETURN jsonb_build_object(
+        'items',  v_items,
+        'total',  v_total,
+        'limit',  p_limit,
+        'offset', p_offset
+    );
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+
+-- api.admin_get_all_media(p_limit, p_offset)
+-- Paginated listing of ALL media items for admin use (no category filter).
+CREATE OR REPLACE FUNCTION api.admin_get_all_media(
+    p_limit  INT DEFAULT 50,
+    p_offset INT DEFAULT 0
+)
+RETURNS JSONB AS $$
+DECLARE
+    v_total INT;
+    v_items JSONB;
+BEGIN
+    SELECT COUNT(*) INTO v_total FROM internal.media_items;
+
+    SELECT COALESCE(jsonb_agg(row_obj ORDER BY created_at DESC), '[]'::jsonb)
+      INTO v_items
+      FROM (
+          SELECT jsonb_build_object(
+                     'id',           mi.id,
+                     'album_id',     mi.album_id,
+                     'album_title',  a.title,
+                     's3_key',       mi.s3_key,
+                     'filename',     mi.filename,
+                     'content_type', mi.content_type,
+                     'size_bytes',   mi.size_bytes,
+                     'width',        mi.width,
+                     'height',       mi.height,
+                     'caption',      mi.caption,
+                     'sort_order',   mi.sort_order,
+                     'created_at',   mi.created_at
+                 ) AS row_obj,
+                 mi.created_at
+            FROM internal.media_items mi
+            LEFT JOIN internal.albums a ON a.id = mi.album_id
+           ORDER BY mi.created_at DESC
            LIMIT p_limit
           OFFSET p_offset
       ) sub;

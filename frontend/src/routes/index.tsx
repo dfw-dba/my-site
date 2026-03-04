@@ -10,7 +10,9 @@ import DataShowcase from "../pages/DataShowcase";
 import AdminLayout from "../pages/admin/AdminLayout";
 import Dashboard from "../pages/admin/Dashboard";
 import BlogEditor from "../pages/admin/BlogEditor";
+import BlogEditForm from "../pages/admin/BlogEditForm";
 import ShowcaseEditor from "../pages/admin/ShowcaseEditor";
+import ShowcaseEditForm from "../pages/admin/ShowcaseEditForm";
 import ResumeEditor from "../pages/admin/ResumeEditor";
 import MediaManager from "../pages/admin/MediaManager";
 
@@ -30,7 +32,11 @@ export default function AppRoutes() {
       <Route path="admin" element={<AdminLayout />}>
         <Route index element={<Dashboard />} />
         <Route path="blog" element={<BlogEditor />} />
+        <Route path="blog/new" element={<BlogEditForm />} />
+        <Route path="blog/:slug" element={<BlogEditForm />} />
         <Route path="showcase" element={<ShowcaseEditor />} />
+        <Route path="showcase/new" element={<ShowcaseEditForm />} />
+        <Route path="showcase/:slug" element={<ShowcaseEditForm />} />
         <Route path="resume" element={<ResumeEditor />} />
         <Route path="media" element={<MediaManager />} />
       </Route>
