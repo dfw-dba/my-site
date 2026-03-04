@@ -56,6 +56,26 @@ class DatabaseAPI:
 
     # ── Blog ─────────────────────────────────────────────────────────────────
 
+    async def admin_get_blog_post(self, slug: str) -> Any:
+        """Fetch a single blog post by slug (any status, for admin use)."""
+        result = await self.session.execute(
+            text("SELECT api.admin_get_blog_post(:slug)"),
+            {"slug": slug},
+        )
+        return result.scalar_one()
+
+    async def admin_get_blog_posts(
+        self,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> Any:
+        """List all blog posts (including drafts) for admin use."""
+        result = await self.session.execute(
+            text("SELECT api.admin_get_blog_posts(:limit, :offset)"),
+            {"limit": limit, "offset": offset},
+        )
+        return result.scalar_one()
+
     async def get_blog_posts(
         self,
         tag: str | None = None,
@@ -155,6 +175,18 @@ class DatabaseAPI:
         result = await self.session.execute(
             text("SELECT api.get_media_by_category(:category, :limit, :offset)"),
             {"category": category, "limit": limit, "offset": offset},
+        )
+        return result.scalar_one()
+
+    async def admin_get_all_media(
+        self,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> Any:
+        """List all media items for admin use."""
+        result = await self.session.execute(
+            text("SELECT api.admin_get_all_media(:limit, :offset)"),
+            {"limit": limit, "offset": offset},
         )
         return result.scalar_one()
 

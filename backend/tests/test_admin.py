@@ -27,6 +27,33 @@ async def test_admin_invalid_key(client: AsyncClient) -> None:
 # ── Blog ────────────────────────────────────────────────────────────────────
 
 
+async def test_list_blog_posts(admin_client: AsyncClient, mock_db_api: AsyncMock) -> None:
+    """GET /api/admin/blog lists all blog posts including drafts."""
+    response = await admin_client.get("/api/admin/blog")
+    assert response.status_code == 200
+    body = response.json()
+    assert "posts" in body
+    assert "total" in body
+    mock_db_api.admin_get_blog_posts.assert_called_once_with(limit=50, offset=0)
+
+
+async def test_list_blog_posts_with_pagination(admin_client: AsyncClient, mock_db_api: AsyncMock) -> None:
+    """GET /api/admin/blog supports limit and offset query params."""
+    response = await admin_client.get("/api/admin/blog?limit=10&offset=5")
+    assert response.status_code == 200
+    mock_db_api.admin_get_blog_posts.assert_called_once_with(limit=10, offset=5)
+
+
+async def test_get_blog_post_admin(admin_client: AsyncClient, mock_db_api: AsyncMock) -> None:
+    """GET /api/admin/blog/{slug} returns any post regardless of published status."""
+    response = await admin_client.get("/api/admin/blog/test-slug")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["slug"] == "test"
+    assert body["published"] is False
+    mock_db_api.admin_get_blog_post.assert_called_once_with("test-slug")
+
+
 async def test_create_blog_post(admin_client: AsyncClient, mock_db_api: AsyncMock) -> None:
     """POST /api/admin/blog creates a blog post and returns 200."""
     payload = {"slug": "my-post", "title": "My Post", "content": "Hello world"}
@@ -81,6 +108,15 @@ async def test_create_resume_entry(admin_client: AsyncClient, mock_db_api: Async
     mock_db_api.upsert_professional_entry.assert_called_once()
 
 
+async def test_delete_resume_entry(admin_client: AsyncClient, mock_db_api: AsyncMock) -> None:
+    """DELETE /api/admin/resume/entry/{id} deletes the entry and returns 200."""
+    entry_id = "550e8400-e29b-41d4-a716-446655440000"
+    response = await admin_client.delete(f"/api/admin/resume/entry/{entry_id}")
+    assert response.status_code == 200
+    assert response.json() == {"success": True}
+    mock_db_api.delete_professional_entry.assert_called_once_with(entry_id)
+
+
 async def test_create_resume_section(admin_client: AsyncClient, mock_db_api: AsyncMock) -> None:
     """POST /api/admin/resume/section creates a resume section and returns 200."""
     payload = {"section_type": "skills", "content": {"languages": ["Python", "TypeScript"]}}
@@ -91,6 +127,16 @@ async def test_create_resume_section(admin_client: AsyncClient, mock_db_api: Asy
 
 
 # ── Media ───────────────────────────────────────────────────────────────────
+
+
+async def test_list_media(admin_client: AsyncClient, mock_db_api: AsyncMock) -> None:
+    """GET /api/admin/media lists all media items."""
+    response = await admin_client.get("/api/admin/media")
+    assert response.status_code == 200
+    body = response.json()
+    assert "items" in body
+    assert "total" in body
+    mock_db_api.admin_get_all_media.assert_called_once_with(limit=50, offset=0)
 
 
 async def test_upload_url(admin_client: AsyncClient, mock_storage: MagicMock) -> None:
