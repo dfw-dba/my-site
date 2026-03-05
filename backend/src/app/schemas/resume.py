@@ -22,5 +22,5 @@ class ResumeEntryCreate(BaseModel):
 class ResumeSectionCreate(BaseModel):
     """Schema for creating/updating a resume section via admin API."""
 
-    section_type: str  # summary, skills, contact, recommendations
+    section_type: str  # summary, contact, recommendations
     content: dict  # JSONB content — structure varies by section_type

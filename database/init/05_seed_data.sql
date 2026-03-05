@@ -98,17 +98,6 @@ VALUES
         }'::jsonb
     ),
     (
-        'skills',
-        '{
-            "databases": ["MSSQL", "PostgreSQL", "SQL Server", "Analysis Services (SSAS)"],
-            "development": ["T-SQL", "Python", "PowerShell", "YAML", "SSIS", "SSRS", "SSDT"],
-            "devops": ["Azure DevOps", "CI/CD Pipelines", "Docker", "Git"],
-            "architecture": ["Database Design", "Performance Tuning", "Data Warehousing", "Transactional Replication", "Clustering", "Partitioning", "Hasura", "Database-as-API"],
-            "cloud": ["Azure Data Factory", "AWS Aurora Serverless"],
-            "tools": ["Red-Gate", "SQL Server Data Tools", "SQLPackage.exe", "BCP"]
-        }'::jsonb
-    ),
-    (
         'contact',
         '{
             "linkedin": "https://www.linkedin.com/in/jason-rowland-6712097",
