@@ -122,7 +122,7 @@ async def test_delete_resume_entry(admin_client: AsyncClient, mock_db_api: Async
 
 async def test_create_resume_section(admin_client: AsyncClient, mock_db_api: AsyncMock) -> None:
     """POST /api/admin/resume/section creates a resume section and returns 200."""
-    payload = {"section_type": "skills", "content": {"languages": ["Python", "TypeScript"]}}
+    payload = {"section_type": "summary", "content": {"text": "A brief professional summary."}}
     response = await admin_client.post("/api/admin/resume/section", json=payload)
     assert response.status_code == 200
     assert response.json() == {"success": True}

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useResume } from "../hooks/useApi";
 import Timeline from "../components/Timeline";
 import ProfileImage from "../components/ProfileImage";
@@ -26,70 +25,6 @@ function SummarySection({ content }: { content: SectionContent }) {
       {text && (
         <p className="text-base leading-relaxed text-gray-700 dark:text-gray-300">{text}</p>
       )}
-    </section>
-  );
-}
-
-function SkillsSection({ content }: { content: SectionContent }) {
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-
-  const groups: Record<string, string[]> = {};
-
-  if (content.groups && typeof content.groups === "object") {
-    Object.entries(content.groups as Record<string, unknown>).forEach(
-      ([key, val]) => {
-        if (Array.isArray(val)) groups[key] = val as string[];
-      }
-    );
-  } else if (Array.isArray(content.items)) {
-    groups["Skills"] = content.items as string[];
-  } else {
-    Object.entries(content).forEach(([key, val]) => {
-      if (Array.isArray(val)) groups[key] = val as string[];
-    });
-  }
-
-  if (Object.keys(groups).length === 0) return null;
-
-  const toggleGroup = (name: string) => {
-    setExpanded((prev) => ({ ...prev, [name]: !prev[name] }));
-  };
-
-  const formatGroupName = (name: string) => name.replace(/_/g, " ");
-
-  return (
-    <section className="mb-10">
-      <div className="space-y-2">
-        {Object.entries(groups).map(([groupName, skills]) => (
-          <div key={groupName}>
-            <button
-              onClick={() => toggleGroup(groupName)}
-              className="flex w-full items-center gap-2 py-1 text-sm font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-            >
-              <svg
-                className={`h-3 w-3 transition-transform ${expanded[groupName] ? "rotate-90" : ""}`}
-                viewBox="0 0 12 12"
-                fill="currentColor"
-              >
-                <path d="M4 1l5 5-5 5V1z" />
-              </svg>
-              {formatGroupName(groupName)}
-            </button>
-            {expanded[groupName] && (
-              <div className="ml-5 mt-2 mb-2 flex flex-wrap gap-2">
-                {skills.map((skill) => (
-                  <span
-                    key={skill}
-                    className="inline-block rounded-full bg-blue-50 dark:bg-blue-900/30 px-3 py-1 text-sm font-medium text-blue-700 dark:text-blue-300"
-                  >
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
     </section>
   );
 }
@@ -134,7 +69,6 @@ export default function Resume() {
       )}
 
       {sections.summary && <SummarySection content={sections.summary} />}
-      {sections.skills && <SkillsSection content={sections.skills} />}
 
       {data.entries && Object.keys(data.entries).length > 0 && (
         <section>
