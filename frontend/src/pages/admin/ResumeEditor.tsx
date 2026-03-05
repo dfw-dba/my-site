@@ -140,7 +140,7 @@ export default function ResumeEditor() {
         </>
       ) : (
         <div className="space-y-4">
-          {["summary", "skills", "contact", "about"].map((sType) => (
+          {["summary", "skills", "contact"].map((sType) => (
             <div key={sType} className="bg-gray-700/50 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-semibold text-white capitalize">{sType}</h3>
