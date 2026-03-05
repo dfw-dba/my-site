@@ -166,6 +166,16 @@
 
 ---
 
+## Fix: Remove "About" Section from Resume Admin & Database
+
+- [x] 13.1 Remove `"about"` from admin Resume Editor section type array — `frontend/src/pages/admin/ResumeEditor.tsx`
+- [x] 13.2 Remove `'about'` from CHECK constraint in DB schema — `database/init/02_tables.sql`
+- [x] 13.3 Update comment in backend schema to list `recommendations` instead of `about` — `backend/src/app/schemas/resume.py`
+- [x] 13.4 Delete `about` row from live database and update CHECK constraint
+- [x] 13.5 Verify: 54 backend tests pass, no `about` row in `internal.resume_sections`
+
+---
+
 ## Sprint Future Work: AWS CDK, CI/CD
 
 ---

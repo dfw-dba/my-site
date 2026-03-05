@@ -1,15 +1,14 @@
 # Workflow Orchestration
 
 ### 1. Plan Mode Default
-When the user initiates any non-trivial task (3+ steps, architectural decisions, ambiguous features, UI/UX, tradeoffs):
+When the user initiates any task :
 
 1. **Create branch FIRST**: Create and switch to `feature/<name>` or `fix/<name>` before any exploration, planning, or file edits. No exceptions.
 2. **Enter plan mode**: Explore the codebase, ask clarifying questions, and design the approach.
-3. **Write plan to `.claude/tasks/plans/<branch-name>.md`**: This is the source of truth — NOT the system-provided ephemeral plan file. Update it as plans evolve during discussion.
-4. **Finalize plan before implementation**: Ensure the plan file has all details a fresh session needs: files to change, what each change does, acceptance criteria, and technical decisions.
-5. **Add todo items to `.claude/tasks/todo.md`**: Only after the plan is approved. Use compact but detailed descriptions.
-6. **Sync todo items to the `my-site` GitHub Project**: Immediately after updating todo.md. Items must include meaningful detail, not just titles.
-7. **Prompt user to clear context**: Before starting implementation, suggest the user clear context and enable auto-accept edits for a clean implementation session.
+3. **Prompt user to clear context**: Before starting implementation, suggest the user clear context and enable auto-accept edits for a clean implementation session.
+4. **Finalize plan before implementation**: Ensure the plan file has all details a fresh session needs: files to change, what each change does, acceptance criteria, and technical decisions. **Write plan to `.claude/tasks/plans/<branch-name>.md`**: This is the source of truth — NOT the system-provided ephemeral plan file. Update it as plans evolve during planning discussion.
+5. **Add todo items to `.claude/tasks/todo.md`**: Only after the plan is approved. If a to do item is complex and cannot be easily described in one item line, break it out into sub-items. The todo item list along with the plan file will be a source of truth when the plan is being implemented. Once all the todo items are added, commit the changes and push to origin. With the plan and tasks documented, committed, and pushed we will be able to safely disgard implementation changes that go awry and start over on the implementation.
+
 
 If something goes sideways during implementation, STOP and re-plan immediately.
 
@@ -59,19 +58,13 @@ If something goes sideways during implementation, STOP and re-plan immediately.
 - Always wait for the CI job to finish after a push, and never suggest a PULL REQUEST if the CI workflow is failing.
 
 ### 8. Task Management
-- **Track Progress**: Mark items complete in `.claude/tasks/todo.md` as you go, then **immediately** mark them done in the `my-site` GitHub Project. Never let the two fall out of sync.
+- **Track Progress**: Mark items complete in `.claude/tasks/todo.md` as you go.
 - **Explain Changes**: High-level summary at each step.
 - **Document Results**: Add review section to `.claude/tasks/todo.md`.
 - **Capture Lessons**: Update `.claude/tasks/lessons.md` after corrections.
 - **Pre-commit checklist**: When the user says "commit it" or confirms a commit, BEFORE running `git commit`:
   1. Mark all completed sprint items as `[x]` in `.claude/tasks/todo.md`.
-  2. Mark matching items as Done in the `my-site` GitHub Project (`gh project`).
-  3. Then stage and commit.
-- **Sync Rules**:
-  - `.claude/tasks/todo.md` is always updated **first**, then the `my-site` GitHub Project is updated to match.
-  - Any time a todo item is created, updated, or completed — mirror the change in the GitHub Project immediately.
-  - GitHub Project items must include detail in the title or body, not just a bare title.
-  - Use `gh project` commands to manage project items.
+  2. Then stage and commit.
 
 ### 9. Core Principles
 - **Simplicity First**: Make every change as simple as possible. Impact minimal code.
