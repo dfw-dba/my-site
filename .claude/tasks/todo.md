@@ -190,6 +190,36 @@
 
 ---
 
+## Sprint 15: Refactor PostgreSQL Database to Match DB Rules
+
+- [x] 15.1 `database/init/00_extensions.sql` — Remove `uuid-ossp` and `pgcrypto` extensions, lowercase keywords
+- [x] 15.2 `database/init/01_schemas.sql` — Lowercase keywords
+- [x] 15.3 `database/init/02_tables.sql` — Full rewrite
+  - PK: UUID → `int4 generated always as identity` (6 tables), `int2` for `resume_sections`
+  - FK columns: UUID → `int4`
+  - `varchar(N)` → `text`
+  - All keywords lowercase
+  - Add `comment on table` + `comment on column` for all tables
+  - Remove `set_updated_at()` trigger function + all 7 triggers
+- [x] 15.4 `database/init/03_functions.sql` — Full rewrite
+  - Lowercase all SQL keywords
+  - UUID variable types → `int4` (or `int2` for resume_sections)
+  - Remove `uuid_generate_v4()` calls and `id` from INSERT column lists
+  - `professional_entries` upsert: switch from ON CONFLICT (id) to IF/ELSE
+  - Add `updated_at = now()` in every UPDATE SET clause
+- [x] 15.5 `database/init/04_permissions.sql` — Lowercase all keywords
+- [x] 15.6 `database/init/05_seed_data.sql` — Lowercase all keywords
+- [x] 15.7 Backend Python changes
+  - `db_functions.py`: `delete_professional_entry` param str→int, remove CAST AS uuid
+  - `admin.py`: `entry_id: str` → `entry_id: int`
+  - `schemas/resume.py`: `id: str|None` → `int|None`, `entry_id: str` → `int`
+  - `schemas/blog.py`: `showcase_item_id: str|None` → `int|None`
+  - `schemas/media.py`: `album_id: str|None` → `int|None`, `cover_image_id: str|None` → `int|None`
+- [x] 15.8 `backend/tests/test_db_functions.py` — Remove `CAST(:id AS uuid)` + fix test_admin.py UUID→int
+- [x] 15.9 Verification: Docker rebuild, all 54 tests pass, spot-checks clean
+
+---
+
 ## Sprint Future Work: AWS CDK, CI/CD
 
 ---

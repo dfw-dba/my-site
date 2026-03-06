@@ -6,7 +6,7 @@ from pydantic import BaseModel
 class ResumeEntryCreate(BaseModel):
     """Schema for creating/updating a professional entry via admin API."""
 
-    id: str | None = None
+    id: int | None = None
     entry_type: str  # work, education, certification, award
     title: str
     organization: str
@@ -23,7 +23,7 @@ class PerformanceReviewCreate(BaseModel):
     """Schema for creating/updating a performance review via admin API."""
 
     id: int | None = None
-    entry_id: str
+    entry_id: int
     reviewer_name: str
     reviewer_title: str | None = None
     review_date: date | None = None
