@@ -3,11 +3,12 @@
 ### 1. Plan Mode Default
 When the user initiates any task :
 
-1. **Create branch FIRST**: Create and switch to `feature/<name>` or `fix/<name>` before any exploration, planning, or file edits. No exceptions.
+1. The user will create a new branch `feature/<name>` or `fix/<name>` before any exploration, planning, or file edits. No exceptions. If the user starts planning check to see if they are in main, and if they are remind the user to create a new branch before continuing.
 2. **Enter plan mode**: Explore the codebase, ask clarifying questions, and design the approach.
 3. **Prompt user to clear context**: Before starting implementation, suggest the user clear context and enable auto-accept edits for a clean implementation session.
-4. **Finalize plan before implementation**: Ensure the plan file has all details a fresh session needs: files to change, what each change does, acceptance criteria, and technical decisions. **Write plan to `.claude/tasks/plans/<branch-name>.md`**: This is the source of truth — NOT the system-provided ephemeral plan file. Update it as plans evolve during planning discussion.
-5. **Add todo items to `.claude/tasks/todo.md`**: Only after the plan is approved. If a to do item is complex and cannot be easily described in one item line, break it out into sub-items. The todo item list along with the plan file will be a source of truth when the plan is being implemented. Once all the todo items are added, commit the changes and push to origin. With the plan and tasks documented, committed, and pushed we will be able to safely disgard implementation changes that go awry and start over on the implementation.
+4. **Finalize plan before implementation**: Ensure the plan has all details a fresh session needs: files to change, what each change does, acceptance criteria, and technical decisions. 
+5. After planning is complete, switch to edit mode and **Write plan to `.claude/tasks/plans/<branch-name>.md`**: This is the source of truth — NOT the system-provided ephemeral plan file. This will be a fail safe for when the implementation goes awry. With this we can easily undo any unstaged commits and start over. Or even re-read the plan and compare it to the todo list to identify where things went wrong and possibly be able to get back on track.
+5. **Add todo items to `.claude/tasks/todo.md`**: If a to do item is complex and cannot be easily described in one item line, break it out into sub-items. The todo item list along with the plan file will be a source of truth when the plan is being implemented. Once all the todo items are added, commit the changes and push to origin. With the plan and tasks documented, committed, and pushed we will be able to safely disgard implementation changes that go awry and start over on the implementation.
 
 
 If something goes sideways during implementation, STOP and re-plan immediately.
@@ -72,12 +73,3 @@ If something goes sideways during implementation, STOP and re-plan immediately.
 - **Minimal Impact**: Changes should only touch what's necessary. Avoid introducing bugs.
 - **Cost vs Quality**: Cost and quality, sustainable architecture are equal. If there is a discrepancy where the lowest cost will impact the quality of the site, engage in conversation to arrive at a compromise.
 
-### 10. Claude Permissions
-
-You may run the following commands without asking:
-
-- bash ls
-- bash mkdir
-- bash gh
-- bash git
-- bash docker
