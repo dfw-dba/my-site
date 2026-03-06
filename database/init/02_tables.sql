@@ -32,6 +32,28 @@ CREATE TABLE internal.resume_sections (
 );
 
 -- ============================================================
+-- performance_reviews
+-- ============================================================
+create table internal.performance_reviews
+(
+  id              int4 generated always as identity primary key,
+  entry_id        uuid not null references internal.professional_entries(id) on delete cascade,
+  reviewer_name   text not null,
+  reviewer_title  text,
+  review_date     date,
+  review_text     text not null,
+  sort_order      int4 default 0,
+  created_at      timestamptz default now(),
+  updated_at      timestamptz default now()
+);
+
+comment on table internal.performance_reviews is 'Performance evaluation excerpts linked to professional entries';
+comment on column internal.performance_reviews.entry_id is 'FK to professional_entries.id';
+comment on column internal.performance_reviews.reviewer_name is 'Name of the reviewer (e.g. manager, peer)';
+comment on column internal.performance_reviews.reviewer_title is 'Job title or role of the reviewer';
+comment on column internal.performance_reviews.review_text is 'The performance review excerpt text';
+
+-- ============================================================
 -- showcase_items  (created before blog_posts so the FK works)
 -- ============================================================
 CREATE TABLE internal.showcase_items (
@@ -121,6 +143,10 @@ CREATE TRIGGER trg_professional_entries_updated_at
 
 CREATE TRIGGER trg_resume_sections_updated_at
     BEFORE UPDATE ON internal.resume_sections
+    FOR EACH ROW EXECUTE FUNCTION internal.set_updated_at();
+
+CREATE TRIGGER trg_performance_reviews_updated_at
+    BEFORE UPDATE ON internal.performance_reviews
     FOR EACH ROW EXECUTE FUNCTION internal.set_updated_at();
 
 CREATE TRIGGER trg_showcase_items_updated_at

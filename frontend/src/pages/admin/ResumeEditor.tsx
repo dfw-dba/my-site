@@ -4,6 +4,8 @@ import {
   useAdminUpsertResumeEntry,
   useAdminDeleteResumeEntry,
   useAdminUpsertResumeSection,
+  useAdminUpsertPerformanceReview,
+  useAdminDeletePerformanceReview,
 } from "../../hooks/useAdminApi";
 import DataTable from "../../components/admin/DataTable";
 import ConfirmModal from "../../components/admin/ConfirmModal";
@@ -41,6 +43,15 @@ const entryColumns: Column<ProfessionalEntry>[] = [
       </span>
     ),
   },
+  {
+    key: "reviews",
+    header: "Reviews",
+    render: (row) => (
+      <span className="inline-block px-2 py-0.5 text-xs rounded bg-purple-600/30 text-purple-300">
+        {row.performance_reviews?.length ?? 0}
+      </span>
+    ),
+  },
 ];
 
 type Tab = "sections" | "entries";
@@ -50,6 +61,8 @@ export default function ResumeEditor() {
   const upsertEntry = useAdminUpsertResumeEntry();
   const deleteEntry = useAdminDeleteResumeEntry();
   const upsertSection = useAdminUpsertResumeSection();
+  const upsertReview = useAdminUpsertPerformanceReview();
+  const deleteReview = useAdminDeletePerformanceReview();
 
   const [tab, setTab] = useState<Tab>("entries");
   const [editingEntry, setEditingEntry] = useState<ProfessionalEntry | null | "new">(null);
@@ -204,6 +217,9 @@ export default function ResumeEditor() {
           }}
           onCancel={() => setEditingEntry(null)}
           saving={upsertEntry.isPending}
+          onSaveReview={(data) => upsertReview.mutate(data)}
+          onDeleteReview={(id) => deleteReview.mutate(id)}
+          reviewSaving={upsertReview.isPending}
         />
       )}
 

@@ -6,6 +6,7 @@ import type {
   ShowcaseItemCreate,
   ResumeEntryCreate,
   ResumeSectionCreate,
+  PerformanceReviewCreate,
   MediaRegister,
   AlbumCreate,
 } from "../types";
@@ -141,6 +142,32 @@ export function useAdminUpsertResumeSection() {
     mutationFn: (data: ResumeSectionCreate) => api.admin.resume.upsertSection(data),
     onSuccess: () => {
       showToast("Section saved", "success");
+      qc.invalidateQueries({ queryKey: ["admin-resume"] });
+      qc.invalidateQueries({ queryKey: ["resume"] });
+    },
+    onError: onMutationError,
+  });
+}
+
+export function useAdminUpsertPerformanceReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: PerformanceReviewCreate) => api.admin.resume.upsertReview(data),
+    onSuccess: () => {
+      showToast("Review saved", "success");
+      qc.invalidateQueries({ queryKey: ["admin-resume"] });
+      qc.invalidateQueries({ queryKey: ["resume"] });
+    },
+    onError: onMutationError,
+  });
+}
+
+export function useAdminDeletePerformanceReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.admin.resume.deleteReview(id),
+    onSuccess: () => {
+      showToast("Review deleted", "success");
       qc.invalidateQueries({ queryKey: ["admin-resume"] });
       qc.invalidateQueries({ queryKey: ["resume"] });
     },

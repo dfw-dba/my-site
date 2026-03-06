@@ -1,4 +1,5 @@
 import type { ProfessionalEntry } from "../types";
+import PerformanceReviewCarousel from "./PerformanceReviewCarousel";
 
 interface TimelineProps {
   entries: Record<string, ProfessionalEntry[]>;
@@ -112,6 +113,10 @@ function TimelineCard({ entry }: { entry: ProfessionalEntry }) {
             </span>
           ))}
         </div>
+      )}
+
+      {entry.performance_reviews && entry.performance_reviews.length > 0 && (
+        <PerformanceReviewCarousel items={entry.performance_reviews} />
       )}
     </div>
   );

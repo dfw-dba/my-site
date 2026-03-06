@@ -87,6 +87,111 @@ VALUES
     );
 
 -- ============================================================
+--  Performance Reviews
+-- ============================================================
+insert into internal.performance_reviews (entry_id, reviewer_name, reviewer_title, review_date, review_text, sort_order)
+values
+    -- Verra Mobility (3 reviews)
+    (
+        (select id from internal.professional_entries where organization = 'Verra Mobility' limit 1),
+        'Director of Engineering',
+        'Engineering Leadership',
+        '2024-09-15',
+        'Jason has quickly become a cornerstone of our database engineering practice. His ability to translate complex business requirements into elegant, performant database architectures is exceptional.',
+        1
+    ),
+    (
+        (select id from internal.professional_entries where organization = 'Verra Mobility' limit 1),
+        'Senior Software Engineer',
+        'Platform Team',
+        '2024-09-15',
+        'Working with Jason has elevated our entire team''s understanding of database design. He doesn''t just solve problems — he teaches us how to think about data.',
+        2
+    ),
+    (
+        (select id from internal.professional_entries where organization = 'Verra Mobility' limit 1),
+        'VP of Technology',
+        'Executive Leadership',
+        '2025-03-01',
+        'Jason consistently delivers high-impact solutions. His single-tenant architecture design has become the foundation for our enterprise scaling strategy.',
+        3
+    ),
+    -- StoneEagle (4 reviews)
+    (
+        (select id from internal.professional_entries where organization = 'StoneEagle' limit 1),
+        'Data Services Manager',
+        'Direct Manager',
+        '2021-06-01',
+        'Jason''s table partitioning implementation was a game-changer — cutting processing time by 83% was beyond our most optimistic projections. He approaches every problem methodically and delivers results.',
+        1
+    ),
+    (
+        (select id from internal.professional_entries where organization = 'StoneEagle' limit 1),
+        'Senior Developer',
+        'Application Development',
+        '2022-01-15',
+        'The CI/CD pipelines Jason built transformed how we deploy database changes. What used to be a nerve-wracking manual process is now reliable and repeatable.',
+        2
+    ),
+    (
+        (select id from internal.professional_entries where organization = 'StoneEagle' limit 1),
+        'Director of Data Services',
+        'Department Leadership',
+        '2022-06-01',
+        'Jason is the rare engineer who excels at both individual contribution and mentorship. New hires consistently cite his onboarding guidance as instrumental to their ramp-up.',
+        3
+    ),
+    (
+        (select id from internal.professional_entries where organization = 'StoneEagle' limit 1),
+        'Cloud Infrastructure Lead',
+        'DevOps Team',
+        '2023-06-01',
+        'During our cloud-to-cloud migration, Jason''s meticulous planning ensured zero data loss. His cross-team collaboration made a complex project feel manageable.',
+        4
+    ),
+    -- GameStop (5 reviews)
+    (
+        (select id from internal.professional_entries where organization = 'GameStop' limit 1),
+        'IT Director',
+        'Enterprise Systems',
+        '2014-03-01',
+        'Jason owns the ERP database infrastructure with a level of care and expertise that gives us complete confidence in our data systems. His proactive approach prevents issues before they become incidents.',
+        1
+    ),
+    (
+        (select id from internal.professional_entries where organization = 'GameStop' limit 1),
+        'Senior DBA',
+        'Database Team',
+        '2015-09-01',
+        'Jason''s SQL Server migration plan was flawless — zero unplanned downtime across 20+ instances. His technical depth in clustering and replication is outstanding.',
+        2
+    ),
+    (
+        (select id from internal.professional_entries where organization = 'GameStop' limit 1),
+        'ETL Development Lead',
+        'Data Warehouse Team',
+        '2016-06-01',
+        'The 50% ETL performance improvement Jason delivered was transformative for our data warehouse operations. He has an intuitive sense for where bottlenecks hide.',
+        3
+    ),
+    (
+        (select id from internal.professional_entries where organization = 'GameStop' limit 1),
+        'VP of International IT',
+        'International Operations',
+        '2018-03-01',
+        'Jason''s GDPR data migration project was critical to our international compliance. He designed an elegant solution that handled encryption across multiple Navision databases seamlessly.',
+        4
+    ),
+    (
+        (select id from internal.professional_entries where organization = 'GameStop' limit 1),
+        'Manager of Database Administration',
+        'Direct Manager',
+        '2019-06-01',
+        'Over seven years, Jason has grown from a strong individual contributor to a technical leader. His published article on SQLServerCentral reflects his commitment to the broader DBA community.',
+        5
+    );
+
+-- ============================================================
 --  Resume Sections
 -- ============================================================
 INSERT INTO internal.resume_sections (section_type, content)

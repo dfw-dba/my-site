@@ -34,10 +34,24 @@ BEGIN
                          'description',  pe.description,
                          'highlights',   pe.highlights,
                          'technologies', pe.technologies,
-                         'sort_order',   pe.sort_order
+                         'sort_order',   pe.sort_order,
+                         'performance_reviews', COALESCE(pr_agg.reviews, '[]'::jsonb)
                      ) ORDER BY pe.sort_order, pe.start_date DESC
                  ) AS items
             FROM internal.professional_entries pe
+            LEFT JOIN LATERAL (
+                SELECT jsonb_agg(
+                    jsonb_build_object(
+                        'id',             pr.id,
+                        'reviewer_name',  pr.reviewer_name,
+                        'reviewer_title', pr.reviewer_title,
+                        'review_date',    pr.review_date,
+                        'text',           pr.review_text
+                    ) ORDER BY pr.sort_order, pr.review_date DESC NULLS LAST
+                ) AS reviews
+                FROM internal.performance_reviews pr
+                WHERE pr.entry_id = pe.id
+            ) pr_agg ON TRUE
            GROUP BY pe.entry_type
       ) sub;
 
@@ -148,6 +162,61 @@ DECLARE
     v_count INT;
 BEGIN
     DELETE FROM internal.professional_entries WHERE id = p_id;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+
+    RETURN jsonb_build_object(
+        'success', (v_count > 0)::BOOLEAN,
+        'id',      p_id
+    );
+END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+
+-- api.upsert_performance_review(p_data JSONB)
+-- Insert or update a performance review. If p_data contains an "id" key that
+-- matches an existing row the row is updated; otherwise a new row is inserted.
+CREATE OR REPLACE FUNCTION api.upsert_performance_review(p_data JSONB)
+RETURNS JSONB AS $$
+DECLARE
+    v_id INT;
+BEGIN
+    IF p_data ? 'id' AND p_data->>'id' IS NOT NULL THEN
+        UPDATE internal.performance_reviews SET
+            entry_id      = COALESCE((p_data->>'entry_id')::UUID, entry_id),
+            reviewer_name = COALESCE(p_data->>'reviewer_name', reviewer_name),
+            reviewer_title = p_data->>'reviewer_title',
+            review_date   = (p_data->>'review_date')::DATE,
+            review_text   = COALESCE(p_data->>'review_text', review_text),
+            sort_order    = COALESCE((p_data->>'sort_order')::INT, sort_order)
+        WHERE id = (p_data->>'id')::INT
+        RETURNING id INTO v_id;
+    ELSE
+        INSERT INTO internal.performance_reviews (
+            entry_id, reviewer_name, reviewer_title, review_date, review_text, sort_order
+        )
+        VALUES (
+            (p_data->>'entry_id')::UUID,
+            p_data->>'reviewer_name',
+            p_data->>'reviewer_title',
+            (p_data->>'review_date')::DATE,
+            p_data->>'review_text',
+            COALESCE((p_data->>'sort_order')::INT, 0)
+        )
+        RETURNING id INTO v_id;
+    END IF;
+
+    RETURN jsonb_build_object('id', v_id, 'success', TRUE);
+END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+
+-- api.delete_performance_review(p_id INT)
+CREATE OR REPLACE FUNCTION api.delete_performance_review(p_id INT)
+RETURNS JSONB AS $$
+DECLARE
+    v_count INT;
+BEGIN
+    DELETE FROM internal.performance_reviews WHERE id = p_id;
     GET DIAGNOSTICS v_count = ROW_COUNT;
 
     RETURN jsonb_build_object(

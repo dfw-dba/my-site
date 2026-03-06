@@ -19,6 +19,18 @@ class ResumeEntryCreate(BaseModel):
     sort_order: int = 0
 
 
+class PerformanceReviewCreate(BaseModel):
+    """Schema for creating/updating a performance review via admin API."""
+
+    id: int | None = None
+    entry_id: str
+    reviewer_name: str
+    reviewer_title: str | None = None
+    review_date: date | None = None
+    review_text: str
+    sort_order: int = 0
+
+
 class ResumeSectionCreate(BaseModel):
     """Schema for creating/updating a resume section via admin API."""
 

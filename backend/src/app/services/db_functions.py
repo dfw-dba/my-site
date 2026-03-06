@@ -46,6 +46,22 @@ class DatabaseAPI:
         )
         return result.scalar_one()
 
+    async def upsert_performance_review(self, data: dict[str, Any]) -> Any:
+        """Insert or update a performance review."""
+        result = await self.session.execute(
+            text("SELECT api.upsert_performance_review(CAST(:data AS jsonb))"),
+            {"data": json.dumps(data, default=str)},
+        )
+        return result.scalar_one()
+
+    async def delete_performance_review(self, review_id: int) -> Any:
+        """Delete a performance review by ID."""
+        result = await self.session.execute(
+            text("SELECT api.delete_performance_review(:id)"),
+            {"id": review_id},
+        )
+        return result.scalar_one()
+
     async def delete_professional_entry(self, entry_id: str) -> Any:
         """Delete a professional entry by ID."""
         result = await self.session.execute(
