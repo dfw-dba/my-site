@@ -12,6 +12,7 @@ import type {
   ShowcaseItemCreate,
   ResumeEntryCreate,
   ResumeSectionCreate,
+  PerformanceReviewCreate,
   UploadUrlRequest,
   UploadUrlResponse,
   MediaRegister,
@@ -145,6 +146,17 @@ export const api = {
           method: "POST",
           headers: adminHeaders(),
           body: JSON.stringify(data),
+        }),
+      upsertReview: (data: PerformanceReviewCreate) =>
+        request<ApiSuccess>("/api/admin/resume/review", {
+          method: "POST",
+          headers: adminHeaders(),
+          body: JSON.stringify(data),
+        }),
+      deleteReview: (id: number) =>
+        request<ApiSuccess>(`/api/admin/resume/review/${id}`, {
+          method: "DELETE",
+          headers: adminHeaders(),
         }),
     },
 

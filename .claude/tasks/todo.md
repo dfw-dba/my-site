@@ -176,6 +176,20 @@
 
 ---
 
+## Sprint 14: Performance Review Carousels
+
+- [x] 14.1 Add `performance_reviews` table to database schema — `database/init/02_tables.sql`
+- [x] 14.2 Add `updated_at` trigger for `performance_reviews` — `database/init/02_tables.sql`
+- [x] 14.3 Modify `api.get_resume()` with lateral join for performance reviews — `database/init/03_functions.sql`
+- [x] 14.4 Add seed data (12 reviews: 3 Verra, 4 StoneEagle, 5 GameStop) — `database/init/05_seed_data.sql`
+- [x] 14.5 Add `PerformanceReview` interface and extend `ProfessionalEntry` — `frontend/src/types/index.ts`
+- [x] 14.6 Create `PerformanceReviewCarousel` component — `frontend/src/components/PerformanceReviewCarousel.tsx`
+- [x] 14.7 Integrate carousel into `TimelineCard` — `frontend/src/components/Timeline.tsx`
+- [x] 14.8 Update test fixtures with `performance_reviews: []` — Timeline + Resume tests
+- [x] 14.9 All 56 frontend tests pass
+
+---
+
 ## Sprint Future Work: AWS CDK, CI/CD
 
 ---

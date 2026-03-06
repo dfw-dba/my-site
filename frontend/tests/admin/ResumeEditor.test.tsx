@@ -7,6 +7,8 @@ import {
   useAdminUpsertResumeEntry,
   useAdminDeleteResumeEntry,
   useAdminUpsertResumeSection,
+  useAdminUpsertPerformanceReview,
+  useAdminDeletePerformanceReview,
 } from "../../src/hooks/useAdminApi";
 
 vi.mock("../../src/hooks/useAdminApi", () => ({
@@ -14,6 +16,8 @@ vi.mock("../../src/hooks/useAdminApi", () => ({
   useAdminUpsertResumeEntry: vi.fn(),
   useAdminDeleteResumeEntry: vi.fn(),
   useAdminUpsertResumeSection: vi.fn(),
+  useAdminUpsertPerformanceReview: vi.fn(),
+  useAdminDeletePerformanceReview: vi.fn(),
 }));
 
 const mockMutation = { mutate: vi.fn(), isPending: false };
@@ -23,6 +27,8 @@ describe("ResumeEditor", () => {
     vi.mocked(useAdminUpsertResumeEntry).mockReturnValue(mockMutation as any);
     vi.mocked(useAdminDeleteResumeEntry).mockReturnValue(mockMutation as any);
     vi.mocked(useAdminUpsertResumeSection).mockReturnValue(mockMutation as any);
+    vi.mocked(useAdminUpsertPerformanceReview).mockReturnValue(mockMutation as any);
+    vi.mocked(useAdminDeletePerformanceReview).mockReturnValue(mockMutation as any);
   });
 
   it("shows loading state", () => {
@@ -54,6 +60,7 @@ describe("ResumeEditor", () => {
               highlights: [],
               technologies: [],
               sort_order: 0,
+              performance_reviews: [],
             },
           ],
         },

@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 from src.app.dependencies import get_admin_auth, get_db_api, get_storage
 from src.app.schemas.blog import BlogPostCreate
 from src.app.schemas.media import AlbumCreate, MediaRegister, UploadUrlRequest, UploadUrlResponse
-from src.app.schemas.resume import ResumeEntryCreate, ResumeSectionCreate
+from src.app.schemas.resume import PerformanceReviewCreate, ResumeEntryCreate, ResumeSectionCreate
 from src.app.schemas.showcase import ShowcaseItemCreate
 from src.app.services.db_functions import DatabaseAPI
 from src.app.services.storage import StorageService
@@ -94,6 +94,24 @@ async def delete_resume_entry(
 ) -> Any:
     """Delete a professional entry by ID."""
     return await db.delete_professional_entry(entry_id)
+
+
+@router.post("/resume/review", dependencies=[Depends(get_admin_auth)])
+async def upsert_performance_review(
+    body: PerformanceReviewCreate,
+    db: DatabaseAPI = Depends(get_db_api),
+) -> Any:
+    """Create or update a performance review."""
+    return await db.upsert_performance_review(body.model_dump())
+
+
+@router.delete("/resume/review/{review_id}", dependencies=[Depends(get_admin_auth)])
+async def delete_performance_review(
+    review_id: int,
+    db: DatabaseAPI = Depends(get_db_api),
+) -> Any:
+    """Delete a performance review by ID."""
+    return await db.delete_performance_review(review_id)
 
 
 @router.post("/resume/section", dependencies=[Depends(get_admin_auth)])
