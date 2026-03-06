@@ -16,6 +16,7 @@ function makeEntry(overrides: Partial<ProfessionalEntry> = {}): ProfessionalEntr
     highlights: [],
     technologies: [],
     sort_order: 0,
+    performance_reviews: [],
     ...overrides,
   };
 }

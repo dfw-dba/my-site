@@ -42,6 +42,7 @@ describe("Resume", () => {
               highlights: [],
               technologies: [],
               sort_order: 0,
+              performance_reviews: [],
             },
           ],
         },

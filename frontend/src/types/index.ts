@@ -1,5 +1,13 @@
 // Types matching the JSONB shapes returned by PostgreSQL stored functions
 
+export interface PerformanceReview {
+  id: number;
+  reviewer_name: string;
+  reviewer_title: string | null;
+  review_date: string | null;
+  text: string;
+}
+
 export interface ProfessionalEntry {
   id: string;
   entry_type: string;
@@ -12,6 +20,7 @@ export interface ProfessionalEntry {
   highlights: string[];
   technologies: string[];
   sort_order: number;
+  performance_reviews: PerformanceReview[];
 }
 
 export interface ResumeSection {
@@ -209,6 +218,16 @@ export interface MediaRegister {
   height?: number | null;
   caption?: string | null;
   album_id?: string | null;
+  sort_order?: number;
+}
+
+export interface PerformanceReviewCreate {
+  id?: number | null;
+  entry_id: string;
+  reviewer_name: string;
+  reviewer_title?: string | null;
+  review_date?: string | null;
+  review_text: string;
   sort_order?: number;
 }
 
