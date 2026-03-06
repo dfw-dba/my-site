@@ -5,30 +5,6 @@ import RecommendationCarousel from "../components/RecommendationCarousel";
 
 type SectionContent = Record<string, unknown>;
 
-function SummarySection({ content }: { content: SectionContent }) {
-  const text =
-    typeof content.text === "string" ? content.text : null;
-  const headline =
-    typeof content.headline === "string"
-      ? content.headline
-      : null;
-
-  if (!text && !headline) return null;
-
-  return (
-    <section className="mb-10">
-      {headline && (
-        <h2 className="mb-2 text-xl font-semibold text-gray-900 dark:text-gray-100">
-          {headline}
-        </h2>
-      )}
-      {text && (
-        <p className="text-base leading-relaxed text-gray-700 dark:text-gray-300">{text}</p>
-      )}
-    </section>
-  );
-}
-
 function LoadingSpinner() {
   return (
     <div className="flex items-center justify-center py-20">
@@ -58,8 +34,22 @@ export default function Resume() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <header className="mb-10 flex flex-col items-center text-center">
+      <header className="mb-10 flex items-center justify-center gap-8">
         <ProfileImage src="/profile.jpg" />
+        {sections.summary && (
+          <div className="max-w-md text-left">
+            {typeof sections.summary.headline === "string" && (
+              <h2 className="mb-2 text-xl font-semibold text-gray-900 dark:text-gray-100">
+                {sections.summary.headline}
+              </h2>
+            )}
+            {typeof sections.summary.text === "string" && (
+              <p className="text-base leading-relaxed text-gray-700 dark:text-gray-300">
+                {sections.summary.text}
+              </p>
+            )}
+          </div>
+        )}
       </header>
 
       {sections.recommendations && Array.isArray((sections.recommendations as SectionContent).items) && (
@@ -67,8 +57,6 @@ export default function Resume() {
           items={(sections.recommendations as SectionContent).items as { author: string; title: string; text: string }[]}
         />
       )}
-
-      {sections.summary && <SummarySection content={sections.summary} />}
 
       {data.entries && Object.keys(data.entries).length > 0 && (
         <section>
