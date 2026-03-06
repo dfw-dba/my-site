@@ -3,5 +3,5 @@
 --   internal: all tables (no direct application access)
 --   api:      all stored functions (the only interface the application uses)
 
-CREATE SCHEMA IF NOT EXISTS internal;
-CREATE SCHEMA IF NOT EXISTS api;
+create schema if not exists internal;
+create schema if not exists api;

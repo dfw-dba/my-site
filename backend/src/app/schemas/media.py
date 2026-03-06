@@ -25,7 +25,7 @@ class MediaRegister(BaseModel):
     width: int | None = None
     height: int | None = None
     caption: str | None = None
-    album_id: str | None = None
+    album_id: int | None = None
     sort_order: int = 0
 
 
@@ -36,5 +36,5 @@ class AlbumCreate(BaseModel):
     title: str
     description: str | None = None
     category: str  # family, vacation, professional, showcase
-    cover_image_id: str | None = None
+    cover_image_id: int | None = None
     sort_order: int = 0
