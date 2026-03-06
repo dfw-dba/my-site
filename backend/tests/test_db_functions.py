@@ -484,7 +484,7 @@ async def test_delete_album_nullifies_media(db_api: DatabaseAPI) -> None:
     from sqlalchemy import text
 
     row = await db_api.session.execute(
-        text("SELECT id, album_id FROM internal.media_items WHERE id = CAST(:id AS uuid)"),
+        text("SELECT id, album_id FROM internal.media_items WHERE id = :id"),
         {"id": media_id},
     )
     media_row = row.first()

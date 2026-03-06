@@ -10,4 +10,4 @@ class BlogPostCreate(BaseModel):
     content: str  # markdown
     tags: list[str] = []
     published: bool = False
-    showcase_item_id: str | None = None
+    showcase_item_id: int | None = None

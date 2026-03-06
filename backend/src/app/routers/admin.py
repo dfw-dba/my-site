@@ -89,7 +89,7 @@ async def upsert_resume_entry(
 
 @router.delete("/resume/entry/{entry_id}", dependencies=[Depends(get_admin_auth)])
 async def delete_resume_entry(
-    entry_id: str,
+    entry_id: int,
     db: DatabaseAPI = Depends(get_db_api),
 ) -> Any:
     """Delete a professional entry by ID."""

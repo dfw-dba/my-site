@@ -113,7 +113,7 @@ async def test_create_resume_entry(admin_client: AsyncClient, mock_db_api: Async
 
 async def test_delete_resume_entry(admin_client: AsyncClient, mock_db_api: AsyncMock) -> None:
     """DELETE /api/admin/resume/entry/{id} deletes the entry and returns 200."""
-    entry_id = "550e8400-e29b-41d4-a716-446655440000"
+    entry_id = 42
     response = await admin_client.delete(f"/api/admin/resume/entry/{entry_id}")
     assert response.status_code == 200
     assert response.json() == {"success": True}

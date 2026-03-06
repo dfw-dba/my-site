@@ -1,5 +1,4 @@
 -- 00_extensions.sql
--- Install required PostgreSQL extensions in the public schema.
-
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+-- No extensions are currently required.
+-- Previously used uuid-ossp and pgcrypto for UUID primary keys;
+-- all tables now use identity columns instead.

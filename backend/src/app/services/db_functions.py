@@ -62,10 +62,10 @@ class DatabaseAPI:
         )
         return result.scalar_one()
 
-    async def delete_professional_entry(self, entry_id: str) -> Any:
+    async def delete_professional_entry(self, entry_id: int) -> Any:
         """Delete a professional entry by ID."""
         result = await self.session.execute(
-            text("SELECT api.delete_professional_entry(CAST(:id AS uuid))"),
+            text("SELECT api.delete_professional_entry(:id)"),
             {"id": entry_id},
         )
         return result.scalar_one()

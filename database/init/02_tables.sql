@@ -4,32 +4,43 @@
 -- ============================================================
 -- professional_entries
 -- ============================================================
-CREATE TABLE internal.professional_entries (
-    id          UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
-    entry_type  VARCHAR(50) NOT NULL CHECK (entry_type IN ('work', 'education', 'certification', 'award')),
-    title       VARCHAR(255) NOT NULL,
-    organization VARCHAR(255) NOT NULL,
-    location    VARCHAR(255),
-    start_date  DATE        NOT NULL,
-    end_date    DATE,
-    description TEXT,
-    highlights  JSONB       DEFAULT '[]',
-    technologies JSONB      DEFAULT '[]',
-    sort_order  INTEGER     DEFAULT 0,
-    created_at  TIMESTAMPTZ DEFAULT NOW(),
-    updated_at  TIMESTAMPTZ DEFAULT NOW()
+create table internal.professional_entries
+(
+  id           int4 generated always as identity primary key,
+  entry_type   text not null check (entry_type in ('work', 'education', 'certification', 'award')),
+  title        text not null,
+  organization text not null,
+  location     text,
+  start_date   date not null,
+  end_date     date,
+  description  text,
+  highlights   jsonb default '[]',
+  technologies jsonb default '[]',
+  sort_order   int4 default 0,
+  created_at   timestamptz default now(),
+  updated_at   timestamptz default now()
 );
+
+comment on table internal.professional_entries is 'Work history, education, certifications, and awards';
+comment on column internal.professional_entries.entry_type is 'One of: work, education, certification, award';
+comment on column internal.professional_entries.highlights is 'JSON array of bullet-point strings';
+comment on column internal.professional_entries.technologies is 'JSON array of technology name strings';
 
 -- ============================================================
 -- resume_sections
 -- ============================================================
-CREATE TABLE internal.resume_sections (
-    id           UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
-    section_type VARCHAR(50) UNIQUE NOT NULL CHECK (section_type IN ('summary', 'contact', 'recommendations')),
-    content      JSONB       NOT NULL,
-    created_at   TIMESTAMPTZ DEFAULT NOW(),
-    updated_at   TIMESTAMPTZ DEFAULT NOW()
+create table internal.resume_sections
+(
+  id           int2 generated always as identity primary key,
+  section_type text unique not null check (section_type in ('summary', 'contact', 'recommendations')),
+  content      jsonb not null,
+  created_at   timestamptz default now(),
+  updated_at   timestamptz default now()
 );
+
+comment on table internal.resume_sections is 'Free-form resume sections keyed by type (summary, contact, recommendations)';
+comment on column internal.resume_sections.section_type is 'One of: summary, contact, recommendations';
+comment on column internal.resume_sections.content is 'JSONB content whose structure varies by section_type';
 
 -- ============================================================
 -- performance_reviews
@@ -37,7 +48,7 @@ CREATE TABLE internal.resume_sections (
 create table internal.performance_reviews
 (
   id              int4 generated always as identity primary key,
-  entry_id        uuid not null references internal.professional_entries(id) on delete cascade,
+  entry_id        int4 not null references internal.professional_entries(id) on delete cascade,
   reviewer_name   text not null,
   reviewer_title  text,
   review_date     date,
@@ -56,111 +67,94 @@ comment on column internal.performance_reviews.review_text is 'The performance r
 -- ============================================================
 -- showcase_items  (created before blog_posts so the FK works)
 -- ============================================================
-CREATE TABLE internal.showcase_items (
-    id           UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
-    slug         VARCHAR(255) UNIQUE NOT NULL,
-    title        VARCHAR(255) NOT NULL,
-    description  TEXT,
-    content      TEXT,
-    category     VARCHAR(100) NOT NULL,
-    technologies JSONB        DEFAULT '[]',
-    demo_url     VARCHAR(500),
-    repo_url     VARCHAR(500),
-    sort_order   INTEGER      DEFAULT 0,
-    created_at   TIMESTAMPTZ  DEFAULT NOW(),
-    updated_at   TIMESTAMPTZ  DEFAULT NOW()
+create table internal.showcase_items
+(
+  id           int4 generated always as identity primary key,
+  slug         text unique not null,
+  title        text not null,
+  description  text,
+  content      text,
+  category     text not null,
+  technologies jsonb default '[]',
+  demo_url     text,
+  repo_url     text,
+  sort_order   int4 default 0,
+  created_at   timestamptz default now(),
+  updated_at   timestamptz default now()
 );
+
+comment on table internal.showcase_items is 'Portfolio showcase projects';
+comment on column internal.showcase_items.slug is 'URL-safe unique identifier';
+comment on column internal.showcase_items.technologies is 'JSON array of technology name strings';
 
 -- ============================================================
 -- blog_posts
 -- ============================================================
-CREATE TABLE internal.blog_posts (
-    id              UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
-    slug            VARCHAR(255) UNIQUE NOT NULL,
-    title           VARCHAR(255) NOT NULL,
-    excerpt         TEXT,
-    content         TEXT         NOT NULL,
-    tags            JSONB        DEFAULT '[]',
-    published       BOOLEAN      DEFAULT FALSE,
-    showcase_item_id UUID        REFERENCES internal.showcase_items(id),
-    created_at      TIMESTAMPTZ  DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ  DEFAULT NOW(),
-    published_at    TIMESTAMPTZ
+create table internal.blog_posts
+(
+  id               int4 generated always as identity primary key,
+  slug             text unique not null,
+  title            text not null,
+  excerpt          text,
+  content          text not null,
+  tags             jsonb default '[]',
+  published        boolean default false,
+  showcase_item_id int4 references internal.showcase_items(id),
+  created_at       timestamptz default now(),
+  updated_at       timestamptz default now(),
+  published_at     timestamptz
 );
+
+comment on table internal.blog_posts is 'Blog posts with optional link to a showcase item';
+comment on column internal.blog_posts.slug is 'URL-safe unique identifier';
+comment on column internal.blog_posts.tags is 'JSON array of tag strings';
+comment on column internal.blog_posts.showcase_item_id is 'FK to showcase_items.id for linked project posts';
 
 -- ============================================================
 -- albums
 -- ============================================================
-CREATE TABLE internal.albums (
-    id             UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
-    slug           VARCHAR(255) UNIQUE NOT NULL,
-    title          VARCHAR(255) NOT NULL,
-    description    TEXT,
-    category       VARCHAR(100) NOT NULL CHECK (category IN ('family', 'vacation', 'professional', 'showcase')),
-    cover_image_id UUID,
-    sort_order     INTEGER      DEFAULT 0,
-    created_at     TIMESTAMPTZ  DEFAULT NOW(),
-    updated_at     TIMESTAMPTZ  DEFAULT NOW()
+create table internal.albums
+(
+  id             int4 generated always as identity primary key,
+  slug           text unique not null,
+  title          text not null,
+  description    text,
+  category       text not null check (category in ('family', 'vacation', 'professional', 'showcase')),
+  cover_image_id int4,
+  sort_order     int4 default 0,
+  created_at     timestamptz default now(),
+  updated_at     timestamptz default now()
 );
+
+comment on table internal.albums is 'Photo albums grouped by category';
+comment on column internal.albums.slug is 'URL-safe unique identifier';
+comment on column internal.albums.category is 'One of: family, vacation, professional, showcase';
+comment on column internal.albums.cover_image_id is 'FK to media_items.id (added after media_items is created)';
 
 -- ============================================================
 -- media_items
 -- ============================================================
-CREATE TABLE internal.media_items (
-    id           UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
-    album_id     UUID         REFERENCES internal.albums(id) ON DELETE SET NULL,
-    s3_key       VARCHAR(500) UNIQUE NOT NULL,
-    filename     VARCHAR(255) NOT NULL,
-    content_type VARCHAR(100) NOT NULL,
-    size_bytes   BIGINT,
-    width        INTEGER,
-    height       INTEGER,
-    caption      TEXT,
-    sort_order   INTEGER      DEFAULT 0,
-    created_at   TIMESTAMPTZ  DEFAULT NOW(),
-    updated_at   TIMESTAMPTZ  DEFAULT NOW()
+create table internal.media_items
+(
+  id           int4 generated always as identity primary key,
+  album_id     int4 references internal.albums(id) on delete set null,
+  s3_key       text unique not null,
+  filename     text not null,
+  content_type text not null,
+  size_bytes   int8,
+  width        int4,
+  height       int4,
+  caption      text,
+  sort_order   int4 default 0,
+  created_at   timestamptz default now(),
+  updated_at   timestamptz default now()
 );
 
+comment on table internal.media_items is 'Uploaded media files stored in S3';
+comment on column internal.media_items.album_id is 'FK to albums.id; null if unassigned';
+comment on column internal.media_items.s3_key is 'Unique S3 object key';
+
 -- Now that media_items exists, add the FK from albums.cover_image_id.
-ALTER TABLE internal.albums
-    ADD CONSTRAINT fk_cover_image
-    FOREIGN KEY (cover_image_id) REFERENCES internal.media_items(id) ON DELETE SET NULL;
-
--- ============================================================
--- Automatic updated_at trigger
--- ============================================================
-CREATE OR REPLACE FUNCTION internal.set_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_professional_entries_updated_at
-    BEFORE UPDATE ON internal.professional_entries
-    FOR EACH ROW EXECUTE FUNCTION internal.set_updated_at();
-
-CREATE TRIGGER trg_resume_sections_updated_at
-    BEFORE UPDATE ON internal.resume_sections
-    FOR EACH ROW EXECUTE FUNCTION internal.set_updated_at();
-
-CREATE TRIGGER trg_performance_reviews_updated_at
-    BEFORE UPDATE ON internal.performance_reviews
-    FOR EACH ROW EXECUTE FUNCTION internal.set_updated_at();
-
-CREATE TRIGGER trg_showcase_items_updated_at
-    BEFORE UPDATE ON internal.showcase_items
-    FOR EACH ROW EXECUTE FUNCTION internal.set_updated_at();
-
-CREATE TRIGGER trg_blog_posts_updated_at
-    BEFORE UPDATE ON internal.blog_posts
-    FOR EACH ROW EXECUTE FUNCTION internal.set_updated_at();
-
-CREATE TRIGGER trg_albums_updated_at
-    BEFORE UPDATE ON internal.albums
-    FOR EACH ROW EXECUTE FUNCTION internal.set_updated_at();
-
-CREATE TRIGGER trg_media_items_updated_at
-    BEFORE UPDATE ON internal.media_items
-    FOR EACH ROW EXECUTE FUNCTION internal.set_updated_at();
+alter table internal.albums
+  add constraint fk_cover_image
+  foreign key (cover_image_id) references internal.media_items(id) on delete set null;
