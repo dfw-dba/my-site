@@ -1,3 +1,9 @@
+---
+globs:
+  - "database/**"
+  - "**/*.sql"
+---
+
 # Postgresql SQL guide
 
 ## Core philosophy
