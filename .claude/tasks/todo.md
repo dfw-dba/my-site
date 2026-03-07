@@ -220,6 +220,20 @@
 
 ---
 
+## Sprint 16: Repo Structure Optimization for Token Efficiency
+
+- [x] 16.1 Add `globs` frontmatter to `postgresql_database.md` — scoped to `database/**` and `**/*.sql`
+- [x] 16.2 Create `.claude/rules/frontend.md` — path-scoped to `frontend/**`
+- [x] 16.3 Create `.claude/rules/backend.md` — path-scoped to `backend/**`
+- [x] 16.4 Populate `database-engineer.md` agent — tools, DB architecture, patterns, key files
+- [x] 16.5 Populate `backend-engineer.md` agent — tools, router pattern, key files, commands
+- [x] 16.6 Populate `uiux-engineer.md` agent — tools, React stack, component/page structure, commands
+- [x] 16.7 Populate `test-engineer.md` agent — tools, pytest/vitest patterns, test counts, CI
+- [x] 16.8 Populate `aws-architect.md` agent — tools, docker-compose, CI/CD, future AWS target
+- [x] 16.9 Trim CLAUDE.md — remove redundant PostgreSQL line, compress sections 4/5/6, renumber
+
+---
+
 ## Sprint Future Work: AWS CDK, CI/CD
 
 ---

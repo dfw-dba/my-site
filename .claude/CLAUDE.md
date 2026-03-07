@@ -6,7 +6,6 @@ When the user initiates any task :
 1. The user will create a new branch `feature/<name>` or `fix/<name>` before any exploration, planning, or file edits. No exceptions. If the user starts planning check to see if they are in main, and if they are remind the user to create a new branch before continuing.
 2. **Enter plan mode**: Explore the codebase, ask clarifying questions, and design the approach.
 3. **Prompt user to clear context**: Before starting implementation, suggest the user clear context and enable auto-accept edits for a clean implementation session.
-4. **Postgresql database rules**: Follow the rules defined in `.claude/rules/postgresql_database.md`.
 4. **Finalize plan before implementation**: Ensure the plan has all details a fresh session needs: files to change, what each change does, acceptance criteria, and technical decisions. 
 5. After planning is complete, switch to edit mode and **Write plan to `.claude/tasks/plans/<branch-name>.md`**: This is the source of truth — NOT the system-provided ephemeral plan file. This will be a fail safe for when the implementation goes awry. With this we can easily undo any unstaged commits and start over. Or even re-read the plan and compare it to the todo list to identify where things went wrong and possibly be able to get back on track.
 5. **Add todo items to `.claude/tasks/todo.md`**: If a to do item is complex and cannot be easily described in one item line, break it out into sub-items. The todo item list along with the plan file will be a source of truth when the plan is being implemented. Once all the todo items are added, commit the changes and push to origin. With the plan and tasks documented, committed, and pushed we will be able to safely disgard implementation changes that go awry and start over on the implementation.
@@ -26,25 +25,12 @@ If something goes sideways during implementation, STOP and re-plan immediately.
 - Ruthlessly iterate on these lessons until mistake rate drops
 - Review lessons at session start for relevant project
 
-### 4. Verification Before Done
-- Never mark a task complete without proving it works
-- Diff behavior between main and your changes when relevant
-- Ask yourself: "Would a staff engineer approve this?"
-- Run tests, check logs, demonstrate correctness
+### 4. Quality Gates
+- Never mark a task complete without proving it works (run tests, check logs, demonstrate correctness)
+- For non-trivial changes: pause and ask "Is there a more elegant way?" Skip for simple fixes.
+- When given a bug report: just fix it autonomously. Zero user context-switching needed.
 
-### 5. Demand Elegance (Balanced)
-- For non-trivial changes: pause and ask "Is there a more elegant way?"
-- If a fix feels hacky: "Knowing everything I know now, implement the elegant solution"
-- Skip this for simple, obvious fixes – don't over-engineer
-- Challenge your own work before presenting it
-
-### 6. Autonomous Bug Fixing
-- When given a bug report: just fix it. Don't ask for hand-holding
-- Point at logs, errors, failing tests – then resolve them
-- Zero context switching required from the user
-- Go fix failing CI tests without being told how
-
-### 7. Git Branching, Commit, Merge, Pull Request Rules
+### 5. Git Branching, Commit, Merge, Pull Request Rules
 
 > **HARD RULE — NO EXCEPTIONS**: Never edit, stage, or commit files while on the `main` branch.
 > Before making ANY file change (including `.claude/tasks/todo.md`, `CLAUDE.md`, or any other file),
@@ -59,7 +45,7 @@ If something goes sideways during implementation, STOP and re-plan immediately.
 - Branch naming: `feature/short-description` for new work, `fix/short-description` for bug fixes.
 - Always wait for the CI job to finish after a push, and never suggest a PULL REQUEST if the CI workflow is failing.
 
-### 8. Task Management
+### 6. Task Management
 - **Track Progress**: Mark items complete in `.claude/tasks/todo.md` as you go.
 - **Explain Changes**: High-level summary at each step.
 - **Document Results**: Add review section to `.claude/tasks/todo.md`.
@@ -68,9 +54,10 @@ If something goes sideways during implementation, STOP and re-plan immediately.
   1. Mark all completed sprint items as `[x]` in `.claude/tasks/todo.md`.
   2. Then stage and commit.
 
-### 9. Core Principles
+### 7. Core Principles
 - **Simplicity First**: Make every change as simple as possible. Impact minimal code.
 - **No Laziness**: Find root causes. No temporary fixes. Senior developer standards.
 - **Minimal Impact**: Changes should only touch what's necessary. Avoid introducing bugs.
+- **Keep agent/rule files current**: When adding, moving, or removing files referenced in `.claude/agents/` or `.claude/rules/`, update those files to match.
 - **Cost vs Quality**: Cost and quality, sustainable architecture are equal. If there is a discrepancy where the lowest cost will impact the quality of the site, engage in conversation to arrive at a compromise.
 
