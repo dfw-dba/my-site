@@ -44,6 +44,7 @@ If something goes sideways during implementation, STOP and re-plan immediately.
 - ***Always squash merge*** into `main` (`gh pr merge --squash`). No merge commits or rebase merges.
 - Branch naming: `feature/short-description` for new work, `fix/short-description` for bug fixes.
 - Always wait for the CI job to finish after a push, and never suggest a PULL REQUEST if the CI workflow is failing.
+- After CI passes, verify each test plan item in the PR body and check them off using `gh api` before suggesting the PR is ready to merge.
 
 ### 6. Task Management
 - **Track Progress**: Mark items complete in `.claude/tasks/todo.md` as you go.
