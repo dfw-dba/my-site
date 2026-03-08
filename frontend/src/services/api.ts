@@ -136,7 +136,7 @@ export const api = {
           headers: adminHeaders(),
           body: JSON.stringify(data),
         }),
-      deleteEntry: (id: string) =>
+      deleteEntry: (id: number) =>
         request<ApiSuccess>(`/api/admin/resume/entry/${id}`, {
           method: "DELETE",
           headers: adminHeaders(),

@@ -17,7 +17,7 @@ const ENTRY_TYPE_OPTIONS = [
 interface ResumeEntryFormProps {
   entry: ProfessionalEntry | null;
   onSave: (data: {
-    id?: string;
+    id?: number;
     entry_type: string;
     title: string;
     organization: string;
@@ -44,7 +44,7 @@ function ReviewEditor({
   saving,
 }: {
   reviews: PerformanceReview[];
-  entryId: string;
+  entryId: number;
   onSave: (data: PerformanceReviewCreate) => void;
   onDelete: (id: number) => void;
   saving?: boolean;
@@ -229,7 +229,7 @@ export default function ResumeEntryForm({
 
   useEffect(() => {
     if (entry) {
-      setEntryType(entry.entry_type);
+      setEntryType(entry.entry_type ?? "work");
       setTitle(entry.title);
       setOrganization(entry.organization);
       setLocation(entry.location ?? "");
