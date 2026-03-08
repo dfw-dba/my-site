@@ -9,7 +9,7 @@ export interface PerformanceReview {
 }
 
 export interface ProfessionalEntry {
-  id: string;
+  id: number;
   entry_type: string;
   title: string;
   organization: string;
@@ -34,7 +34,7 @@ export interface ResumeData {
 }
 
 export interface BlogPostListItem {
-  id: string;
+  id: number;
   slug: string;
   title: string;
   excerpt: string | null;
@@ -51,7 +51,7 @@ export interface BlogPostsResponse {
 }
 
 export interface BlogPost {
-  id: string;
+  id: number;
   slug: string;
   title: string;
   excerpt: string | null;
@@ -61,11 +61,11 @@ export interface BlogPost {
   created_at: string;
   updated_at: string;
   published_at: string | null;
-  showcase_item_id: string | null;
+  showcase_item_id: number | null;
 }
 
 export interface ShowcaseItem {
-  id: string;
+  id: number;
   slug: string;
   title: string;
   description: string | null;
@@ -80,7 +80,7 @@ export interface ShowcaseItem {
 }
 
 export interface MediaItem {
-  id: string;
+  id: number;
   s3_key: string;
   filename: string;
   content_type: string;
@@ -93,7 +93,7 @@ export interface MediaItem {
 }
 
 export interface Album {
-  id: string;
+  id: number;
   slug: string;
   title: string;
   description: string | null;
@@ -104,7 +104,7 @@ export interface Album {
 }
 
 export interface AlbumDetail {
-  id: string;
+  id: number;
   slug: string;
   title: string;
   description: string | null;
@@ -118,7 +118,7 @@ export interface AlbumDetail {
 // ── Admin types ────────────────────────────────────────────────────────────
 
 export interface AdminBlogPostListItem {
-  id: string;
+  id: number;
   slug: string;
   title: string;
   excerpt: string | null;
@@ -137,8 +137,8 @@ export interface AdminBlogPostsResponse {
 }
 
 export interface AdminMediaItem {
-  id: string;
-  album_id: string | null;
+  id: number;
+  album_id: number | null;
   album_title: string | null;
   s3_key: string;
   filename: string;
@@ -165,7 +165,7 @@ export interface BlogPostCreate {
   content: string;
   tags?: string[];
   published?: boolean;
-  showcase_item_id?: string | null;
+  showcase_item_id?: number | null;
 }
 
 export interface ShowcaseItemCreate {
@@ -181,7 +181,7 @@ export interface ShowcaseItemCreate {
 }
 
 export interface ResumeEntryCreate {
-  id?: string | null;
+  id?: number | null;
   entry_type: string;
   title: string;
   organization: string;
@@ -217,13 +217,13 @@ export interface MediaRegister {
   width?: number | null;
   height?: number | null;
   caption?: string | null;
-  album_id?: string | null;
+  album_id?: number | null;
   sort_order?: number;
 }
 
 export interface PerformanceReviewCreate {
   id?: number | null;
-  entry_id: string;
+  entry_id: number;
   reviewer_name: string;
   reviewer_title?: string | null;
   review_date?: string | null;
@@ -236,12 +236,12 @@ export interface AlbumCreate {
   title: string;
   description?: string | null;
   category: string;
-  cover_image_id?: string | null;
+  cover_image_id?: number | null;
   sort_order?: number;
 }
 
 export interface ApiSuccess {
   success: boolean;
-  id?: string;
+  id?: number;
   slug?: string;
 }

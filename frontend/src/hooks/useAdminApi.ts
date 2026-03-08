@@ -126,7 +126,7 @@ export function useAdminUpsertResumeEntry() {
 export function useAdminDeleteResumeEntry() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => api.admin.resume.deleteEntry(id),
+    mutationFn: (id: number) => api.admin.resume.deleteEntry(id),
     onSuccess: () => {
       showToast("Entry deleted", "success");
       qc.invalidateQueries({ queryKey: ["admin-resume"] });
