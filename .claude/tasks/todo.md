@@ -238,6 +238,14 @@
 
 ---
 
+## Feature: Editable Highlights in Resume Entry Form
+
+- [x] 17.1 Replace static `<span>` with `<input>` in `ListInput.tsx` for inline editing
+- [x] 17.2 Verify: `npx tsc --noEmit` passes, frontend tests pass (56/56)
+- [x] 17.3 Manual test: edit highlight text, save, confirm persistence
+
+---
+
 ## Notes
 - DB port mapped to 5433 on host (5432 in use by local PostgreSQL)
 - `uv` installed at ~/.local/bin/uv
