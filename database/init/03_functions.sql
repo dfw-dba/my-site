@@ -28,6 +28,7 @@ begin
             jsonb_agg(
                 jsonb_build_object(
                     'id',           pe.id,
+                    'entry_type',   pe.entry_type,
                     'title',        pe.title,
                     'organization', pe.organization,
                     'location',     pe.location,
