@@ -10,7 +10,7 @@ export interface Column<T> {
 interface DataTableProps<T> {
   columns: Column<T>[];
   data: T[];
-  keyFn: (row: T) => string;
+  keyFn: (row: T) => string | number;
   actions?: (row: T) => ReactNode;
   emptyMessage?: string;
 }
