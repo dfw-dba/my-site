@@ -36,7 +36,16 @@ export default function ListInput({ label, value, onChange, placeholder = "Add i
         {value.map((item, i) => (
           <div key={i} className="flex items-center gap-2 bg-gray-700 rounded px-3 py-1.5">
             <span className="text-gray-400 text-xs w-5">{i + 1}.</span>
-            <span className="flex-1 text-sm text-white">{item}</span>
+            <input
+              type="text"
+              value={item}
+              onChange={(e) => {
+                const updated = [...value];
+                updated[i] = e.target.value;
+                onChange(updated);
+              }}
+              className="flex-1 text-sm text-white bg-transparent outline-none focus:ring-1 focus:ring-blue-500 rounded px-1"
+            />
             <button
               type="button"
               onClick={() => removeItem(i)}
