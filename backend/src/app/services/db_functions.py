@@ -25,6 +25,11 @@ class DatabaseAPI:
         result = await self.session.execute(text("SELECT api.get_resume()"))
         return result.scalar_one()
 
+    async def get_contact_info(self) -> Any:
+        """Fetch contact info (linkedin, github, email, etc.)."""
+        result = await self.session.execute(text("SELECT api.get_contact_info()"))
+        return result.scalar_one()
+
     async def get_professional_timeline(self) -> Any:
         """Fetch resume entries as a chronological timeline."""
         result = await self.session.execute(text("SELECT api.get_professional_timeline()"))

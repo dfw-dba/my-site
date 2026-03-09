@@ -206,7 +206,8 @@ values
         'contact',
         '{
             "linkedin": "https://www.linkedin.com/in/jason-rowland-6712097",
-            "github": "https://github.com/dfw-dba"
+            "github": "https://github.com/dfw-dba",
+            "email": "email@jasonrowland.me"
         }'::jsonb
     ),
     (

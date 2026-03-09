@@ -28,6 +28,12 @@ export interface ResumeSection {
   content: Record<string, unknown>;
 }
 
+export interface ContactInfo {
+  linkedin?: string;
+  github?: string;
+  email?: string;
+}
+
 export interface ResumeData {
   sections: Record<string, Record<string, unknown>>;
   entries: Record<string, ProfessionalEntry[]>;
