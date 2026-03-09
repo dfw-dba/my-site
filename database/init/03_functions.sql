@@ -67,6 +67,21 @@ end;
 $$ language plpgsql stable;
 
 
+-- api.get_contact_info()
+-- Returns the contact section content (linkedin, github, email, etc.).
+create or replace function api.get_contact_info()
+returns jsonb as $$
+begin
+    return coalesce(
+    (
+        select rs.content
+          from internal.resume_sections as rs
+         where rs.section_type = 'contact'
+    ), '{}'::jsonb);
+end;
+$$ language plpgsql stable;
+
+
 -- api.get_professional_timeline()
 -- Returns all entries ordered by start_date DESC.
 create or replace function api.get_professional_timeline()

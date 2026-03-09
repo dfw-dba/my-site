@@ -1,3 +1,6 @@
+import { useQuery } from "@tanstack/react-query";
+import { api } from "../services/api";
+
 function LinkedInIcon() {
   return (
     <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
@@ -24,33 +27,47 @@ function MailIcon() {
 }
 
 export default function SocialIcons() {
+  const { data: contact } = useQuery({
+    queryKey: ["contact-info"],
+    queryFn: api.resume.contact,
+    staleTime: Infinity,
+  });
+
+  if (!contact) return null;
+
   return (
     <div className="flex items-center gap-5">
-      <a
-        href="https://www.linkedin.com/in/jason-rowland-6712097"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-        aria-label="LinkedIn"
-      >
-        <LinkedInIcon />
-      </a>
-      <a
-        href="https://github.com/dfw-dba"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
-        aria-label="GitHub"
-      >
-        <GitHubIcon />
-      </a>
-      <a
-        href="mailto:email@jasonrowland.me"
-        className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-        aria-label="Email"
-      >
-        <MailIcon />
-      </a>
+      {contact.linkedin && (
+        <a
+          href={contact.linkedin}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          aria-label="LinkedIn"
+        >
+          <LinkedInIcon />
+        </a>
+      )}
+      {contact.github && (
+        <a
+          href={contact.github}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+          aria-label="GitHub"
+        >
+          <GitHubIcon />
+        </a>
+      )}
+      {contact.email && (
+        <a
+          href={`mailto:${contact.email}`}
+          className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          aria-label="Email"
+        >
+          <MailIcon />
+        </a>
+      )}
     </div>
   );
 }
