@@ -7,10 +7,6 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/mysite"
     ADMIN_API_KEY: str = "local-dev-admin-key"
     CORS_ORIGINS: str = "http://localhost:5173"
-    MINIO_ENDPOINT: str = "http://minio:9000"
-    MEDIA_BUCKET: str = "media"
-    MINIO_ROOT_USER: str = "minioadmin"
-    MINIO_ROOT_PASSWORD: str = "minioadmin"
 
     @property
     def cors_origin_list(self) -> list[str]:
