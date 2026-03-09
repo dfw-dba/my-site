@@ -3,6 +3,7 @@ import type {
   Album,
   BlogPost,
   BlogPostsResponse,
+  ContactInfo,
   ResumeData,
   ProfessionalEntry,
   ShowcaseItem,
@@ -48,6 +49,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 export const api = {
   resume: {
     get: () => request<ResumeData>("/api/resume/"),
+    contact: () => request<ContactInfo>("/api/resume/contact"),
     timeline: () => request<ProfessionalEntry[]>("/api/resume/timeline"),
   },
 
