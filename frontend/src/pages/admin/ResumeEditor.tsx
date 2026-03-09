@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useAdminResume,
   useAdminUpsertResumeEntry,
@@ -57,6 +58,7 @@ const entryColumns: Column<ProfessionalEntry>[] = [
 type Tab = "sections" | "entries";
 
 export default function ResumeEditor() {
+  const queryClient = useQueryClient();
   const { data: resume, isLoading } = useAdminResume();
   const upsertEntry = useAdminUpsertResumeEntry();
   const deleteEntry = useAdminDeleteResumeEntry();
@@ -65,7 +67,7 @@ export default function ResumeEditor() {
   const deleteReview = useAdminDeletePerformanceReview();
 
   const [tab, setTab] = useState<Tab>("entries");
-  const [editingEntry, setEditingEntry] = useState<ProfessionalEntry | null | "new">(null);
+  const [editingEntryId, setEditingEntryId] = useState<number | "new" | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ProfessionalEntry | null>(null);
 
   // Section editing state
@@ -76,22 +78,31 @@ export default function ResumeEditor() {
     ? Object.values(resume.entries).flat()
     : [];
 
+  // Derive editing entry from query data so it stays fresh after refetch
+  const editingEntry =
+    editingEntryId !== null && editingEntryId !== "new"
+      ? allEntries.find((e) => e.id === editingEntryId) ?? null
+      : editingEntryId;
+
   function openSectionEditor(sectionType: string) {
     const content = resume?.sections[sectionType];
     setEditingSectionType(sectionType);
     setSectionContent(content ? JSON.stringify(content, null, 2) : "{}");
   }
 
-  function saveSectionContent() {
+  async function saveSectionContent() {
     if (!editingSectionType) return;
     try {
       const parsed = JSON.parse(sectionContent);
-      upsertSection.mutate(
+      await upsertSection.mutateAsync(
         { section_type: editingSectionType, content: parsed },
-        { onSuccess: () => setEditingSectionType(null) },
       );
-    } catch {
-      alert("Invalid JSON");
+      await queryClient.invalidateQueries({ queryKey: ["admin-resume"] });
+      setEditingSectionType(null);
+    } catch (e) {
+      if (e instanceof SyntaxError) {
+        alert("Invalid JSON");
+      }
     }
   }
 
@@ -122,7 +133,7 @@ export default function ResumeEditor() {
         <>
           <div className="flex justify-end mb-4">
             <button
-              onClick={() => setEditingEntry("new")}
+              onClick={() => setEditingEntryId("new")}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
             >
               New Entry
@@ -136,7 +147,7 @@ export default function ResumeEditor() {
             actions={(row) => (
               <div className="flex gap-2 justify-end">
                 <button
-                  onClick={() => setEditingEntry(row)}
+                  onClick={() => setEditingEntryId(row.id)}
                   className="text-blue-400 hover:text-blue-300 text-sm"
                 >
                   Edit
@@ -210,14 +221,21 @@ export default function ResumeEditor() {
       {editingEntry !== null && (
         <ResumeEntryForm
           entry={editingEntry === "new" ? null : editingEntry}
-          onSave={(data) => {
-            upsertEntry.mutate(data, {
-              onSuccess: () => setEditingEntry(null),
-            });
+          onSave={async (data) => {
+            try {
+              await upsertEntry.mutateAsync(data);
+              await queryClient.invalidateQueries({ queryKey: ["admin-resume"] });
+              setEditingEntryId(null);
+            } catch {
+              // Mutation errors handled by hook's onError
+            }
           }}
-          onCancel={() => setEditingEntry(null)}
+          onCancel={() => setEditingEntryId(null)}
           saving={upsertEntry.isPending}
-          onSaveReview={(data) => upsertReview.mutate(data)}
+          onSaveReview={async (data) => {
+            await upsertReview.mutateAsync(data);
+            await queryClient.invalidateQueries({ queryKey: ["admin-resume"] });
+          }}
           onDeleteReview={(id) => deleteReview.mutate(id)}
           reviewSaving={upsertReview.isPending}
         />
