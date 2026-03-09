@@ -28,10 +28,10 @@ interface ResumeEntryFormProps {
     highlights?: string[];
     technologies?: string[];
     sort_order?: number;
-  }) => void;
+  }) => void | Promise<void>;
   onCancel: () => void;
   saving?: boolean;
-  onSaveReview?: (data: PerformanceReviewCreate) => void;
+  onSaveReview?: (data: PerformanceReviewCreate) => void | Promise<void>;
   onDeleteReview?: (id: number) => void;
   reviewSaving?: boolean;
 }
@@ -45,7 +45,7 @@ function ReviewEditor({
 }: {
   reviews: PerformanceReview[];
   entryId: number;
-  onSave: (data: PerformanceReviewCreate) => void;
+  onSave: (data: PerformanceReviewCreate) => void | Promise<void>;
   onDelete: (id: number) => void;
   saving?: boolean;
 }) {
@@ -74,8 +74,8 @@ function ReviewEditor({
     }
   }
 
-  function handleSaveReview() {
-    onSave({
+  async function handleSaveReview() {
+    await onSave({
       id: editingReview !== "new" ? editingReview?.id ?? undefined : undefined,
       entry_id: entryId,
       reviewer_name: reviewerName,
