@@ -2,7 +2,7 @@ import { useResume } from "../hooks/useApi";
 import Timeline from "../components/Timeline";
 import ProfileImage from "../components/ProfileImage";
 import RecommendationCarousel from "../components/RecommendationCarousel";
-import SocialIcons from "../components/SocialIcons";
+
 
 type SectionContent = Record<string, unknown>;
 
@@ -49,9 +49,7 @@ export default function Resume() {
                 {sections.summary.text}
               </p>
             )}
-            <div className="mt-4">
-              <SocialIcons />
-            </div>
+
           </div>
         )}
       </header>
