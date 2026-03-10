@@ -50,8 +50,15 @@ export default function RecommendationCarousel({
 
   useEffect(() => {
     if (items.length <= 1) return;
-    const id = setInterval(rotate, intervalMs);
-    return () => clearInterval(id);
+    let intervalId: ReturnType<typeof setInterval>;
+    const delayId = setTimeout(() => {
+      rotate();
+      intervalId = setInterval(rotate, intervalMs);
+    }, Math.random() * (intervalMs / 2));
+    return () => {
+      clearTimeout(delayId);
+      clearInterval(intervalId);
+    };
   }, [rotate, intervalMs, items.length]);
 
   if (!items || items.length === 0) return null;
