@@ -84,7 +84,10 @@ async def client(app, mock_db_api) -> AsyncGenerator[AsyncClient, None]:
 
 @pytest.fixture
 async def admin_client(app, mock_db_api) -> AsyncGenerator[AsyncClient, None]:
-    """Async HTTP client with mocked dependencies AND admin auth header."""
+    """Async HTTP client with mocked dependencies AND admin auth header.
+
+    Uses API key fallback (COGNITO_USER_POOL_ID is empty by default in tests).
+    """
     app.dependency_overrides[get_db_api] = lambda: mock_db_api
 
     transport = ASGITransport(app=app)

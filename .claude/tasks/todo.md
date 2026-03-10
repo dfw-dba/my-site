@@ -246,6 +246,38 @@
 
 ---
 
+## Sprint 18: Cognito Auth Integration
+
+### Backend
+- [x] 18.1 Add PyJWT dependency to pyproject.toml
+- [x] 18.2 Add Cognito settings to config.py
+- [x] 18.3 Create cognito.py JWT verifier service
+- [x] 18.4 Update dependencies.py for dual-mode auth (Bearer + API key fallback)
+- [x] 18.5 Update conftest.py for new auth pattern
+- [x] 18.6 Add backend tests for Cognito auth (9 tests)
+- [x] 18.7 Run ruff check + format check — all pass
+- [x] 18.8 Run pytest — 18/18 pass
+
+### Frontend
+- [x] 18.9 Install amazon-cognito-identity-js
+- [x] 18.10 Create auth.ts service (Cognito SDK wrapper)
+- [x] 18.11 Create useAuth.ts hook
+- [x] 18.12 Create AuthContext.tsx
+- [x] 18.13 Create Login.tsx page
+- [x] 18.14 Create ProtectedRoute.tsx component
+- [x] 18.15 Update routes/index.tsx with ProtectedRoute
+- [x] 18.16 Update api.ts for async Bearer auth
+- [x] 18.17 Update main.tsx with AuthProvider
+- [x] 18.18 Add AuthState type to types/index.ts
+- [x] 18.19 Add frontend tests (Login: 4, ProtectedRoute: 2)
+- [x] 18.20 Run tsc --noEmit — passes
+- [x] 18.21 Run vitest — 22/22 pass
+
+### Config
+- [x] 18.22 Update .env.example with Cognito vars
+
+---
+
 ## Notes
 - DB port mapped to 5433 on host (5432 in use by local PostgreSQL)
 - `uv` installed at ~/.local/bin/uv
