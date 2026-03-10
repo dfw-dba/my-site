@@ -2,13 +2,13 @@
 
 import os
 from collections.abc import AsyncGenerator
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
-from src.app.dependencies import get_db_api, get_storage
+from src.app.dependencies import get_db_api
 from src.app.main import create_app
 from src.app.services.db_functions import DatabaseAPI
 
@@ -58,43 +58,9 @@ def mock_db_api() -> AsyncMock:
     mock.upsert_professional_entry.return_value = {"success": True}
     mock.upsert_resume_section.return_value = {"success": True}
     mock.delete_professional_entry.return_value = {"success": True}
+    mock.upsert_performance_review.return_value = {"success": True}
+    mock.delete_performance_review.return_value = {"success": True}
 
-    # Blog defaults
-    mock.admin_get_blog_post.return_value = {
-        "slug": "test",
-        "title": "Test",
-        "content": "body",
-        "published": False,
-    }
-    mock.admin_get_blog_posts.return_value = {"posts": [], "total": 0, "limit": 50, "offset": 0}
-    mock.get_blog_posts.return_value = {"posts": [], "total": 0, "limit": 20, "offset": 0}
-    mock.get_blog_post.return_value = {"slug": "test", "title": "Test", "content": "body"}
-    mock.upsert_blog_post.return_value = {"success": True}
-    mock.delete_blog_post.return_value = {"success": True}
-
-    # Showcase defaults
-    mock.get_showcase_items.return_value = []
-    mock.get_showcase_item.return_value = {"slug": "test", "title": "Test"}
-    mock.upsert_showcase_item.return_value = {"success": True}
-    mock.delete_showcase_item.return_value = {"success": True}
-
-    # Media/Albums defaults
-    mock.admin_get_all_media.return_value = {"items": [], "total": 0, "limit": 50, "offset": 0}
-    mock.get_albums.return_value = []
-    mock.get_album_with_media.return_value = {"slug": "test", "title": "Test", "media": []}
-    mock.register_media.return_value = {"success": True}
-    mock.upsert_album.return_value = {"success": True}
-    mock.delete_album.return_value = {"success": True}
-
-    return mock
-
-
-@pytest.fixture
-def mock_storage() -> MagicMock:
-    """Mocked StorageService."""
-    mock = MagicMock()
-    mock.generate_upload_url.return_value = "https://minio.test/presigned-upload-url"
-    mock.generate_download_url.return_value = "https://minio.test/presigned-download-url"
     return mock
 
 
@@ -105,10 +71,9 @@ def app():
 
 
 @pytest.fixture
-async def client(app, mock_db_api, mock_storage) -> AsyncGenerator[AsyncClient, None]:
+async def client(app, mock_db_api) -> AsyncGenerator[AsyncClient, None]:
     """Async HTTP client with mocked dependencies (no auth header)."""
     app.dependency_overrides[get_db_api] = lambda: mock_db_api
-    app.dependency_overrides[get_storage] = lambda: mock_storage
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
@@ -118,10 +83,9 @@ async def client(app, mock_db_api, mock_storage) -> AsyncGenerator[AsyncClient, 
 
 
 @pytest.fixture
-async def admin_client(app, mock_db_api, mock_storage) -> AsyncGenerator[AsyncClient, None]:
+async def admin_client(app, mock_db_api) -> AsyncGenerator[AsyncClient, None]:
     """Async HTTP client with mocked dependencies AND admin auth header."""
     app.dependency_overrides[get_db_api] = lambda: mock_db_api
-    app.dependency_overrides[get_storage] = lambda: mock_storage
 
     transport = ASGITransport(app=app)
     async with AsyncClient(

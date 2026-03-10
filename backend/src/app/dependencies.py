@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.app.config import settings
 from src.app.database import async_session_factory
 from src.app.services.db_functions import DatabaseAPI
-from src.app.services.storage import StorageService
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
@@ -25,16 +24,6 @@ async def get_db_api(
 ) -> AsyncGenerator[DatabaseAPI, None]:
     """Yield a DatabaseAPI instance wrapping the current session."""
     yield DatabaseAPI(session)
-
-
-def get_storage() -> StorageService:
-    """Return a StorageService instance configured from settings."""
-    return StorageService(
-        endpoint_url=settings.MINIO_ENDPOINT,
-        access_key=settings.MINIO_ROOT_USER,
-        secret_key=settings.MINIO_ROOT_PASSWORD,
-        bucket=settings.MEDIA_BUCKET,
-    )
 
 
 async def get_admin_auth(

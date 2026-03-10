@@ -39,153 +39,6 @@ export interface ResumeData {
   entries: Record<string, ProfessionalEntry[]>;
 }
 
-export interface BlogPostListItem {
-  id: number;
-  slug: string;
-  title: string;
-  excerpt: string | null;
-  tags: string[];
-  created_at: string;
-  published_at: string | null;
-}
-
-export interface BlogPostsResponse {
-  posts: BlogPostListItem[];
-  total: number;
-  limit: number;
-  offset: number;
-}
-
-export interface BlogPost {
-  id: number;
-  slug: string;
-  title: string;
-  excerpt: string | null;
-  content: string;
-  tags: string[];
-  published: boolean;
-  created_at: string;
-  updated_at: string;
-  published_at: string | null;
-  showcase_item_id: number | null;
-}
-
-export interface ShowcaseItem {
-  id: number;
-  slug: string;
-  title: string;
-  description: string | null;
-  content?: string | null;
-  category: string;
-  technologies: string[];
-  demo_url: string | null;
-  repo_url: string | null;
-  sort_order: number;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface MediaItem {
-  id: number;
-  s3_key: string;
-  filename: string;
-  content_type: string;
-  size_bytes: number | null;
-  width: number | null;
-  height: number | null;
-  caption: string | null;
-  sort_order: number;
-  created_at: string;
-}
-
-export interface Album {
-  id: number;
-  slug: string;
-  title: string;
-  description: string | null;
-  category: string;
-  cover_image: MediaItem | null;
-  media_count: number;
-  sort_order: number;
-}
-
-export interface AlbumDetail {
-  id: number;
-  slug: string;
-  title: string;
-  description: string | null;
-  category: string;
-  media: MediaItem[];
-  created_at: string;
-  updated_at: string;
-  sort_order: number;
-}
-
-// ── Admin types ────────────────────────────────────────────────────────────
-
-export interface AdminBlogPostListItem {
-  id: number;
-  slug: string;
-  title: string;
-  excerpt: string | null;
-  tags: string[];
-  published: boolean;
-  published_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface AdminBlogPostsResponse {
-  posts: AdminBlogPostListItem[];
-  total: number;
-  limit: number;
-  offset: number;
-}
-
-export interface AdminMediaItem {
-  id: number;
-  album_id: number | null;
-  album_title: string | null;
-  s3_key: string;
-  filename: string;
-  content_type: string;
-  size_bytes: number | null;
-  width: number | null;
-  height: number | null;
-  caption: string | null;
-  sort_order: number;
-  created_at: string;
-}
-
-export interface AdminMediaResponse {
-  items: AdminMediaItem[];
-  total: number;
-  limit: number;
-  offset: number;
-}
-
-export interface BlogPostCreate {
-  slug: string;
-  title: string;
-  excerpt?: string | null;
-  content: string;
-  tags?: string[];
-  published?: boolean;
-  showcase_item_id?: number | null;
-}
-
-export interface ShowcaseItemCreate {
-  slug: string;
-  title: string;
-  description?: string | null;
-  content?: string | null;
-  category: string;
-  technologies?: string[];
-  demo_url?: string | null;
-  repo_url?: string | null;
-  sort_order?: number;
-}
-
 export interface ResumeEntryCreate {
   id?: number | null;
   entry_type: string;
@@ -205,28 +58,6 @@ export interface ResumeSectionCreate {
   content: Record<string, unknown>;
 }
 
-export interface UploadUrlRequest {
-  filename: string;
-  content_type: string;
-}
-
-export interface UploadUrlResponse {
-  upload_url: string;
-  s3_key: string;
-}
-
-export interface MediaRegister {
-  s3_key: string;
-  filename: string;
-  content_type: string;
-  size_bytes?: number | null;
-  width?: number | null;
-  height?: number | null;
-  caption?: string | null;
-  album_id?: number | null;
-  sort_order?: number;
-}
-
 export interface PerformanceReviewCreate {
   id?: number | null;
   entry_id: number;
@@ -234,15 +65,6 @@ export interface PerformanceReviewCreate {
   reviewer_title?: string | null;
   review_date?: string | null;
   review_text: string;
-  sort_order?: number;
-}
-
-export interface AlbumCreate {
-  slug: string;
-  title: string;
-  description?: string | null;
-  category: string;
-  cover_image_id?: number | null;
   sort_order?: number;
 }
 
