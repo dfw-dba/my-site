@@ -19,15 +19,11 @@ describe("HamburgerMenu", () => {
     expect(nav.className).toContain("translate-x-0");
   });
 
-  it("contains correct navigation links", () => {
+  it("contains the Resume link", () => {
     renderWithProviders(<HamburgerMenu />);
 
     fireEvent.click(screen.getByLabelText("Open menu"));
 
     expect(screen.getByText("Resume")).toBeInTheDocument();
-    expect(screen.getByText("Personal")).toBeInTheDocument();
-    expect(screen.getByText("Blog")).toBeInTheDocument();
-    expect(screen.getByText("Data")).toBeInTheDocument();
-    expect(screen.getByText("All Projects")).toBeInTheDocument();
   });
 });

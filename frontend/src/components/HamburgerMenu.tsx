@@ -71,49 +71,6 @@ export default function HamburgerMenu() {
                 Resume
               </Link>
             </li>
-            <li>
-              <Link
-                to="/personal"
-                onClick={() => setIsOpen(false)}
-                className="block text-lg font-medium text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400"
-              >
-                Personal
-              </Link>
-            </li>
-            <li>
-              <span className="block text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                Showcase
-              </span>
-              <ul className="mt-2 ml-4 space-y-2">
-                <li>
-                  <Link
-                    to="/showcase/blog"
-                    onClick={() => setIsOpen(false)}
-                    className="block text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
-                  >
-                    Blog
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/showcase/data"
-                    onClick={() => setIsOpen(false)}
-                    className="block text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
-                  >
-                    Data
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/showcase"
-                    onClick={() => setIsOpen(false)}
-                    className="block text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
-                  >
-                    All Projects
-                  </Link>
-                </li>
-              </ul>
-            </li>
           </ul>
 
         </div>
