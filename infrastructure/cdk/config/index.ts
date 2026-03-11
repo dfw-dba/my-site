@@ -1,40 +1,47 @@
 /**
- * Site configuration — edit these values for your deployment.
+ * Site configuration.
  *
- * To deploy your own instance:
- * 1. Change domainName to your domain
- * 2. Set awsAccountId to your AWS account ID
- * 3. Set budgetAlertEmail to your email address
- * 4. Optionally adjust region, instance class, and limits
+ * Required environment variables (set in shell or .env):
+ *   CDK_DOMAIN_NAME     — your registered domain (e.g., "example.com")
+ *   CDK_ACCOUNT_ID      — AWS account ID (or use AWS_ACCOUNT_ID)
+ *   CDK_REGION           — AWS region (or use AWS_REGION, default: us-east-1)
+ *   CDK_BUDGET_EMAIL     — email for budget alarm notifications
+ *
+ * Optional environment variables (sensible defaults provided):
+ *   CDK_DB_INSTANCE_CLASS, CDK_LAMBDA_MEMORY_MB, CDK_LAMBDA_CONCURRENCY,
+ *   CDK_API_THROTTLE_RATE, CDK_API_THROTTLE_BURST, CDK_BUDGET_LIMIT_USD
  */
+
+function required(name: string, ...fallbacks: string[]): string {
+  const value = [name, ...fallbacks]
+    .map((n) => process.env[n])
+    .find((v) => v !== undefined && v !== "");
+  if (!value) {
+    throw new Error(
+      `Missing required environment variable: ${name}` +
+        (fallbacks.length ? ` (also checked: ${fallbacks.join(", ")})` : ""),
+    );
+  }
+  return value;
+}
+
+function optional(name: string, defaultValue: string, ...fallbacks: string[]): string {
+  return (
+    [name, ...fallbacks]
+      .map((n) => process.env[n])
+      .find((v) => v !== undefined && v !== "") ?? defaultValue
+  );
+}
+
 export const config = {
-  /** Your domain name (must be registered — you'll point NS records to Route 53) */
-  domainName: "jasonrowland.me",
-
-  /** AWS account ID for deployment */
-  awsAccountId: "123456789012",
-
-  /** Primary AWS region for all resources */
-  awsRegion: "us-east-1",
-
-  /** RDS instance class (t4g.micro = free tier eligible) */
-  dbInstanceClass: "t4g.micro",
-
-  /** Lambda memory in MB */
-  lambdaMemoryMb: 256,
-
-  /** Lambda reserved concurrency (caps simultaneous executions) */
-  lambdaConcurrency: 5,
-
-  /** API Gateway throttle: sustained requests per second */
-  apiThrottleRatePerSec: 10,
-
-  /** API Gateway throttle: burst capacity */
-  apiThrottleBurst: 50,
-
-  /** Monthly budget alarm threshold in USD */
-  budgetLimitUsd: 10,
-
-  /** Email address for budget alarm notifications */
-  budgetAlertEmail: "you@example.com",
+  domainName: required("CDK_DOMAIN_NAME"),
+  awsAccountId: required("CDK_ACCOUNT_ID", "AWS_ACCOUNT_ID"),
+  awsRegion: optional("CDK_REGION", "us-east-1", "AWS_REGION"),
+  dbInstanceClass: optional("CDK_DB_INSTANCE_CLASS", "t4g.micro"),
+  lambdaMemoryMb: Number(optional("CDK_LAMBDA_MEMORY_MB", "256")),
+  lambdaConcurrency: Number(optional("CDK_LAMBDA_CONCURRENCY", "5")),
+  apiThrottleRatePerSec: Number(optional("CDK_API_THROTTLE_RATE", "10")),
+  apiThrottleBurst: Number(optional("CDK_API_THROTTLE_BURST", "50")),
+  budgetLimitUsd: Number(optional("CDK_BUDGET_LIMIT_USD", "10")),
+  budgetAlertEmail: required("CDK_BUDGET_EMAIL"),
 };
