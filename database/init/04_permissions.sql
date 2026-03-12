@@ -38,5 +38,13 @@ begin
 end
 $$;
 
-grant rds_iam to lambda_iam;
+-- Grant rds_iam only if the role exists (RDS provides it; local/CI does not).
+do $$
+begin
+    if exists (select 1 from pg_roles where rolname = 'rds_iam') then
+        execute 'grant rds_iam to lambda_iam';
+    end if;
+end
+$$;
+
 grant app_user to lambda_iam;
