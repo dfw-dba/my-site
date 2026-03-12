@@ -20,8 +20,6 @@ jobs:
     outputs:
       frontend-bucket: ${{ steps.cdk-outputs.outputs.frontend-bucket }}
       distribution-id: ${{ steps.cdk-outputs.outputs.distribution-id }}
-      ecr-repo: ${{ steps.cdk-outputs.outputs.ecr-repo }}
-      lambda-function: ${{ steps.cdk-outputs.outputs.lambda-function }}
       user-pool-id: ${{ steps.cdk-outputs.outputs.user-pool-id }}
       user-pool-client-id: ${{ steps.cdk-outputs.outputs.user-pool-client-id }}
       api-url: ${{ steps.cdk-outputs.outputs.api-url }}
@@ -70,64 +68,9 @@ jobs:
         run: |
           echo "frontend-bucket=$(jq -r '.MySiteApp.FrontendBucketName' cdk-outputs.json)" >> "$GITHUB_OUTPUT"
           echo "distribution-id=$(jq -r '.MySiteApp.DistributionId' cdk-outputs.json)" >> "$GITHUB_OUTPUT"
-          echo "ecr-repo=$(jq -r '.MySiteData.EcrRepoUri' cdk-outputs.json)" >> "$GITHUB_OUTPUT"
-          echo "lambda-function=$(jq -r '.MySiteApp.LambdaFunctionName' cdk-outputs.json)" >> "$GITHUB_OUTPUT"
           echo "user-pool-id=$(jq -r '.MySiteData.UserPoolId' cdk-outputs.json)" >> "$GITHUB_OUTPUT"
           echo "user-pool-client-id=$(jq -r '.MySiteData.UserPoolClientId' cdk-outputs.json)" >> "$GITHUB_OUTPUT"
           echo "api-url=$(jq -r '.MySiteApp.ApiUrl' cdk-outputs.json)" >> "$GITHUB_OUTPUT"
-
-  deploy-backend:
-    runs-on: ubuntu-latest
-    needs: deploy-infra
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Login to Amazon ECR
-        id: ecr-login
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build and push Lambda image
-        run: |
-          IMAGE_URI="${{ needs.deploy-infra.outputs.ecr-repo }}:${{ github.event.workflow_run.head_sha }}"
-          docker build \
-            --platform linux/arm64 \
-            -f docker/backend/Dockerfile.lambda \
-            -t "$IMAGE_URI" \
-            .
-          docker push "$IMAGE_URI"
-
-      - name: Update Lambda function
-        run: |
-          IMAGE_URI="${{ needs.deploy-infra.outputs.ecr-repo }}:${{ github.event.workflow_run.head_sha }}"
-          aws lambda update-function-code \
-            --function-name "${{ needs.deploy-infra.outputs.lambda-function }}" \
-            --image-uri "$IMAGE_URI" \
-            --no-cli-pager
-
-          echo "Waiting for Lambda update to complete..."
-          aws lambda wait function-updated \
-            --function-name "${{ needs.deploy-infra.outputs.lambda-function }}"
-
-      - name: Health check
-        run: |
-          API_URL="${{ needs.deploy-infra.outputs.api-url }}"
-          for i in 1 2 3 4 5; do
-            if curl --fail --silent "${API_URL}/api/health"; then
-              echo "Health check passed"
-              exit 0
-            fi
-            echo "Attempt $i failed, retrying in 10s..."
-            sleep 10
-          done
-          echo "Health check failed after 5 attempts"
-          exit 1
 
   deploy-frontend:
     runs-on: ubuntu-latest

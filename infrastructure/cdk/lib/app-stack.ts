@@ -10,10 +10,11 @@ import * as apigatewayv2 from "aws-cdk-lib/aws-apigatewayv2";
 import * as apigatewayv2Integrations from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as rds from "aws-cdk-lib/aws-rds";
-import * as ecr from "aws-cdk-lib/aws-ecr";
+import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as budgets from "aws-cdk-lib/aws-budgets";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
+import * as path from "path";
 import { Construct } from "constructs";
 import { config } from "../config";
 
@@ -25,7 +26,6 @@ interface AppStackProps extends cdk.StackProps {
   vpc: ec2.IVpc;
   userPoolId: string;
   userPoolClientId: string;
-  ecrRepository: ecr.IRepository;
 }
 
 export class AppStack extends cdk.Stack {
@@ -112,12 +112,21 @@ export class AppStack extends cdk.Stack {
       "/mysite/db-credentials",
     );
 
-    const backendFn = new lambda.Function(this, "BackendFunction", {
+    const repoRoot = path.resolve(__dirname, "..", "..", "..");
+
+    const backendFn = new lambda.DockerImageFunction(this, "BackendFunction", {
       functionName: "mysite-backend",
-      runtime: lambda.Runtime.FROM_IMAGE,
-      handler: lambda.Handler.FROM_IMAGE,
-      code: lambda.Code.fromEcrImage(props.ecrRepository, {
-        tagOrDigest: "latest",
+      code: lambda.DockerImageCode.fromImageAsset(repoRoot, {
+        file: "docker/backend/Dockerfile.lambda",
+        platform: ecr_assets.Platform.LINUX_ARM64,
+        exclude: [
+          "infrastructure/cdk/cdk.out",
+          "infrastructure/cdk/node_modules",
+          "frontend",
+          ".git",
+          "node_modules",
+          "minio-data",
+        ],
       }),
       architecture: lambda.Architecture.ARM_64,
       memorySize: config.lambdaMemoryMb,

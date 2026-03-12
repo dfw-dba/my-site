@@ -36,7 +36,6 @@ new AppStack(app, "MySiteApp", {
   vpc: data.vpc,
   userPoolId: data.userPoolId,
   userPoolClientId: data.userPoolClientId,
-  ecrRepository: data.ecrRepository,
 });
 
 app.synth();

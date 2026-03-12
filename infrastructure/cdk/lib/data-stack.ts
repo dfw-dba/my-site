@@ -2,7 +2,6 @@ import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as cognito from "aws-cdk-lib/aws-cognito";
-import * as ecr from "aws-cdk-lib/aws-ecr";
 import * as ssm from "aws-cdk-lib/aws-ssm";
 import * as route53 from "aws-cdk-lib/aws-route53";
 import { Construct } from "constructs";
@@ -18,8 +17,6 @@ export class DataStack extends cdk.Stack {
   public readonly vpc: ec2.IVpc;
   public readonly userPoolId: string;
   public readonly userPoolClientId: string;
-  public readonly ecrRepository: ecr.IRepository;
-
   constructor(scope: Construct, id: string, props: DataStackProps) {
     super(scope, id, props);
 
@@ -145,19 +142,6 @@ export class DataStack extends cdk.Stack {
       },
     });
 
-    // --- ECR Repository ---
-
-    this.ecrRepository = new ecr.Repository(this, "BackendRepo", {
-      repositoryName: "mysite-backend",
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
-      lifecycleRules: [
-        {
-          maxImageCount: 5,
-          description: "Keep only 5 most recent images",
-        },
-      ],
-    });
-
     // --- Outputs ---
 
     new cdk.CfnOutput(this, "DatabaseEndpoint", {
@@ -172,8 +156,5 @@ export class DataStack extends cdk.Stack {
       value: userPoolClient.userPoolClientId,
     });
 
-    new cdk.CfnOutput(this, "EcrRepoUri", {
-      value: this.ecrRepository.repositoryUri,
-    });
   }
 }
