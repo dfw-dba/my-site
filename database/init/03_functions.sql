@@ -64,7 +64,8 @@ begin
         'entries',  v_entries
     );
 end;
-$$ language plpgsql stable;
+$$ language plpgsql stable
+security definer;
 
 
 -- api.get_contact_info()
@@ -79,7 +80,8 @@ begin
          where rs.section_type = 'contact'
     ), '{}'::jsonb);
 end;
-$$ language plpgsql stable;
+$$ language plpgsql stable
+security definer;
 
 
 -- api.get_professional_timeline()
@@ -107,7 +109,8 @@ begin
         from internal.professional_entries as pe
     ), '[]'::jsonb);
 end;
-$$ language plpgsql stable;
+$$ language plpgsql stable
+security definer;
 
 
 -- api.upsert_professional_entry(p_data JSONB)
@@ -157,7 +160,8 @@ begin
 
     return jsonb_build_object('id', v_id, 'success', true);
 end;
-$$ language plpgsql volatile;
+$$ language plpgsql volatile
+security definer;
 
 
 -- api.upsert_resume_section(p_data JSONB)
@@ -180,7 +184,8 @@ begin
 
     return jsonb_build_object('id', v_id, 'success', true);
 end;
-$$ language plpgsql volatile;
+$$ language plpgsql volatile
+security definer;
 
 
 -- api.delete_professional_entry(p_id int4)
@@ -197,7 +202,8 @@ begin
         'id',      p_id
     );
 end;
-$$ language plpgsql volatile;
+$$ language plpgsql volatile
+security definer;
 
 
 -- api.upsert_performance_review(p_data JSONB)
@@ -238,7 +244,8 @@ begin
 
     return jsonb_build_object('id', v_id, 'success', true);
 end;
-$$ language plpgsql volatile;
+$$ language plpgsql volatile
+security definer;
 
 
 -- api.delete_performance_review(p_id int4)
@@ -255,4 +262,5 @@ begin
         'id',      p_id
     );
 end;
-$$ language plpgsql volatile;
+$$ language plpgsql volatile
+security definer;

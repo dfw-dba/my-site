@@ -26,3 +26,17 @@ grant execute on all functions in schema api to mysite;
 -- Ensure future functions in api are also accessible.
 alter default privileges in schema api grant execute on functions to app_user;
 alter default privileges in schema api grant execute on functions to mysite;
+
+-- Create IAM-authenticated user for Lambda.
+-- lambda_iam authenticates via RDS IAM (rds_iam role) and inherits
+-- api schema execute permissions from app_user.
+do $$
+begin
+    if not exists (select 1 from pg_roles where rolname = 'lambda_iam') then
+        create user lambda_iam with login;
+    end if;
+end
+$$;
+
+grant rds_iam to lambda_iam;
+grant app_user to lambda_iam;
