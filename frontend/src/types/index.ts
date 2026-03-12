@@ -73,3 +73,10 @@ export interface ApiSuccess {
   id?: number;
   slug?: string;
 }
+
+export interface AuthState {
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  user: { email: string } | null;
+  error: string | null;
+}

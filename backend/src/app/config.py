@@ -8,6 +8,11 @@ class Settings(BaseSettings):
     ADMIN_API_KEY: str = "local-dev-admin-key"
     CORS_ORIGINS: str = "http://localhost:5173"
 
+    # Cognito settings (leave empty to use API key fallback)
+    COGNITO_USER_POOL_ID: str = ""
+    COGNITO_APP_CLIENT_ID: str = ""
+    COGNITO_REGION: str = "us-east-1"
+
     @property
     def cors_origin_list(self) -> list[str]:
         """Parse comma-separated CORS origins into a list."""

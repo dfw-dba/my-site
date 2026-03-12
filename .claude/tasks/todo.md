@@ -246,6 +246,69 @@
 
 ---
 
+## Sprint 18: Cognito Auth Integration
+
+### Backend
+- [x] 18.1 Add PyJWT dependency to pyproject.toml
+- [x] 18.2 Add Cognito settings to config.py
+- [x] 18.3 Create cognito.py JWT verifier service
+- [x] 18.4 Update dependencies.py for dual-mode auth (Bearer + API key fallback)
+- [x] 18.5 Update conftest.py for new auth pattern
+- [x] 18.6 Add backend tests for Cognito auth (9 tests)
+- [x] 18.7 Run ruff check + format check — all pass
+- [x] 18.8 Run pytest — 18/18 pass
+
+### Frontend
+- [x] 18.9 Install amazon-cognito-identity-js
+- [x] 18.10 Create auth.ts service (Cognito SDK wrapper)
+- [x] 18.11 Create useAuth.ts hook
+- [x] 18.12 Create AuthContext.tsx
+- [x] 18.13 Create Login.tsx page
+- [x] 18.14 Create ProtectedRoute.tsx component
+- [x] 18.15 Update routes/index.tsx with ProtectedRoute
+- [x] 18.16 Update api.ts for async Bearer auth
+- [x] 18.17 Update main.tsx with AuthProvider
+- [x] 18.18 Add AuthState type to types/index.ts
+- [x] 18.19 Add frontend tests (Login: 4, ProtectedRoute: 2)
+- [x] 18.20 Run tsc --noEmit — passes
+- [x] 18.21 Run vitest — 22/22 pass
+
+### Config
+- [x] 18.22 Update .env.example with Cognito vars
+
+---
+
+## Sprint 19: AWS CDK Infrastructure + CD Pipeline
+
+### Phase 1: CDK Project Setup
+- [x] 19.1 Initialize CDK project (package.json, tsconfig.json, cdk.json)
+- [x] 19.2 Create config/index.ts with parameterized deployment values
+- [x] 19.3 Implement DnsStack (Route 53 hosted zone)
+- [x] 19.4 Implement CertStack (ACM wildcard cert, us-east-1, DNS validation)
+
+### Phase 2: Data Infrastructure
+- [x] 19.5 Implement DataStack (default VPC, RDS PG17, Cognito user pool, VPC endpoint, SSM params, ECR repo)
+
+### Phase 3: Lambda Backend Prep
+- [x] 19.6 Add mangum dependency to pyproject.toml
+- [x] 19.7 Create lambda_handler.py (Mangum wrapper)
+- [x] 19.8 Create Dockerfile.lambda (ARM64 Lambda container)
+
+### Phase 4: App Infrastructure
+- [x] 19.9 Implement AppStack (S3+CloudFront, Lambda, API Gateway v2, Route 53 records, media bucket, budget alarm)
+
+### Phase 5: CD Pipeline
+- [x] 19.10 Implement deploy.yml (3 jobs: infra, backend, frontend — OIDC auth)
+
+### Verification
+- [x] 19.11 `npx tsc --noEmit` — CDK compiles clean
+- [x] 19.12 `npx cdk synth` — all 4 stacks synthesize
+- [x] 19.13 Backend lint passes (ruff check + format)
+- [x] 19.14 Frontend type check passes (tsc --noEmit)
+- [x] 19.15 Frontend tests pass (22/22)
+
+---
+
 ## Notes
 - DB port mapped to 5433 on host (5432 in use by local PostgreSQL)
 - `uv` installed at ~/.local/bin/uv

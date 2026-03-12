@@ -1,6 +1,6 @@
 from collections.abc import AsyncGenerator
 
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.app.config import settings
@@ -26,13 +26,55 @@ async def get_db_api(
     yield DatabaseAPI(session)
 
 
-async def get_admin_auth(
-    x_admin_key: str = Header(..., alias="X-Admin-Key"),
-) -> str:
-    """Validate the admin API key from the X-Admin-Key header."""
-    if x_admin_key != settings.ADMIN_API_KEY:
+# Lazily initialised Cognito verifier (created on first use when configured)
+_cognito_verifier = None
+
+
+def _get_cognito_verifier():
+    global _cognito_verifier
+    if _cognito_verifier is None:
+        from src.app.services.cognito import CognitoJWTVerifier
+
+        _cognito_verifier = CognitoJWTVerifier(
+            region=settings.COGNITO_REGION,
+            user_pool_id=settings.COGNITO_USER_POOL_ID,
+            app_client_id=settings.COGNITO_APP_CLIENT_ID,
+        )
+    return _cognito_verifier
+
+
+async def get_admin_auth(request: Request) -> dict | str:
+    """Authenticate admin requests.
+
+    When Cognito is configured (COGNITO_USER_POOL_ID is set), expects
+    Authorization: Bearer <id_token> and returns decoded JWT claims.
+
+    When Cognito is not configured, falls back to X-Admin-Key header
+    and returns the API key string.
+    """
+    if settings.COGNITO_USER_POOL_ID:
+        auth_header = request.headers.get("Authorization", "")
+        if not auth_header.startswith("Bearer "):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Missing or invalid Authorization header",
+            )
+        token = auth_header[7:]  # Strip "Bearer "
+        try:
+            verifier = _get_cognito_verifier()
+            claims = verifier.verify_token(token)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Invalid token: {exc}",
+            ) from exc
+        return claims
+
+    # Fallback: API key auth for local dev
+    api_key = request.headers.get("X-Admin-Key", "")
+    if api_key != settings.ADMIN_API_KEY:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid admin API key",
         )
-    return x_admin_key
+    return api_key

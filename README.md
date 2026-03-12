@@ -8,12 +8,57 @@ A fork-friendly, full-stack personal site with a "database as API" architecture 
 
 | Layer | Technology |
 |-------|-----------|
-| Backend | Python 3.13, FastAPI, SQLAlchemy (async), Alembic |
-| Frontend | React 19, TypeScript, Vite, Tailwind CSS, TanStack Query |
+| Backend | Python 3.13, FastAPI, SQLAlchemy (async), Mangum (Lambda) |
+| Frontend | React 19, TypeScript, Vite, Tailwind CSS 4, TanStack Query |
 | Database | PostgreSQL 17 |
+| Auth | AWS Cognito (TOTP MFA, no self-signup) |
 | Storage | MinIO (local) / S3 (production) |
 | Infrastructure | Docker Compose (local), AWS CDK (production) |
-| Testing | pytest (backend), Vitest (frontend) |
+| CI/CD | GitHub Actions (CI on PR, CD on merge to main) |
+| Testing | pytest (backend), Vitest + Testing Library (frontend) |
+
+## Architecture
+
+```
+                    ┌─────────────────────┐
+                    │   Route 53 DNS      │
+                    │   yourdomain.com    │
+                    └──────┬──────┬───────┘
+                           │      │
+              A alias      │      │  A alias
+         ┌─────────────────┘      └──────────────────┐
+         ▼                                           ▼
+┌─────────────────┐                        ┌──────────────────┐
+│   CloudFront    │                        │  API Gateway v2  │
+│  (frontend SPA) │                        │ api.yourdomain   │
+│   S3 + OAC     │                        │  throttled       │
+└─────────────────┘                        └────────┬─────────┘
+                                                    │
+                                                    ▼
+                                           ┌──────────────────┐
+                                           │  Lambda (ARM64)  │
+                                           │  FastAPI+Mangum  │
+                                           └────────┬─────────┘
+                                                    │
+                                    ┌───────────────┼───────────────┐
+                                    ▼               ▼               ▼
+                             ┌────────────┐  ┌───────────┐  ┌─────────────┐
+                             │  RDS PG17  │  │ Cognito   │  │ S3 (media)  │
+                             │ t4g.micro  │  │ User Pool │  │             │
+                             └────────────┘  └───────────┘  └─────────────┘
+```
+
+## Cost Estimate
+
+| Service | Year 1/month | After free tier |
+|---------|-------------|-----------------|
+| Route 53 hosted zone | $0.50 | $0.50 |
+| RDS db.t4g.micro | $0.00 | $12.50 |
+| VPC endpoint (cognito-idp) | $7.20 | $7.20 |
+| CloudFront / S3 / Lambda / API GW / Cognito / ACM | ~$0 | ~$0 |
+| **Total** | **~$8/month** | **~$20/month** |
+
+Built-in cost safeguards: API Gateway throttling (10 req/s), Lambda reserved concurrency (5), and a configurable budget alarm.
 
 ## Running Locally
 
@@ -29,32 +74,355 @@ docker compose up -d
 #    Frontend:  http://localhost:5173
 #    Backend:   http://localhost:8000
 #    API docs:  http://localhost:8000/docs
-#    MinIO:     http://localhost:9001
 ```
+
+Local dev uses API key auth (`ADMIN_API_KEY` in `.env`). Cognito auth is only required in production.
+
+---
+
+## Deploying to AWS
+
+This section walks you through deploying your own instance from a fork. The entire infrastructure is defined in CDK (TypeScript) and deploys via GitHub Actions.
+
+### Prerequisites
+
+- An AWS account
+- A registered domain name
+- Node.js 22+ and npm
+- AWS CLI v2 installed
+- Docker installed (for building Lambda images)
+
+### 1. Fork and Clone
+
+```bash
+git clone https://github.com/<your-username>/my-site.git
+cd my-site
+```
+
+### 2. Set Up IAM Identity Center (recommended)
+
+Don't use the root account for deployments. Set up IAM Identity Center for a proper admin user:
+
+1. Sign in as root → AWS Console → **IAM Identity Center** → **Enable**
+   - Choose your primary region (should match where you'll deploy, e.g., `us-east-1`)
+   - Use the default **Identity Center directory**
+2. **Users** → **Add user** → fill in your details
+3. **Permission sets** → **Create** → **Predefined: AdministratorAccess**
+4. **AWS accounts** → select your account → **Assign users** → your user + AdministratorAccess permission set
+5. Configure the AWS CLI:
+   ```bash
+   aws configure sso
+   # SSO start URL: (shown in IAM Identity Center dashboard)
+   # SSO region: us-east-1
+   # CLI profile name: admin
+   ```
+6. Log in:
+   ```bash
+   aws sso login --profile admin
+   export AWS_PROFILE=admin
+   ```
+7. Enable MFA on root account (IAM → Account settings), then stop using root
+
+### 3. Set CDK Environment Variables
+
+CDK configuration is read from environment variables — nothing sensitive is hardcoded in the repo.
+
+**Required variables:**
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `CDK_DOMAIN_NAME` | Your registered domain | `example.com` |
+| `CDK_ACCOUNT_ID` | AWS account ID (also reads `AWS_ACCOUNT_ID`) | `123456789012` |
+| `CDK_BUDGET_EMAIL` | Email for budget alarm notifications | `you@example.com` |
+
+**Optional variables (sensible defaults):**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CDK_REGION` | `us-east-1` | Also reads `AWS_REGION` |
+| `CDK_DB_INSTANCE_CLASS` | `t4g.micro` | RDS instance class |
+| `CDK_LAMBDA_MEMORY_MB` | `256` | Lambda memory |
+| `CDK_LAMBDA_CONCURRENCY` | `5` | Max simultaneous Lambda executions |
+| `CDK_API_THROTTLE_RATE` | `10` | API Gateway requests per second |
+| `CDK_API_THROTTLE_BURST` | `50` | API Gateway burst capacity |
+| `CDK_BUDGET_LIMIT_USD` | `10` | Monthly budget alarm threshold |
+
+Set them in your shell for local CDK commands:
+```bash
+export CDK_DOMAIN_NAME="yourdomain.com"
+export CDK_ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+export CDK_BUDGET_EMAIL="you@example.com"
+```
+
+Or add them to a `.env` file in `infrastructure/cdk/` (git-ignored).
+
+Delete the placeholder VPC context so CDK looks up your real VPC:
+```bash
+rm infrastructure/cdk/cdk.context.json
+```
+
+### 4. Bootstrap CDK
+
+One-time setup that creates the S3 bucket and IAM roles CDK needs:
+
+```bash
+cd infrastructure/cdk
+npm install
+npx cdk bootstrap aws://$CDK_ACCOUNT_ID/us-east-1
+```
+
+### 5. Create GitHub OIDC Provider
+
+This lets GitHub Actions authenticate to AWS without storing credentials.
+
+```bash
+aws iam create-open-id-connect-provider \
+  --url https://token.actions.githubusercontent.com \
+  --client-id-list sts.amazonaws.com \
+  --thumbprint-list 6938fd4d98bab03faadb97b34396831e3780aea1
+```
+
+### 6. Create IAM Role for GitHub Actions
+
+Create `github-actions-trust-policy.json` (replace `<ACCOUNT_ID>` and `<OWNER/REPO>`):
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::<ACCOUNT_ID>:oidc-provider/token.actions.githubusercontent.com"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+        },
+        "StringLike": {
+          "token.actions.githubusercontent.com:sub": "repo:<OWNER/REPO>:ref:refs/heads/main"
+        }
+      }
+    }
+  ]
+}
+```
+
+Create the role and attach permissions:
+
+```bash
+aws iam create-role \
+  --role-name github-actions-deploy \
+  --assume-role-policy-document file://github-actions-trust-policy.json
+
+aws iam attach-role-policy \
+  --role-name github-actions-deploy \
+  --policy-arn arn:aws:iam::aws:policy/AdministratorAccess
+```
+
+Note the role ARN:
+```bash
+aws iam get-role --role-name github-actions-deploy --query Role.Arn --output text
+```
+
+> **Note**: AdministratorAccess is broad. For a personal site this is fine. For tighter security, create a custom policy scoped to the services used (CloudFormation, S3, Lambda, ECR, API Gateway, Route 53, RDS, Cognito, IAM, CloudFront, Budgets, SSM, Secrets Manager, EC2).
+
+### 7. Set GitHub Repository Secrets and Variables
+
+Go to **GitHub → your repo → Settings → Secrets and variables → Actions**:
+
+**Secrets:**
+
+| Name | Value |
+|------|-------|
+| `AWS_DEPLOY_ROLE_ARN` | `arn:aws:iam::<ACCOUNT_ID>:role/github-actions-deploy` |
+
+**Variables:**
+
+| Name | Value |
+|------|-------|
+| `AWS_ACCOUNT_ID` | Your AWS account ID |
+| `AWS_REGION` | `us-east-1` |
+| `CDK_DOMAIN_NAME` | Your domain (e.g., `example.com`) |
+| `CDK_BUDGET_EMAIL` | Your email for budget alerts |
+
+### 8. Deploy Infrastructure
+
+Run the first deploy from your laptop so you can watch for issues and approve IAM changes:
+
+```bash
+cd infrastructure/cdk
+npx cdk deploy --all
+```
+
+This creates 4 CloudFormation stacks:
+- **MySiteDns** — Route 53 hosted zone
+- **MySiteCert** — ACM wildcard certificate (us-east-1)
+- **MySiteData** — RDS PostgreSQL, Cognito user pool, ECR repo, VPC endpoint
+- **MySiteApp** — S3 + CloudFront, Lambda, API Gateway, Route 53 records, budget alarm
+
+Takes ~10–15 minutes (RDS is the slow part). Note the outputs — you'll need them for the next steps.
+
+### 9. Update Domain Nameservers
+
+The `MySiteDns` stack outputs **nameserver records**. Go to your domain registrar and replace the existing NS records with the Route 53 nameservers from the output.
+
+Verify propagation:
+```bash
+dig yourdomain.com NS +short
+```
+
+### 10. Push Initial Backend Image
+
+The Lambda function needs a container image in ECR:
+
+```bash
+# Get your account ID and region
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+REGION=us-east-1
+
+# Login to ECR
+aws ecr get-login-password --region $REGION | \
+  docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com
+
+# Build and push (from repo root)
+docker build --platform linux/arm64 \
+  -f docker/backend/Dockerfile.lambda \
+  -t $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/mysite-backend:latest .
+docker push $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/mysite-backend:latest
+
+# Update Lambda
+aws lambda update-function-code \
+  --function-name mysite-backend \
+  --image-uri $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/mysite-backend:latest
+```
+
+### 11. Initialize the Database
+
+RDS is not publicly accessible. Temporarily allow access to run the init scripts:
+
+```bash
+# Get the DB instance identifier and security group ID from the CDK outputs or AWS console
+
+# Temporarily allow your IP
+MY_IP=$(curl -s https://checkip.amazonaws.com)
+aws ec2 authorize-security-group-ingress \
+  --group-id <DB_SECURITY_GROUP_ID> \
+  --protocol tcp --port 5432 --cidr $MY_IP/32
+
+aws rds modify-db-instance \
+  --db-instance-identifier <DB_INSTANCE_ID> \
+  --publicly-accessible --apply-immediately
+
+# Wait for the modification to complete (~2–3 minutes)
+aws rds wait db-instance-available --db-instance-identifier <DB_INSTANCE_ID>
+
+# Get credentials from Secrets Manager
+aws secretsmanager get-secret-value --secret-id /mysite/db-credentials \
+  --query SecretString --output text | jq .
+
+# Run init scripts
+DB_URL="postgresql://<username>:<password>@<rds-endpoint>:5432/mysite"
+for f in database/init/0*.sql; do
+  echo "Running $f..."
+  psql "$DB_URL" -f "$f"
+done
+
+# Revert public access
+aws rds modify-db-instance \
+  --db-instance-identifier <DB_INSTANCE_ID> \
+  --no-publicly-accessible --apply-immediately
+
+aws ec2 revoke-security-group-ingress \
+  --group-id <DB_SECURITY_GROUP_ID> \
+  --protocol tcp --port 5432 --cidr $MY_IP/32
+```
+
+### 12. Create Cognito Admin User
+
+```bash
+USER_POOL_ID=<from CDK outputs>
+
+aws cognito-idp admin-create-user \
+  --user-pool-id $USER_POOL_ID \
+  --username your@email.com \
+  --temporary-password 'TempPass123!@#$' \
+  --message-action SUPPRESS
+
+aws cognito-idp admin-set-user-password \
+  --user-pool-id $USER_POOL_ID \
+  --username your@email.com \
+  --password 'YourPermanentPassword123!@#$' \
+  --permanent
+```
+
+Log in at `https://yourdomain.com/admin` — you'll be prompted to set up TOTP MFA on first login.
+
+### 13. Deploy Frontend
+
+```bash
+cd frontend
+npm ci
+
+VITE_API_URL=https://api.yourdomain.com \
+VITE_COGNITO_USER_POOL_ID=<pool-id> \
+VITE_COGNITO_APP_CLIENT_ID=<client-id> \
+VITE_COGNITO_REGION=us-east-1 \
+npm run build
+
+aws s3 sync dist/ s3://yourdomain.com-frontend --delete
+aws cloudfront create-invalidation \
+  --distribution-id <DISTRIBUTION_ID> --paths "/*"
+```
+
+### 14. Verify
+
+- `https://yourdomain.com` — resume loads
+- `https://api.yourdomain.com/api/health` — returns 200
+- `https://yourdomain.com/admin` — Cognito login works with MFA
+- Push a change to `main` — CD pipeline deploys automatically
+
+---
+
+## Continuous Deployment
+
+After initial setup, all deployments are automatic:
+
+1. Push to `main` (or merge a PR)
+2. CI runs (lint, type check, tests)
+3. On CI success, the Deploy workflow runs:
+   - **deploy-infra**: `cdk deploy --all` (updates infrastructure if changed)
+   - **deploy-backend**: builds Docker image → pushes to ECR → updates Lambda
+   - **deploy-frontend**: builds with Vite → syncs to S3 → invalidates CloudFront
+
+Backend and frontend deploy in parallel after infrastructure.
 
 ## Project Structure
 
 ```
-├── backend/           # FastAPI application
-│   ├── alembic/       # Database migrations
-│   ├── src/app/       # Application code
-│   │   ├── models/    # SQLAlchemy models
-│   │   ├── routers/   # API route handlers
-│   │   ├── schemas/   # Pydantic models
-│   │   └── services/  # DatabaseAPI service layer
-│   └── tests/         # Backend tests
-├── frontend/          # React application
+├── backend/               # FastAPI application
+│   ├── src/app/           # Application code
+│   │   ├── routers/       # API route handlers
+│   │   ├── schemas/       # Pydantic request models
+│   │   └── services/      # DatabaseAPI + Cognito verifier
+│   ├── src/lambda_handler.py  # Mangum wrapper for Lambda
+│   └── tests/             # Backend tests
+├── frontend/              # React SPA
 │   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── hooks/
-│   │   ├── services/  # API client
-│   │   └── types/
-│   └── tests/         # Frontend tests
-├── database/init/     # SQL initialization scripts
-├── docker/            # Dockerfiles
-├── config/            # Site configuration
-└── infrastructure/    # AWS CDK (future)
+│   │   ├── components/    # Reusable UI components
+│   │   ├── pages/         # Route pages (public + admin)
+│   │   ├── hooks/         # Custom React hooks
+│   │   ├── services/      # API client + auth service
+│   │   └── types/         # TypeScript interfaces
+│   └── tests/             # Frontend tests
+├── database/init/         # SQL init scripts (schemas, tables, functions, seed data)
+├── docker/                # Dockerfiles (dev, production, Lambda)
+├── infrastructure/cdk/    # AWS CDK stacks (TypeScript)
+│   ├── lib/               # Stack definitions (DNS, Cert, Data, App)
+│   └── config/            # Deployment configuration
+├── .github/workflows/     # CI + CD pipelines
+└── config/                # Site configuration
 ```
 
 ## Versioning
