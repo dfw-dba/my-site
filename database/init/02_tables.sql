@@ -4,7 +4,7 @@
 -- ============================================================
 -- professional_entries
 -- ============================================================
-create table internal.professional_entries
+create table if not exists internal.professional_entries
 (
   id           int4 generated always as identity primary key,
   entry_type   text not null check (entry_type in ('work', 'education', 'certification', 'award')),
@@ -29,7 +29,7 @@ comment on column internal.professional_entries.technologies is 'JSON array of t
 -- ============================================================
 -- resume_sections
 -- ============================================================
-create table internal.resume_sections
+create table if not exists internal.resume_sections
 (
   id           int2 generated always as identity primary key,
   section_type text unique not null check (section_type in ('summary', 'contact', 'recommendations')),
@@ -45,7 +45,7 @@ comment on column internal.resume_sections.content is 'JSONB content whose struc
 -- ============================================================
 -- performance_reviews
 -- ============================================================
-create table internal.performance_reviews
+create table if not exists internal.performance_reviews
 (
   id              int4 generated always as identity primary key,
   entry_id        int4 not null references internal.professional_entries(id) on delete cascade,

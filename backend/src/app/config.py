@@ -1,6 +1,4 @@
-import json
 import os
-from urllib.parse import quote_plus
 
 from pydantic_settings import BaseSettings
 
@@ -8,7 +6,11 @@ _LOCAL_DEFAULT_DB_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/m
 
 
 def resolve_database_url() -> str:
-    """Build the DATABASE_URL from Secrets Manager when running in Lambda."""
+    """Build the DATABASE_URL from env vars.
+
+    In Lambda mode, the URL has no password — IAM auth tokens are injected
+    per-connection in database.py via a SQLAlchemy connect event.
+    """
     explicit = os.environ.get("DATABASE_URL")
     if explicit:
         return explicit
@@ -16,19 +18,12 @@ def resolve_database_url() -> str:
     if not os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
         return _LOCAL_DEFAULT_DB_URL
 
-    secret_name = os.environ.get("DB_SECRET_NAME", "/mysite/db-credentials")
+    host = os.environ["DB_HOST"]
+    port = os.environ.get("DB_PORT", "5432")
+    user = os.environ["DB_USER"]
+    name = os.environ.get("DB_NAME", "mysite")
 
-    import boto3
-
-    client = boto3.client("secretsmanager")
-    resp = client.get_secret_value(SecretId=secret_name)
-    creds = json.loads(resp["SecretString"])
-
-    password = quote_plus(creds["password"])
-    return (
-        f"postgresql+asyncpg://{creds['username']}:{password}"
-        f"@{creds['host']}:{creds['port']}/{creds['dbname']}?ssl=require"
-    )
+    return f"postgresql+asyncpg://{user}@{host}:{port}/{name}?ssl=require"
 
 
 class Settings(BaseSettings):
@@ -42,6 +37,12 @@ class Settings(BaseSettings):
     COGNITO_USER_POOL_ID: str = ""
     COGNITO_APP_CLIENT_ID: str = ""
     COGNITO_REGION: str = "us-east-1"
+
+    # RDS connection details (Lambda only)
+    DB_HOST: str = ""
+    DB_PORT: str = "5432"
+    DB_USER: str = ""
+    DB_NAME: str = "mysite"
 
     @property
     def cors_origin_list(self) -> list[str]:

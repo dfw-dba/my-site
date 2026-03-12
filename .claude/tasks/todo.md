@@ -309,6 +309,20 @@
 
 ---
 
+## Sprint 20: RDS IAM Authentication (replace Secrets Manager)
+
+- [x] 20.1 CDK DataStack: Add `iamAuthentication: true` to RDS instance — `infrastructure/cdk/lib/data-stack.ts`
+- [x] 20.2 CDK AppStack: Remove Secrets Manager, add DB env vars + `rds-db:connect` IAM policy — `infrastructure/cdk/lib/app-stack.ts`
+- [x] 20.3 Backend: Replace Secrets Manager URL resolution with env-var-based URL — `backend/src/app/config.py`
+- [x] 20.4 Backend: Add IAM auth token injection on `do_connect` event — `backend/src/app/database.py`
+- [x] 20.5 Database: Add `security definer` to all 8 api functions — `database/init/03_functions.sql`
+- [x] 20.6 Database: Create `lambda_iam` user with `rds_iam` + `app_user` roles — `database/init/04_permissions.sql`
+- [x] 20.7 Verification: Backend lint + 23 tests pass, frontend tsc + 22 tests pass, CDK type-check passes
+- [ ] 20.8 Deploy: `cdk deploy DataStack`, run manual SQL migration, `cdk deploy AppStack`
+- [ ] 20.9 Verify: `https://jasonrowland.me/` loads resume data, admin endpoints work
+
+---
+
 ## Notes
 - DB port mapped to 5433 on host (5432 in use by local PostgreSQL)
 - `uv` installed at ~/.local/bin/uv

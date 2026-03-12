@@ -1,6 +1,9 @@
+import * as path from "path";
 import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as rds from "aws-cdk-lib/aws-rds";
+import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as cr from "aws-cdk-lib/custom-resources";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as ssm from "aws-cdk-lib/aws-ssm";
 import * as route53 from "aws-cdk-lib/aws-route53";
@@ -53,6 +56,7 @@ export class DataStack extends cdk.Stack {
       maxAllocatedStorage: 20,
       multiAz: false,
       backupRetention: cdk.Duration.days(7),
+      iamAuthentication: true,
       deletionProtection: true,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
       storageEncrypted: true,
@@ -67,6 +71,64 @@ export class DataStack extends cdk.Stack {
     });
 
     this.database = dbInstance;
+
+    // --- Database Migration Custom Resource ---
+
+    const migrationSg = new ec2.SecurityGroup(this, "MigrationLambdaSg", {
+      vpc: this.vpc,
+      description: "Security group for DB migration Lambda",
+      allowAllOutbound: true,
+    });
+
+    this.databaseSecurityGroup.addIngressRule(
+      migrationSg,
+      ec2.Port.tcp(5432),
+      "Allow migration Lambda to connect to RDS",
+    );
+
+    const migrationFn = new lambda.Function(this, "DbMigrationFn", {
+      runtime: lambda.Runtime.PYTHON_3_12,
+      handler: "index.handler",
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, "migration-handler"),
+        {
+          bundling: {
+            image: lambda.Runtime.PYTHON_3_12.bundlingImage,
+            command: [
+              "bash",
+              "-c",
+              "pip install pg8000 -t /asset-output && cp /asset-input/*.py /asset-output/",
+            ],
+          },
+        },
+      ),
+      vpc: this.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+      allowPublicSubnet: true,
+      securityGroups: [migrationSg],
+      timeout: cdk.Duration.minutes(2),
+      environment: {
+        DB_HOST: dbInstance.dbInstanceEndpointAddress,
+        DB_PORT: dbInstance.dbInstanceEndpointPort,
+        DB_USER: dbCredentials.username,
+        DB_PASSWORD: dbInstance.secret!
+          .secretValueFromJson("password")
+          .unsafeUnwrap(),
+        DB_NAME: "mysite",
+      },
+    });
+
+    const migrationProvider = new cr.Provider(this, "DbMigrationProvider", {
+      onEventHandler: migrationFn,
+    });
+
+    new cdk.CustomResource(this, "DbMigration", {
+      serviceToken: migrationProvider.serviceToken,
+      properties: {
+        // Change this value to trigger the migration again on next deploy
+        version: "1",
+      },
+    });
 
     // Store database URL in SSM (uses the generated secret)
     new ssm.StringParameter(this, "DbEndpointParam", {

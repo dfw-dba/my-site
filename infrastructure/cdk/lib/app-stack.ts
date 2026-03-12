@@ -13,7 +13,6 @@ import * as rds from "aws-cdk-lib/aws-rds";
 import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as budgets from "aws-cdk-lib/aws-budgets";
-import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as path from "path";
 import { Construct } from "constructs";
 import { config } from "../config";
@@ -105,12 +104,7 @@ export class AppStack extends cdk.Stack {
       description: "Lambda to RDS",
     });
 
-    // Look up the DB secret created by RDS
-    const dbSecret = secretsmanager.Secret.fromSecretNameV2(
-      this,
-      "DbSecret",
-      "/mysite/db-credentials",
-    );
+    const dbUser = "lambda_iam";
 
     const repoRoot = path.resolve(__dirname, "..", "..", "..");
 
@@ -141,13 +135,23 @@ export class AppStack extends cdk.Stack {
         COGNITO_REGION: config.awsRegion,
         CORS_ORIGINS: `https://${config.domainName}`,
         MEDIA_BUCKET: mediaBucket.bucketName,
-        DB_SECRET_NAME: "/mysite/db-credentials",
+        DB_HOST: props.database.dbInstanceEndpointAddress,
+        DB_PORT: "5432",
+        DB_USER: dbUser,
+        DB_NAME: "mysite",
         AWS_LWA_INVOKE_MODE: "BUFFERED",
       },
     });
 
-    // Grant Lambda read access to DB credentials secret
-    dbSecret.grantRead(backendFn);
+    // Grant Lambda permission to generate RDS IAM auth tokens
+    backendFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["rds-db:connect"],
+        resources: [
+          `arn:aws:rds-db:${this.region}:${this.account}:dbuser:*/${dbUser}`,
+        ],
+      }),
+    );
 
     // Grant Lambda access to media bucket
     mediaBucket.grantReadWrite(backendFn);
