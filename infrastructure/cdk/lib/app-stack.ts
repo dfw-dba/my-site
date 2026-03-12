@@ -118,7 +118,7 @@ export class AppStack extends cdk.Stack {
       functionName: "mysite-backend",
       code: lambda.DockerImageCode.fromImageAsset(repoRoot, {
         file: "docker/backend/Dockerfile.lambda",
-        platform: ecr_assets.Platform.LINUX_ARM64,
+        platform: ecr_assets.Platform.LINUX_AMD64,
         exclude: [
           "infrastructure/cdk/cdk.out",
           "infrastructure/cdk/node_modules",
@@ -128,7 +128,7 @@ export class AppStack extends cdk.Stack {
           "minio-data",
         ],
       }),
-      architecture: lambda.Architecture.ARM_64,
+      architecture: lambda.Architecture.X86_64,
       memorySize: config.lambdaMemoryMb,
       timeout: cdk.Duration.seconds(30),
       reservedConcurrentExecutions: config.lambdaConcurrency,

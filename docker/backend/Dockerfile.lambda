@@ -1,4 +1,4 @@
-FROM public.ecr.aws/lambda/python:3.13-arm64
+FROM public.ecr.aws/lambda/python:3.13
 
 # Install uv for fast dependency resolution
 RUN pip install --no-cache-dir uv
