@@ -137,6 +137,12 @@ export class DataStack extends cdk.Stack {
       vpc: this.vpc,
       service: ec2.InterfaceVpcEndpointAwsService.COGNITO_IDP,
       privateDnsEnabled: true,
+      subnets: {
+        availabilityZones: [
+          `${config.awsRegion}b`,
+          `${config.awsRegion}c`,
+        ],
+      },
     });
 
     // --- ECR Repository ---
