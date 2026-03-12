@@ -131,7 +131,6 @@ export class AppStack extends cdk.Stack {
       architecture: lambda.Architecture.X86_64,
       memorySize: config.lambdaMemoryMb,
       timeout: cdk.Duration.seconds(30),
-      reservedConcurrentExecutions: config.lambdaConcurrency,
       vpc: props.vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
       allowPublicSubnet: true,
