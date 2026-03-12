@@ -141,6 +141,7 @@ export class AppStack extends cdk.Stack {
         COGNITO_REGION: config.awsRegion,
         CORS_ORIGINS: `https://${config.domainName}`,
         MEDIA_BUCKET: mediaBucket.bucketName,
+        DB_SECRET_NAME: "/mysite/db-credentials",
         AWS_LWA_INVOKE_MODE: "BUFFERED",
       },
     });
