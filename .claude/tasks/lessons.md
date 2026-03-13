@@ -17,6 +17,7 @@ _Updated after each correction or insight. Review at session start._
 ## Technical
 - **SQLAlchemy text() and PostgreSQL casts**: Use `CAST(:param AS jsonb)` not `:param::jsonb` — SQLAlchemy interprets `::jsonb` as a bind parameter named `:jsonb`.
 - **AWS EC2 SG descriptions must be ASCII-only (2026-03-13)**: Never use non-ASCII characters (em dashes, curly quotes, etc.) in EC2 security group descriptions. CloudFormation will fail with `Character sets beyond ASCII are not supported`.
+- **SQL splitters must handle comments and strings (2026-03-13)**: When splitting SQL on semicolons, must account for `--` line comments, `/* */` block comments, single-quoted strings, and `$$` dollar-quoting. Semicolons inside any of these are not statement separators.
 
 ## Project Patterns
 - **Database as API**: ALL data access goes through `api.*` stored functions. No direct table queries. No ORM queries.
