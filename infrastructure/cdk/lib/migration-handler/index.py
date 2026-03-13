@@ -13,34 +13,102 @@ import pg8000.native
 
 
 def split_sql_statements(sql_text):
-    """Split SQL text into individual statements, respecting dollar-quoted blocks.
+    """Split SQL text into individual statements.
 
-    A simple state machine that tracks whether we're inside a $$-quoted block
-    so that semicolons within function bodies / DO blocks are not treated as
-    statement separators.
+    A state machine that respects:
+    - $$ dollar-quoted blocks (function bodies, DO blocks)
+    - -- line comments (semicolons inside are not separators)
+    - /* */ block comments
+    - Single-quoted string literals
     """
     statements = []
     current = []
-    in_dollar_quote = False
     i = 0
+    in_dollar_quote = False
+    in_line_comment = False
+    in_block_comment = False
+    in_string = False
 
     while i < len(sql_text):
         char = sql_text[i]
 
+        # Line comment: skip until newline
+        if in_line_comment:
+            current.append(char)
+            if char == "\n":
+                in_line_comment = False
+            i += 1
+            continue
+
+        # Block comment: skip until */
+        if in_block_comment:
+            current.append(char)
+            if char == "*" and i + 1 < len(sql_text) and sql_text[i + 1] == "/":
+                current.append("/")
+                in_block_comment = False
+                i += 2
+            else:
+                i += 1
+            continue
+
+        # String literal: skip until closing quote ('' is escaped quote)
+        if in_string:
+            current.append(char)
+            if char == "'":
+                if i + 1 < len(sql_text) and sql_text[i + 1] == "'":
+                    current.append("'")
+                    i += 2
+                else:
+                    in_string = False
+                    i += 1
+            else:
+                i += 1
+            continue
+
+        # Dollar quoting toggle
         if char == "$" and i + 1 < len(sql_text) and sql_text[i + 1] == "$":
             current.append("$$")
             in_dollar_quote = not in_dollar_quote
             i += 2
             continue
 
-        if char == ";" and not in_dollar_quote:
+        # Inside dollar quote: pass everything through
+        if in_dollar_quote:
+            current.append(char)
+            i += 1
+            continue
+
+        # Start of line comment
+        if char == "-" and i + 1 < len(sql_text) and sql_text[i + 1] == "-":
+            current.append("--")
+            in_line_comment = True
+            i += 2
+            continue
+
+        # Start of block comment
+        if char == "/" and i + 1 < len(sql_text) and sql_text[i + 1] == "*":
+            current.append("/*")
+            in_block_comment = True
+            i += 2
+            continue
+
+        # Start of string literal
+        if char == "'":
+            current.append(char)
+            in_string = True
+            i += 1
+            continue
+
+        # Statement separator
+        if char == ";":
             stmt = "".join(current).strip()
             if stmt:
                 statements.append(stmt)
             current = []
-        else:
-            current.append(char)
+            i += 1
+            continue
 
+        current.append(char)
         i += 1
 
     # Capture any trailing statement without a semicolon
