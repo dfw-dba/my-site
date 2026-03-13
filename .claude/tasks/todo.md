@@ -323,6 +323,20 @@
 
 ---
 
+## Sprint 21: Fix Database Schema Deployment + Add Bastion Host
+
+- [x] 21.1 Rewrite migration handler to execute SQL init files with dollar-quote-aware splitter — `infrastructure/cdk/lib/migration-handler/index.py`
+- [x] 21.2 Update CDK bundling to mount and copy `database/init/*.sql` into Lambda asset — `infrastructure/cdk/lib/data-stack.ts`
+- [x] 21.3 Bump custom resource version to trigger re-execution — `infrastructure/cdk/lib/data-stack.ts`
+- [x] 21.4 Add bastion host (t4g.nano, SSM, AL2023 ARM64, psql client) — `infrastructure/cdk/lib/data-stack.ts`
+- [x] 21.5 Add bastion SG → RDS SG ingress rule on TCP 5432 — `infrastructure/cdk/lib/data-stack.ts`
+- [x] 21.6 Add CfnOutput for bastion instance ID — `infrastructure/cdk/lib/data-stack.ts`
+- [x] 21.7 Write plan file — `.claude/tasks/plans/fix-db-migration-and-bastion.md`
+- [ ] 21.8 CDK synth — template generates without errors
+- [ ] 21.9 Deploy and verify: migration Lambda executes all 6 SQL files, API returns resume data, bastion SSM works
+
+---
+
 ## Notes
 - DB port mapped to 5433 on host (5432 in use by local PostgreSQL)
 - `uv` installed at ~/.local/bin/uv
