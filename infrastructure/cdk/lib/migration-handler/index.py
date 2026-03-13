@@ -1,19 +1,60 @@
 """
 CDK Custom Resource handler for RDS database migration.
-Creates the lambda_iam user and grants required roles.
-Connects using master credentials passed via environment variables.
+Executes SQL init scripts (00–05) to set up schemas, tables, functions,
+permissions, and seed data. Connects using master credentials passed via
+environment variables.
 """
 
+import glob
 import os
 import ssl
 
 import pg8000.native
 
 
+def split_sql_statements(sql_text):
+    """Split SQL text into individual statements, respecting dollar-quoted blocks.
+
+    A simple state machine that tracks whether we're inside a $$-quoted block
+    so that semicolons within function bodies / DO blocks are not treated as
+    statement separators.
+    """
+    statements = []
+    current = []
+    in_dollar_quote = False
+    i = 0
+
+    while i < len(sql_text):
+        char = sql_text[i]
+
+        if char == "$" and i + 1 < len(sql_text) and sql_text[i + 1] == "$":
+            current.append("$$")
+            in_dollar_quote = not in_dollar_quote
+            i += 2
+            continue
+
+        if char == ";" and not in_dollar_quote:
+            stmt = "".join(current).strip()
+            if stmt:
+                statements.append(stmt)
+            current = []
+        else:
+            current.append(char)
+
+        i += 1
+
+    # Capture any trailing statement without a semicolon
+    stmt = "".join(current).strip()
+    if stmt:
+        statements.append(stmt)
+
+    return statements
+
+
 def handler(event, context):
     request_type = event.get("RequestType", "")
 
-    # No-op on delete — don't drop users when tearing down the stack
+    # No-op on delete — don't drop anything when tearing down the stack
     if request_type == "Delete":
         return {"Status": "SUCCESS", "PhysicalResourceId": "db-migration"}
 
@@ -35,39 +76,28 @@ def handler(event, context):
     )
 
     try:
-        # Create lambda_iam user if it doesn't exist
-        conn.run("""
-            do $$
-            begin
-                if not exists (select 1 from pg_roles where rolname = 'lambda_iam') then
-                    create user lambda_iam with login;
-                end if;
-            end
-            $$;
-        """)
+        sql_dir = os.path.join(os.path.dirname(__file__), "sql")
+        sql_files = sorted(glob.glob(os.path.join(sql_dir, "*.sql")))
 
-        # Grant rds_iam to lambda_iam (only on RDS where rds_iam exists)
-        conn.run("""
-            do $$
-            begin
-                if exists (select 1 from pg_roles where rolname = 'rds_iam') then
-                    execute 'grant rds_iam to lambda_iam';
-                end if;
-            end
-            $$;
-        """)
+        print(f"Found {len(sql_files)} SQL files in {sql_dir}")
 
-        # Create app_user role if it doesn't exist, then grant to lambda_iam
-        conn.run("""
-            do $$
-            begin
-                if not exists (select 1 from pg_roles where rolname = 'app_user') then
-                    create role app_user nologin;
-                end if;
-            end
-            $$;
-        """)
-        conn.run("grant app_user to lambda_iam")
+        for sql_file in sql_files:
+            filename = os.path.basename(sql_file)
+            print(f"Executing {filename}...")
+
+            with open(sql_file) as f:
+                sql_text = f.read()
+
+            statements = split_sql_statements(sql_text)
+            print(f"  {len(statements)} statement(s)")
+
+            for idx, stmt in enumerate(statements, 1):
+                print(f"  [{idx}/{len(statements)}] {stmt[:80]}...")
+                conn.run(stmt)
+
+            print(f"  {filename} complete")
+
+        print("All SQL files executed successfully")
 
     finally:
         conn.close()

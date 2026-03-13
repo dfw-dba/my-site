@@ -5,6 +5,7 @@ import * as rds from "aws-cdk-lib/aws-rds";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as cr from "aws-cdk-lib/custom-resources";
 import * as cognito from "aws-cdk-lib/aws-cognito";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as ssm from "aws-cdk-lib/aws-ssm";
 import * as route53 from "aws-cdk-lib/aws-route53";
 import { Construct } from "constructs";
@@ -94,10 +95,16 @@ export class DataStack extends cdk.Stack {
         {
           bundling: {
             image: lambda.Runtime.PYTHON_3_12.bundlingImage,
+            volumes: [
+              {
+                hostPath: path.resolve(__dirname, "../../../database/init"),
+                containerPath: "/sql-input",
+              },
+            ],
             command: [
               "bash",
               "-c",
-              "pip install pg8000 -t /asset-output && cp /asset-input/*.py /asset-output/",
+              "pip install pg8000 -t /asset-output && cp /asset-input/*.py /asset-output/ && mkdir -p /asset-output/sql && cp /sql-input/*.sql /asset-output/sql/",
             ],
           },
         },
@@ -126,7 +133,7 @@ export class DataStack extends cdk.Stack {
       serviceToken: migrationProvider.serviceToken,
       properties: {
         // Change this value to trigger the migration again on next deploy
-        version: "1",
+        version: "2",
       },
     });
 
@@ -204,6 +211,45 @@ export class DataStack extends cdk.Stack {
       },
     });
 
+    // --- Bastion Host (SSM Session Manager, no SSH keys) ---
+
+    const bastionSg = new ec2.SecurityGroup(this, "BastionSg", {
+      vpc: this.vpc,
+      description: "Bastion host — outbound only for SSM",
+      allowAllOutbound: true,
+    });
+
+    this.databaseSecurityGroup.addIngressRule(
+      bastionSg,
+      ec2.Port.tcp(5432),
+      "Allow bastion host to connect to RDS",
+    );
+
+    const bastionRole = new iam.Role(this, "BastionRole", {
+      assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),
+      managedPolicies: [
+        iam.ManagedPolicy.fromAwsManagedPolicyName(
+          "AmazonSSMManagedInstanceCore",
+        ),
+      ],
+    });
+
+    const bastion = new ec2.Instance(this, "Bastion", {
+      vpc: this.vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+      instanceType: ec2.InstanceType.of(
+        ec2.InstanceClass.T4G,
+        ec2.InstanceSize.NANO,
+      ),
+      machineImage: ec2.MachineImage.latestAmazonLinux2023({
+        cpuType: ec2.AmazonLinuxCpuType.ARM_64,
+      }),
+      securityGroup: bastionSg,
+      role: bastionRole,
+    });
+
+    bastion.addUserData("dnf install -y postgresql16");
+
     // --- Outputs ---
 
     new cdk.CfnOutput(this, "DatabaseEndpoint", {
@@ -216,6 +262,10 @@ export class DataStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, "UserPoolClientId", {
       value: userPoolClient.userPoolClientId,
+    });
+
+    new cdk.CfnOutput(this, "BastionInstanceId", {
+      value: bastion.instanceId,
     });
 
   }

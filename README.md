@@ -298,48 +298,49 @@ aws lambda update-function-code \
   --image-uri $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/mysite-backend:latest
 ```
 
-### 11. Initialize the Database
+### 11. Database Initialization
 
-RDS is not publicly accessible. Temporarily allow access to run the init scripts:
+The database is initialized automatically. The `MySiteData` stack includes a migration Lambda that runs all SQL init scripts (`database/init/00–05`) on every deploy. No manual SQL setup is needed.
+
+### 12. Connecting to the Database (Bastion Host)
+
+The `MySiteData` stack deploys a bastion host (t4g.nano) that you can reach via **SSM Session Manager** — no SSH keys or open inbound ports required. The bastion instance ID is in the CDK stack outputs.
+
+**Prerequisites:** AWS CLI v2 and the [Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html).
+
+**Interactive shell on the bastion:**
 
 ```bash
-# Get the DB instance identifier and security group ID from the CDK outputs or AWS console
+aws ssm start-session --target <BASTION_INSTANCE_ID> --profile admin
+```
 
-# Temporarily allow your IP
-MY_IP=$(curl -s https://checkip.amazonaws.com)
-aws ec2 authorize-security-group-ingress \
-  --group-id <DB_SECURITY_GROUP_ID> \
-  --protocol tcp --port 5432 --cidr $MY_IP/32
+Once connected, use `psql` (pre-installed) to connect to RDS:
 
-aws rds modify-db-instance \
-  --db-instance-identifier <DB_INSTANCE_ID> \
-  --publicly-accessible --apply-immediately
-
-# Wait for the modification to complete (~2–3 minutes)
-aws rds wait db-instance-available --db-instance-identifier <DB_INSTANCE_ID>
-
-# Get credentials from Secrets Manager
+```bash
+# Get the master password from Secrets Manager
 aws secretsmanager get-secret-value --secret-id /mysite/db-credentials \
   --query SecretString --output text | jq .
 
-# Run init scripts
-DB_URL="postgresql://<username>:<password>@<rds-endpoint>:5432/mysite"
-for f in database/init/0*.sql; do
-  echo "Running $f..."
-  psql "$DB_URL" -f "$f"
-done
-
-# Revert public access
-aws rds modify-db-instance \
-  --db-instance-identifier <DB_INSTANCE_ID> \
-  --no-publicly-accessible --apply-immediately
-
-aws ec2 revoke-security-group-ingress \
-  --group-id <DB_SECURITY_GROUP_ID> \
-  --protocol tcp --port 5432 --cidr $MY_IP/32
+# Connect
+psql -h <RDS_ENDPOINT> -U mysite -d mysite
 ```
 
-### 12. Create Cognito Admin User
+**Port-forward RDS to your local machine** (run `psql` or any GUI locally):
+
+```bash
+aws ssm start-session --target <BASTION_INSTANCE_ID> \
+  --document-name AWS-StartPortForwardingSessionToRemoteHost \
+  --parameters '{"host":["<RDS_ENDPOINT>"],"portNumber":["5432"],"localPortNumber":["5432"]}' \
+  --profile admin
+```
+
+Then in another terminal:
+
+```bash
+psql -h localhost -U mysite -d mysite
+```
+
+### 13. Create Cognito Admin User
 
 ```bash
 USER_POOL_ID=<from CDK outputs>
@@ -359,7 +360,7 @@ aws cognito-idp admin-set-user-password \
 
 Log in at `https://yourdomain.com/admin` — you'll be prompted to set up TOTP MFA on first login.
 
-### 13. Deploy Frontend
+### 14. Deploy Frontend
 
 ```bash
 cd frontend
@@ -376,7 +377,7 @@ aws cloudfront create-invalidation \
   --distribution-id <DISTRIBUTION_ID> --paths "/*"
 ```
 
-### 14. Verify
+### 15. Verify
 
 - `https://yourdomain.com` — resume loads
 - `https://api.yourdomain.com/api/health` — returns 200
