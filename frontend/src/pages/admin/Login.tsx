@@ -1,33 +1,41 @@
 import { useState, type FormEvent } from "react";
 import { useAuthContext } from "../../contexts/AuthContext";
 
-type LoginStep = "credentials" | "new-password" | "mfa";
+type LoginStep = "credentials" | "new-password" | "mfa" | "mfa-setup";
 
 export default function Login() {
-  const { login, completeNewPassword, submitMFA, error, isLoading } = useAuthContext();
+  const { login, completeNewPassword, submitMFA, setupMFA, mfaSecret, error, isLoading } = useAuthContext();
 
   const [step, setStep] = useState<LoginStep>("credentials");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [mfaCode, setMfaCode] = useState("");
+  const [mfaSetupCode, setMfaSetupCode] = useState("");
 
   async function handleLogin(e: FormEvent) {
     e.preventDefault();
     const challenge = await login(email, password);
     if (challenge === "NEW_PASSWORD_REQUIRED") setStep("new-password");
     else if (challenge === "MFA_REQUIRED") setStep("mfa");
+    else if (challenge === "MFA_SETUP") setStep("mfa-setup");
   }
 
   async function handleNewPassword(e: FormEvent) {
     e.preventDefault();
     const challenge = await completeNewPassword(newPassword);
     if (challenge === "MFA_REQUIRED") setStep("mfa");
+    else if (challenge === "MFA_SETUP") setStep("mfa-setup");
   }
 
   async function handleMFA(e: FormEvent) {
     e.preventDefault();
     await submitMFA(mfaCode);
+  }
+
+  async function handleMFASetup(e: FormEvent) {
+    e.preventDefault();
+    await setupMFA(mfaSetupCode);
   }
 
   return (
@@ -104,6 +112,46 @@ export default function Login() {
               className="w-full rounded bg-blue-600 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
             >
               {isLoading ? "Updating..." : "Set Password"}
+            </button>
+          </form>
+        )}
+
+        {step === "mfa-setup" && (
+          <form onSubmit={handleMFASetup} className="space-y-4">
+            <p className="text-sm text-gray-400">
+              Set up your authenticator app. Add the secret key below to your authenticator app
+              (e.g. Google Authenticator, Authy), then enter the 6-digit code.
+            </p>
+            {mfaSecret && (
+              <div>
+                <label className="block text-sm font-medium text-gray-300">Secret Key</label>
+                <code className="mt-1 block w-full select-all break-all rounded bg-gray-700 px-3 py-2 text-sm text-green-300">
+                  {mfaSecret}
+                </code>
+              </div>
+            )}
+            <div>
+              <label htmlFor="mfa-setup-code" className="block text-sm font-medium text-gray-300">
+                Verification Code
+              </label>
+              <input
+                id="mfa-setup-code"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={mfaSetupCode}
+                onChange={(e) => setMfaSetupCode(e.target.value)}
+                required
+                autoComplete="one-time-code"
+                className="mt-1 w-full rounded bg-gray-700 px-3 py-2 text-center text-lg tracking-widest text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full rounded bg-blue-600 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              {isLoading ? "Verifying..." : "Verify & Complete Setup"}
             </button>
           </form>
         )}
