@@ -45,7 +45,13 @@ A fork-friendly, full-stack personal site with a "database as API" architecture 
                              ┌────────────┐  ┌───────────┐  ┌─────────────┐
                              │  RDS PG17  │  │ Cognito   │  │ S3 (media)  │
                              │ t4g.micro  │  │ User Pool │  │             │
-                             └────────────┘  └───────────┘  └─────────────┘
+                             └─────┬──────┘  └───────────┘  └─────────────┘
+                                   │
+                             ┌─────┴──────┐
+                             │  Bastion   │
+                             │ t4g.nano   │
+                             │ (SSM only) │
+                             └────────────┘
 ```
 
 ## Cost Estimate
@@ -342,23 +348,41 @@ psql -h localhost -U mysite -d mysite
 
 ### 13. Create Cognito Admin User
 
+**Find your User Pool ID** from CDK outputs, or look it up:
+
 ```bash
-USER_POOL_ID=<from CDK outputs>
+aws cognito-idp list-user-pools --max-results 10 --query "UserPools[?Name=='mysite-users'].Id" --output text
+```
+
+**Create the user:**
+
+```bash
+USER_POOL_ID=<from above>
 
 aws cognito-idp admin-create-user \
   --user-pool-id $USER_POOL_ID \
   --username your@email.com \
+  --user-attributes Name=email,Value=your@email.com Name=email_verified,Value=true \
   --temporary-password 'TempPass123!@#$' \
   --message-action SUPPRESS
-
-aws cognito-idp admin-set-user-password \
-  --user-pool-id $USER_POOL_ID \
-  --username your@email.com \
-  --password 'YourPermanentPassword123!@#$' \
-  --permanent
 ```
 
-Log in at `https://yourdomain.com/admin` — you'll be prompted to set up TOTP MFA on first login.
+**First login flow:**
+
+1. Go to `https://yourdomain.com/admin` and log in with your email and the temporary password above
+2. You'll be prompted to set a permanent password — must be 12+ characters with uppercase, lowercase, digits, and symbols
+3. You'll then be prompted to set up TOTP MFA — scan the QR code with an authenticator app (Google Authenticator, Authy, 1Password, etc.) and enter the verification code
+
+After completing these steps, future logins require your permanent password + a TOTP code from your authenticator app.
+
+**Key details:**
+
+- MFA is mandatory (TOTP only, no SMS)
+- Self-signup is disabled — all users must be created via CLI or AWS Console
+- Access tokens expire after 1 hour, refresh tokens after 30 days
+- Account recovery is email-only
+
+**GUI alternative:** You can also create users in the AWS Console under **Cognito → User Pools → mysite-users → Users → Create user**.
 
 ### 14. Deploy Frontend
 
@@ -383,6 +407,72 @@ aws cloudfront create-invalidation \
 - `https://api.yourdomain.com/api/health` — returns 200
 - `https://yourdomain.com/admin` — Cognito login works with MFA
 - Push a change to `main` — CD pipeline deploys automatically
+
+---
+
+## Managing Costs
+
+You can stop certain resources when not in use to reduce your monthly bill.
+
+### Stoppable Resources
+
+**Bastion Host (EC2 t4g.nano)** — ~$3.80/month running, ~$0.10/month stopped (EBS only)
+
+Only needed for database maintenance. Safe to stop when not in use.
+
+```bash
+# Get instance ID from CDK outputs
+BASTION_ID=$(aws cloudformation describe-stacks --stack-name MySiteData \
+  --query 'Stacks[0].Outputs[?OutputKey==`BastionInstanceId`].OutputValue' --output text)
+
+# Stop
+aws ec2 stop-instances --instance-ids $BASTION_ID
+
+# Start (when you need database access again)
+aws ec2 start-instances --instance-ids $BASTION_ID
+```
+
+**RDS PostgreSQL (db.t4g.micro)** — ~$12.50/month running (after free tier), ~$3.50/month stopped
+
+> **Warning:** Your site's API will return errors while RDS is stopped. AWS also auto-restarts stopped RDS instances after 7 days.
+
+```bash
+# Get instance identifier
+RDS_ID=$(aws rds describe-db-instances \
+  --query 'DBInstances[?DBName==`mysite`].DBInstanceIdentifier' --output text)
+
+# Stop
+aws rds stop-db-instance --db-instance-identifier $RDS_ID
+
+# Start
+aws rds start-db-instance --db-instance-identifier $RDS_ID
+```
+
+### Always-On Resources (low or no cost)
+
+| Resource | Monthly Cost | Notes |
+|----------|-------------|-------|
+| Route 53 hosted zone | $0.50 | Fixed |
+| VPC endpoint (cognito-idp) | $7.20 | Fixed; required for Lambda to verify auth tokens |
+| CloudFront, S3, Lambda, API GW, Cognito | ~$0 | Pay-per-use, mostly covered by free tier |
+
+### Quick Reference
+
+```bash
+# Look up resource IDs
+BASTION_ID=$(aws cloudformation describe-stacks --stack-name MySiteData \
+  --query 'Stacks[0].Outputs[?OutputKey==`BastionInstanceId`].OutputValue' --output text)
+RDS_ID=$(aws rds describe-db-instances \
+  --query 'DBInstances[?DBName==`mysite`].DBInstanceIdentifier' --output text)
+
+# Stop everything stoppable
+aws ec2 stop-instances --instance-ids $BASTION_ID
+aws rds stop-db-instance --db-instance-identifier $RDS_ID
+
+# Start everything back up
+aws ec2 start-instances --instance-ids $BASTION_ID
+aws rds start-db-instance --db-instance-identifier $RDS_ID
+```
 
 ---
 

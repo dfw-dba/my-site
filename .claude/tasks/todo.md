@@ -337,6 +337,14 @@
 
 ---
 
+## Sprint 22: Improve README Documentation
+
+- [x] 22.1 Add bastion host to architecture diagram — `README.md`
+- [x] 22.2 Expand section 13 (Create Cognito Admin User) with detailed walkthrough — `README.md`
+- [x] 22.3 Add Managing Costs section with stop/start commands — `README.md`
+
+---
+
 ## Notes
 - DB port mapped to 5433 on host (5432 in use by local PostgreSQL)
 - `uv` installed at ~/.local/bin/uv
