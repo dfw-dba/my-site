@@ -215,7 +215,7 @@ export class DataStack extends cdk.Stack {
 
     const bastionSg = new ec2.SecurityGroup(this, "BastionSg", {
       vpc: this.vpc,
-      description: "Bastion host — outbound only for SSM",
+      description: "Bastion host - outbound only for SSM",
       allowAllOutbound: true,
     });
 
