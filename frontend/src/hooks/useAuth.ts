@@ -5,6 +5,7 @@ import {
   signOut as cognitoSignOut,
   completeNewPassword as cognitoCompleteNewPassword,
   verifyMFA as cognitoVerifyMFA,
+  verifyTOTPSetup as cognitoVerifyTOTPSetup,
   getCurrentSession,
   isCognitoConfigured,
 } from "../services/auth";
@@ -18,6 +19,7 @@ export function useAuth() {
   });
 
   const [pendingUser, setPendingUser] = useState<unknown>(null);
+  const [mfaSecret, setMfaSecret] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isCognitoConfigured) return;
@@ -59,6 +61,9 @@ export function useAuth() {
         return undefined;
       }
       setPendingUser(result.cognitoUser ?? null);
+      if (result.challenge === "MFA_SETUP") {
+        setMfaSecret(result.secretCode ?? null);
+      }
       setState((s) => ({ ...s, isLoading: false }));
       return result.challenge;
     } catch (err) {
@@ -88,6 +93,10 @@ export function useAuth() {
           });
           setPendingUser(null);
           return undefined;
+        }
+        if (result.challenge === "MFA_SETUP") {
+          setPendingUser(result.cognitoUser ?? pendingUser);
+          setMfaSecret(result.secretCode ?? null);
         }
         setState((s) => ({ ...s, isLoading: false }));
         return result.challenge;
@@ -129,6 +138,33 @@ export function useAuth() {
     [pendingUser]
   );
 
+  const setupMFA = useCallback(
+    async (code: string) => {
+      if (!pendingUser) return;
+      setState((s) => ({ ...s, error: null, isLoading: true }));
+      try {
+        await cognitoVerifyTOTPSetup(pendingUser, code);
+        const session = await getCurrentSession();
+        const payload = session?.getIdToken().decodePayload();
+        setState({
+          isAuthenticated: true,
+          isLoading: false,
+          user: { email: payload?.["email"] as string },
+          error: null,
+        });
+        setPendingUser(null);
+        setMfaSecret(null);
+      } catch (err) {
+        setState((s) => ({
+          ...s,
+          isLoading: false,
+          error: err instanceof Error ? err.message : "MFA setup failed",
+        }));
+      }
+    },
+    [pendingUser]
+  );
+
   const logout = useCallback(async () => {
     await cognitoSignOut();
     setState({
@@ -138,6 +174,7 @@ export function useAuth() {
       error: null,
     });
     setPendingUser(null);
+    setMfaSecret(null);
   }, []);
 
   return {
@@ -146,5 +183,7 @@ export function useAuth() {
     logout,
     completeNewPassword,
     submitMFA,
+    setupMFA,
+    mfaSecret,
   };
 }

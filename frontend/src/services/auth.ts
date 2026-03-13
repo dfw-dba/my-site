@@ -29,8 +29,9 @@ function getUserPool() {
 
 export interface SignInResult {
   success: boolean;
-  challenge?: "NEW_PASSWORD_REQUIRED" | "MFA_REQUIRED";
+  challenge?: "NEW_PASSWORD_REQUIRED" | "MFA_REQUIRED" | "MFA_SETUP";
   cognitoUser?: unknown;
+  secretCode?: string;
 }
 
 export async function signIn(email: string, password: string): Promise<SignInResult> {
@@ -63,6 +64,16 @@ export async function signIn(email: string, password: string): Promise<SignInRes
       mfaRequired: () => {
         resolve({ success: false, challenge: "MFA_REQUIRED", cognitoUser: user });
       },
+      mfaSetup: () => {
+        user.associateSoftwareToken({
+          associateSecretCode: (secretCode: string) => {
+            resolve({ success: false, challenge: "MFA_SETUP", cognitoUser: user, secretCode });
+          },
+          onFailure: (err: Error) => {
+            reject(err);
+          },
+        });
+      },
     });
   });
 }
@@ -87,6 +98,28 @@ export async function completeNewPassword(
       mfaRequired: () => {
         resolve({ success: false, challenge: "MFA_REQUIRED", cognitoUser });
       },
+      mfaSetup: () => {
+        const u = cognitoUser as Awaited<ReturnType<typeof getCognitoSDK>>["CognitoUser"]["prototype"];
+        u.associateSoftwareToken({
+          associateSecretCode: (secretCode: string) => {
+            resolve({ success: false, challenge: "MFA_SETUP", cognitoUser, secretCode });
+          },
+          onFailure: (err: Error) => {
+            reject(err);
+          },
+        });
+      },
+    });
+  });
+}
+
+export async function verifyTOTPSetup(cognitoUser: unknown, code: string): Promise<void> {
+  const user = cognitoUser as Awaited<ReturnType<typeof getCognitoSDK>>["CognitoUser"]["prototype"];
+
+  return new Promise((resolve, reject) => {
+    user.verifySoftwareToken(code, "My Site", {
+      onSuccess: () => resolve(),
+      onFailure: (err: Error) => reject(err),
     });
   });
 }
