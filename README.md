@@ -100,6 +100,8 @@ SEED_DATA=true ./dev.sh
 
 The seed script is idempotent — it only inserts rows when tables are empty, so running it multiple times is safe. Seed data lives in `database/seed/` and is never loaded automatically in production or CI.
 
+**Production note:** The AWS deployment pipeline only runs SQL files from `database/init/`. Since seed data lives in `database/seed/`, it is never bundled into the migration Lambda or executed during `cdk deploy`. Production databases start empty and are populated through the admin UI.
+
 ---
 
 ## Deploying to AWS
