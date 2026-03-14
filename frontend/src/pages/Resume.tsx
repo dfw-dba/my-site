@@ -45,7 +45,7 @@ export default function Resume() {
               </h2>
             )}
             {typeof sections.summary.text === "string" && (
-              <p className="text-base leading-relaxed text-gray-700 dark:text-gray-300">
+              <p className="text-base leading-relaxed text-gray-700 dark:text-gray-300 whitespace-pre-line">
                 {sections.summary.text}
               </p>
             )}

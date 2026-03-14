@@ -345,6 +345,26 @@
 
 ---
 
+## Sprint 23: Normalize resume_sections Table & Add Summary Form Editor
+
+- [x] 23.1 Database tables: Replace `resume_sections` with `resume_summary`, `resume_contact`, `resume_recommendations`
+- [x] 23.2 Database functions: Rewrite `get_resume()`, `get_contact_info()`, replace `upsert_resume_section()` with typed functions
+- [x] 23.3 Seed data: Update inserts for new tables
+- [x] 23.4 Migration script: `database/migrations/001_normalize_resume_sections.sql`
+- [x] 23.5 Backend schemas: Replace `ResumeSectionCreate` with typed schemas
+- [x] 23.6 Backend DatabaseAPI: Replace `upsert_resume_section()` with three typed methods
+- [x] 23.7 Backend router: Replace `POST /resume/section` with `/summary`, `/contact`, `/recommendations`
+- [x] 23.8 Frontend types: Replace `ResumeSectionCreate`/`ResumeSection` with typed interfaces
+- [x] 23.9 Frontend API: Replace `upsertSection` with typed methods
+- [x] 23.10 Frontend hooks: Replace `useAdminUpsertResumeSection` with three typed hooks
+- [x] 23.11 Frontend ResumeEditor: Replace JSON modal with inline typed forms
+- [x] 23.12 Frontend Resume page: Add `whitespace-pre-line` to summary text
+- [x] 23.13 Backend tests: Update for new endpoints
+- [x] 23.14 Frontend tests: Update mocks/assertions for new hooks
+- [x] 23.15 Verification: Run all checks (ruff, pytest, tsc, vitest)
+
+---
+
 ## Notes
 - DB port mapped to 5433 on host (5432 in use by local PostgreSQL)
 - `uv` installed at ~/.local/bin/uv

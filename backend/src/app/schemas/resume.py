@@ -31,8 +31,30 @@ class PerformanceReviewCreate(BaseModel):
     sort_order: int = 0
 
 
-class ResumeSectionCreate(BaseModel):
-    """Schema for creating/updating a resume section via admin API."""
+class ResumeSummaryCreate(BaseModel):
+    """Schema for creating/updating the resume summary."""
 
-    section_type: str  # summary, contact, recommendations
-    content: dict  # JSONB content — structure varies by section_type
+    headline: str | None = None
+    text: str
+
+
+class ResumeContactCreate(BaseModel):
+    """Schema for creating/updating the resume contact info."""
+
+    linkedin: str | None = None
+    github: str | None = None
+    email: str | None = None
+
+
+class ResumeRecommendationItem(BaseModel):
+    """A single recommendation entry."""
+
+    author: str
+    title: str
+    text: str
+
+
+class ResumeRecommendationsReplace(BaseModel):
+    """Schema for replacing all recommendations."""
+
+    items: list[ResumeRecommendationItem]

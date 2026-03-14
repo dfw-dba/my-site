@@ -3,7 +3,9 @@ import { api } from "../services/api";
 import { showToast } from "../components/admin/Toast";
 import type {
   ResumeEntryCreate,
-  ResumeSectionCreate,
+  ResumeSummaryCreate,
+  ResumeContactCreate,
+  ResumeRecommendationsReplace,
   PerformanceReviewCreate,
 } from "../types";
 
@@ -46,12 +48,38 @@ export function useAdminDeleteResumeEntry() {
   });
 }
 
-export function useAdminUpsertResumeSection() {
+export function useAdminUpsertResumeSummary() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: ResumeSectionCreate) => api.admin.resume.upsertSection(data),
+    mutationFn: (data: ResumeSummaryCreate) => api.admin.resume.upsertSummary(data),
     onSuccess: () => {
-      showToast("Section saved", "success");
+      showToast("Summary saved", "success");
+      qc.invalidateQueries({ queryKey: ["admin-resume"] });
+      qc.invalidateQueries({ queryKey: ["resume"] });
+    },
+    onError: onMutationError,
+  });
+}
+
+export function useAdminUpsertResumeContact() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: ResumeContactCreate) => api.admin.resume.upsertContact(data),
+    onSuccess: () => {
+      showToast("Contact saved", "success");
+      qc.invalidateQueries({ queryKey: ["admin-resume"] });
+      qc.invalidateQueries({ queryKey: ["resume"] });
+    },
+    onError: onMutationError,
+  });
+}
+
+export function useAdminReplaceRecommendations() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: ResumeRecommendationsReplace) => api.admin.resume.replaceRecommendations(data),
+    onSuccess: () => {
+      showToast("Recommendations saved", "success");
       qc.invalidateQueries({ queryKey: ["admin-resume"] });
       qc.invalidateQueries({ queryKey: ["resume"] });
     },

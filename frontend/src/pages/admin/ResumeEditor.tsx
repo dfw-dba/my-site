@@ -4,15 +4,18 @@ import {
   useAdminResume,
   useAdminUpsertResumeEntry,
   useAdminDeleteResumeEntry,
-  useAdminUpsertResumeSection,
+  useAdminUpsertResumeSummary,
+  useAdminUpsertResumeContact,
+  useAdminReplaceRecommendations,
   useAdminUpsertPerformanceReview,
   useAdminDeletePerformanceReview,
 } from "../../hooks/useAdminApi";
+import FormInput from "../../components/admin/FormInput";
 import DataTable from "../../components/admin/DataTable";
 import ConfirmModal from "../../components/admin/ConfirmModal";
 import FormTextarea from "../../components/admin/FormTextarea";
 import ResumeEntryForm from "./ResumeEntryForm";
-import type { ProfessionalEntry } from "../../types";
+import type { ProfessionalEntry, ResumeRecommendationItem } from "../../types";
 import type { Column } from "../../components/admin/DataTable";
 
 const entryColumns: Column<ProfessionalEntry>[] = [
@@ -62,7 +65,9 @@ export default function ResumeEditor() {
   const { data: resume, isLoading } = useAdminResume();
   const upsertEntry = useAdminUpsertResumeEntry();
   const deleteEntry = useAdminDeleteResumeEntry();
-  const upsertSection = useAdminUpsertResumeSection();
+  const upsertSummary = useAdminUpsertResumeSummary();
+  const upsertContact = useAdminUpsertResumeContact();
+  const replaceRecommendations = useAdminReplaceRecommendations();
   const upsertReview = useAdminUpsertPerformanceReview();
   const deleteReview = useAdminDeletePerformanceReview();
 
@@ -70,9 +75,20 @@ export default function ResumeEditor() {
   const [editingEntryId, setEditingEntryId] = useState<number | "new" | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ProfessionalEntry | null>(null);
 
-  // Section editing state
-  const [editingSectionType, setEditingSectionType] = useState<string | null>(null);
-  const [sectionContent, setSectionContent] = useState("");
+  // Summary form state
+  const [summaryHeadline, setSummaryHeadline] = useState("");
+  const [summaryText, setSummaryText] = useState("");
+  const [summaryDirty, setSummaryDirty] = useState(false);
+
+  // Contact form state
+  const [contactLinkedin, setContactLinkedin] = useState("");
+  const [contactGithub, setContactGithub] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactDirty, setContactDirty] = useState(false);
+
+  // Recommendations form state
+  const [recsItems, setRecsItems] = useState<ResumeRecommendationItem[]>([]);
+  const [recsDirty, setRecsDirty] = useState(false);
 
   const allEntries = resume
     ? Object.values(resume.entries).flat()
@@ -84,26 +100,22 @@ export default function ResumeEditor() {
       ? allEntries.find((e) => e.id === editingEntryId) ?? null
       : editingEntryId;
 
-  function openSectionEditor(sectionType: string) {
-    const content = resume?.sections[sectionType];
-    setEditingSectionType(sectionType);
-    setSectionContent(content ? JSON.stringify(content, null, 2) : "{}");
-  }
+  // Sync form state when resume data loads or tab switches
+  const summarySection = resume?.sections?.summary as { headline?: string; text?: string } | undefined;
+  const contactSection = resume?.sections?.contact as { linkedin?: string; github?: string; email?: string } | undefined;
+  const recsSection = resume?.sections?.recommendations as { items?: { author: string; title: string; text: string }[] } | undefined;
 
-  async function saveSectionContent() {
-    if (!editingSectionType) return;
-    try {
-      const parsed = JSON.parse(sectionContent);
-      await upsertSection.mutateAsync(
-        { section_type: editingSectionType, content: parsed },
-      );
-      await queryClient.invalidateQueries({ queryKey: ["admin-resume"] });
-      setEditingSectionType(null);
-    } catch (e) {
-      if (e instanceof SyntaxError) {
-        alert("Invalid JSON");
-      }
-    }
+  // Reset form state from server data when switching to sections tab
+  function resetSectionForms() {
+    setSummaryHeadline(summarySection?.headline ?? "");
+    setSummaryText(summarySection?.text ?? "");
+    setSummaryDirty(false);
+    setContactLinkedin(contactSection?.linkedin ?? "");
+    setContactGithub(contactSection?.github ?? "");
+    setContactEmail(contactSection?.email ?? "");
+    setContactDirty(false);
+    setRecsItems(recsSection?.items ? recsSection.items.map((i) => ({ ...i })) : []);
+    setRecsDirty(false);
   }
 
   return (
@@ -115,7 +127,10 @@ export default function ResumeEditor() {
         {(["entries", "sections"] as Tab[]).map((t) => (
           <button
             key={t}
-            onClick={() => setTab(t)}
+            onClick={() => {
+              setTab(t);
+              if (t === "sections") resetSectionForms();
+            }}
             className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
               tab === t
                 ? "border-blue-500 text-white"
@@ -163,57 +178,154 @@ export default function ResumeEditor() {
           />
         </>
       ) : (
-        <div className="space-y-4">
-          {["summary", "contact"].map((sType) => (
-            <div key={sType} className="bg-gray-700/50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-white capitalize">{sType}</h3>
-                <button
-                  onClick={() => openSectionEditor(sType)}
-                  className="text-blue-400 hover:text-blue-300 text-sm"
-                >
-                  Edit
-                </button>
-              </div>
-              <pre className="text-xs text-gray-400 overflow-x-auto max-h-24">
-                {resume?.sections[sType]
-                  ? JSON.stringify(resume.sections[sType], null, 2)
-                  : "Not configured"}
-              </pre>
+        <div className="space-y-6">
+          {/* Summary */}
+          <div className="bg-gray-700/50 rounded-lg p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-white">Summary</h3>
+            <FormInput
+              label="Headline"
+              value={summaryHeadline}
+              onChange={(v) => { setSummaryHeadline(v); setSummaryDirty(true); }}
+              placeholder="Optional headline above the summary"
+            />
+            <FormTextarea
+              label="Text"
+              value={summaryText}
+              onChange={(v) => { setSummaryText(v); setSummaryDirty(true); }}
+              rows={5}
+            />
+            <div className="flex justify-end">
+              <button
+                onClick={async () => {
+                  await upsertSummary.mutateAsync({ headline: summaryHeadline || null, text: summaryText });
+                  setSummaryDirty(false);
+                }}
+                disabled={!summaryDirty || upsertSummary.isPending}
+                className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-50"
+              >
+                {upsertSummary.isPending ? "Saving..." : "Save Summary"}
+              </button>
             </div>
-          ))}
+          </div>
 
-          {editingSectionType && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center">
-              <div className="absolute inset-0 bg-black/60" onClick={() => setEditingSectionType(null)} />
-              <div className="relative bg-gray-800 rounded-lg shadow-xl max-w-lg w-full mx-4 p-6">
-                <h3 className="text-lg font-semibold text-white mb-4 capitalize">
-                  Edit {editingSectionType}
-                </h3>
-                <FormTextarea
-                  label="Content (JSON)"
-                  value={sectionContent}
-                  onChange={setSectionContent}
-                  rows={12}
-                />
-                <div className="mt-4 flex justify-end gap-3">
+          {/* Contact */}
+          <div className="bg-gray-700/50 rounded-lg p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-white">Contact</h3>
+            <FormInput
+              label="LinkedIn"
+              value={contactLinkedin}
+              onChange={(v) => { setContactLinkedin(v); setContactDirty(true); }}
+              placeholder="https://www.linkedin.com/in/..."
+            />
+            <FormInput
+              label="GitHub"
+              value={contactGithub}
+              onChange={(v) => { setContactGithub(v); setContactDirty(true); }}
+              placeholder="https://github.com/..."
+            />
+            <FormInput
+              label="Email"
+              value={contactEmail}
+              onChange={(v) => { setContactEmail(v); setContactDirty(true); }}
+              placeholder="email@example.com"
+            />
+            <div className="flex justify-end">
+              <button
+                onClick={async () => {
+                  await upsertContact.mutateAsync({
+                    linkedin: contactLinkedin || null,
+                    github: contactGithub || null,
+                    email: contactEmail || null,
+                  });
+                  setContactDirty(false);
+                }}
+                disabled={!contactDirty || upsertContact.isPending}
+                className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-50"
+              >
+                {upsertContact.isPending ? "Saving..." : "Save Contact"}
+              </button>
+            </div>
+          </div>
+
+          {/* Recommendations */}
+          <div className="bg-gray-700/50 rounded-lg p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-white">Recommendations</h3>
+              <button
+                onClick={() => {
+                  setRecsItems([...recsItems, { author: "", title: "", text: "" }]);
+                  setRecsDirty(true);
+                }}
+                className="text-blue-400 hover:text-blue-300 text-sm"
+              >
+                + Add
+              </button>
+            </div>
+            {recsItems.map((item, idx) => (
+              <div key={idx} className="border border-gray-600 rounded-lg p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-400">#{idx + 1}</span>
                   <button
-                    onClick={() => setEditingSectionType(null)}
-                    className="px-4 py-2 text-sm text-gray-300 hover:text-white"
+                    onClick={() => {
+                      setRecsItems(recsItems.filter((_, i) => i !== idx));
+                      setRecsDirty(true);
+                    }}
+                    className="text-red-400 hover:text-red-300 text-xs"
                   >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={saveSectionContent}
-                    disabled={upsertSection.isPending}
-                    className="px-5 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-50"
-                  >
-                    {upsertSection.isPending ? "Saving..." : "Save"}
+                    Remove
                   </button>
                 </div>
+                <FormInput
+                  label="Author"
+                  value={item.author}
+                  onChange={(v) => {
+                    const updated = [...recsItems];
+                    updated[idx] = { ...updated[idx], author: v };
+                    setRecsItems(updated);
+                    setRecsDirty(true);
+                  }}
+                  required
+                />
+                <FormInput
+                  label="Title"
+                  value={item.title}
+                  onChange={(v) => {
+                    const updated = [...recsItems];
+                    updated[idx] = { ...updated[idx], title: v };
+                    setRecsItems(updated);
+                    setRecsDirty(true);
+                  }}
+                  required
+                />
+                <FormTextarea
+                  label="Text"
+                  value={item.text}
+                  onChange={(v) => {
+                    const updated = [...recsItems];
+                    updated[idx] = { ...updated[idx], text: v };
+                    setRecsItems(updated);
+                    setRecsDirty(true);
+                  }}
+                  rows={3}
+                />
               </div>
+            ))}
+            {recsItems.length === 0 && (
+              <p className="text-sm text-gray-400">No recommendations yet.</p>
+            )}
+            <div className="flex justify-end">
+              <button
+                onClick={async () => {
+                  await replaceRecommendations.mutateAsync({ items: recsItems });
+                  setRecsDirty(false);
+                }}
+                disabled={!recsDirty || replaceRecommendations.isPending}
+                className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-50"
+              >
+                {replaceRecommendations.isPending ? "Saving..." : "Save Recommendations"}
+              </button>
             </div>
-          )}
+          </div>
         </div>
       )}
 

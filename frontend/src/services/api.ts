@@ -3,7 +3,9 @@ import type {
   ResumeData,
   ProfessionalEntry,
   ResumeEntryCreate,
-  ResumeSectionCreate,
+  ResumeSummaryCreate,
+  ResumeContactCreate,
+  ResumeRecommendationsReplace,
   PerformanceReviewCreate,
   ApiSuccess,
 } from "../types";
@@ -66,8 +68,20 @@ export const api = {
           method: "DELETE",
           headers: await adminHeaders(),
         }),
-      upsertSection: async (data: ResumeSectionCreate) =>
-        request<ApiSuccess>("/api/admin/resume/section", {
+      upsertSummary: async (data: ResumeSummaryCreate) =>
+        request<ApiSuccess>("/api/admin/resume/summary", {
+          method: "POST",
+          headers: await adminHeaders(),
+          body: JSON.stringify(data),
+        }),
+      upsertContact: async (data: ResumeContactCreate) =>
+        request<ApiSuccess>("/api/admin/resume/contact", {
+          method: "POST",
+          headers: await adminHeaders(),
+          body: JSON.stringify(data),
+        }),
+      replaceRecommendations: async (data: ResumeRecommendationsReplace) =>
+        request<ApiSuccess>("/api/admin/resume/recommendations", {
           method: "POST",
           headers: await adminHeaders(),
           body: JSON.stringify(data),
