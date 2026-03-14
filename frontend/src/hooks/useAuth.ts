@@ -117,13 +117,11 @@ export function useAuth() {
       if (!pendingUser) return;
       setState((s) => ({ ...s, error: null, isLoading: true }));
       try {
-        await cognitoVerifyMFA(pendingUser, code);
-        const session = await getCurrentSession();
-        const payload = session?.getIdToken().decodePayload();
+        const result = await cognitoVerifyMFA(pendingUser, code);
         setState({
           isAuthenticated: true,
           isLoading: false,
-          user: { email: payload?.["email"] as string },
+          user: { email: result.email },
           error: null,
         });
         setPendingUser(null);
@@ -143,13 +141,11 @@ export function useAuth() {
       if (!pendingUser) return;
       setState((s) => ({ ...s, error: null, isLoading: true }));
       try {
-        await cognitoVerifyTOTPSetup(pendingUser, code);
-        const session = await getCurrentSession();
-        const payload = session?.getIdToken().decodePayload();
+        const result = await cognitoVerifyTOTPSetup(pendingUser, code);
         setState({
           isAuthenticated: true,
           isLoading: false,
-          user: { email: payload?.["email"] as string },
+          user: { email: result.email },
           error: null,
         });
         setPendingUser(null);

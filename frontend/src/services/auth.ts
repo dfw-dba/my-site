@@ -113,25 +113,39 @@ export async function completeNewPassword(
   });
 }
 
-export async function verifyTOTPSetup(cognitoUser: unknown, code: string): Promise<void> {
+export interface TOTPSetupResult {
+  email: string;
+}
+
+export async function verifyTOTPSetup(cognitoUser: unknown, code: string): Promise<TOTPSetupResult> {
   const user = cognitoUser as Awaited<ReturnType<typeof getCognitoSDK>>["CognitoUser"]["prototype"];
 
   return new Promise((resolve, reject) => {
     user.verifySoftwareToken(code, "My Site", {
-      onSuccess: () => resolve(),
+      onSuccess: (session: { getIdToken: () => { decodePayload: () => Record<string, unknown> } }) => {
+        const payload = session.getIdToken().decodePayload();
+        resolve({ email: payload["email"] as string });
+      },
       onFailure: (err: Error) => reject(err),
     });
   });
 }
 
-export async function verifyMFA(cognitoUser: unknown, code: string): Promise<void> {
+export interface MFAVerifyResult {
+  email: string;
+}
+
+export async function verifyMFA(cognitoUser: unknown, code: string): Promise<MFAVerifyResult> {
   const user = cognitoUser as Awaited<ReturnType<typeof getCognitoSDK>>["CognitoUser"]["prototype"];
 
   return new Promise((resolve, reject) => {
     user.sendMFACode(
       code,
       {
-        onSuccess: () => resolve(),
+        onSuccess: (session: { getIdToken: () => { decodePayload: () => Record<string, unknown> } }) => {
+          const payload = session.getIdToken().decodePayload();
+          resolve({ email: payload["email"] as string });
+        },
         onFailure: (err: Error) => reject(err),
       },
       "SOFTWARE_TOKEN_MFA"
