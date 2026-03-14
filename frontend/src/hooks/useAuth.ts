@@ -13,7 +13,8 @@ import {
 export function useAuth() {
   const [state, setState] = useState<AuthState>({
     isAuthenticated: !isCognitoConfigured,
-    isLoading: isCognitoConfigured,
+    isInitializing: isCognitoConfigured,
+    isLoading: false,
     user: null,
     error: null,
   });
@@ -29,6 +30,7 @@ export function useAuth() {
         const payload = session.getIdToken().decodePayload();
         setState({
           isAuthenticated: true,
+          isInitializing: false,
           isLoading: false,
           user: { email: payload["email"] as string },
           error: null,
@@ -36,6 +38,7 @@ export function useAuth() {
       } else {
         setState({
           isAuthenticated: false,
+          isInitializing: false,
           isLoading: false,
           user: null,
           error: null,
@@ -53,6 +56,7 @@ export function useAuth() {
         const payload = session?.getIdToken().decodePayload();
         setState({
           isAuthenticated: true,
+          isInitializing: false,
           isLoading: false,
           user: { email: payload?.["email"] as string },
           error: null,
@@ -87,6 +91,7 @@ export function useAuth() {
           const payload = session?.getIdToken().decodePayload();
           setState({
             isAuthenticated: true,
+            isInitializing: false,
             isLoading: false,
             user: { email: payload?.["email"] as string },
             error: null,
@@ -120,6 +125,7 @@ export function useAuth() {
         const result = await cognitoVerifyMFA(pendingUser, code);
         setState({
           isAuthenticated: true,
+          isInitializing: false,
           isLoading: false,
           user: { email: result.email },
           error: null,
@@ -144,6 +150,7 @@ export function useAuth() {
         const result = await cognitoVerifyTOTPSetup(pendingUser, code);
         setState({
           isAuthenticated: true,
+          isInitializing: false,
           isLoading: false,
           user: { email: result.email },
           error: null,
@@ -165,6 +172,7 @@ export function useAuth() {
     await cognitoSignOut();
     setState({
       isAuthenticated: false,
+      isInitializing: false,
       isLoading: false,
       user: null,
       error: null,

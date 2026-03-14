@@ -76,6 +76,7 @@ export interface ApiSuccess {
 
 export interface AuthState {
   isAuthenticated: boolean;
+  isInitializing: boolean;
   isLoading: boolean;
   user: { email: string } | null;
   error: string | null;
