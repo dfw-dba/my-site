@@ -50,8 +50,14 @@ export default function Resume() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <header className="mb-10 flex items-center justify-center gap-8">
-        <ProfileImage src="/profile.jpg" />
+      <header className="mb-10 flex items-start justify-center gap-8">
+        <ProfileImage
+          src={
+            typeof (sections.profile_image as Record<string, unknown>)?.image_url === "string"
+              ? ((sections.profile_image as Record<string, unknown>).image_url as string)
+              : "/profile.jpg"
+          }
+        />
         {sections.summary && (
           <div className="max-w-md text-left">
             {typeof sections.summary.headline === "string" && (

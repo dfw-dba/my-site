@@ -12,6 +12,7 @@ import {
   useAdminReplaceRecommendations,
   useAdminUpsertPerformanceReview,
   useAdminDeletePerformanceReview,
+  useAdminUploadProfileImage,
 } from "../../src/hooks/useAdminApi";
 
 vi.mock("../../src/hooks/useAdminApi", () => ({
@@ -24,6 +25,7 @@ vi.mock("../../src/hooks/useAdminApi", () => ({
   useAdminReplaceRecommendations: vi.fn(),
   useAdminUpsertPerformanceReview: vi.fn(),
   useAdminDeletePerformanceReview: vi.fn(),
+  useAdminUploadProfileImage: vi.fn(),
 }));
 
 const mockMutation = { mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false };
@@ -38,6 +40,7 @@ describe("ResumeEditor", () => {
     vi.mocked(useAdminReplaceRecommendations).mockReturnValue(mockMutation as any);
     vi.mocked(useAdminUpsertPerformanceReview).mockReturnValue(mockMutation as any);
     vi.mocked(useAdminDeletePerformanceReview).mockReturnValue(mockMutation as any);
+    vi.mocked(useAdminUploadProfileImage).mockReturnValue(mockMutation as any);
   });
 
   it("shows loading state", () => {

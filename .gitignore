@@ -48,3 +48,4 @@ minio-data/
 
 # Misc
 *.log
+_tmp/

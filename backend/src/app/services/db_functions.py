@@ -91,6 +91,14 @@ class DatabaseAPI:
         )
         return result.scalar_one()
 
+    async def upsert_resume_profile_image(self, data: dict[str, Any]) -> Any:
+        """Insert or update the resume profile image URL."""
+        result = await self.session.execute(
+            text("SELECT api.upsert_resume_profile_image(CAST(:data AS jsonb))"),
+            {"data": json.dumps(data, default=str)},
+        )
+        return result.scalar_one()
+
     async def delete_professional_entry(self, entry_id: int) -> Any:
         """Delete a professional entry by ID."""
         result = await self.session.execute(

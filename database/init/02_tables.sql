@@ -95,6 +95,20 @@ comment on column internal.resume_recommendations.text is 'Full text of the reco
 comment on column internal.resume_recommendations.sort_order is 'Display order; lower values appear first';
 
 -- ============================================================
+-- resume_profile_image (single-row)
+-- ============================================================
+create table if not exists internal.resume_profile_image
+(
+  id           int4 generated always as identity primary key,
+  image_url    text not null,
+  created_at   timestamptz default now(),
+  updated_at   timestamptz default now()
+);
+
+comment on table internal.resume_profile_image is 'Single-row table holding the profile image URL for the resume page';
+comment on column internal.resume_profile_image.image_url is 'Public URL of the uploaded profile image';
+
+-- ============================================================
 -- performance_reviews
 -- ============================================================
 create table if not exists internal.performance_reviews

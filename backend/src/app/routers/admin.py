@@ -1,8 +1,8 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 
-from src.app.dependencies import get_admin_auth, get_db_api
+from src.app.dependencies import get_admin_auth, get_db_api, get_storage
 from src.app.schemas.resume import (
     PerformanceReviewCreate,
     ResumeContactCreate,
@@ -12,6 +12,7 @@ from src.app.schemas.resume import (
     ResumeTitleCreate,
 )
 from src.app.services.db_functions import DatabaseAPI
+from src.app.services.storage import StorageService
 
 router = APIRouter()
 
@@ -89,3 +90,37 @@ async def replace_resume_recommendations(
 ) -> Any:
     """Replace all resume recommendations."""
     return await db.replace_resume_recommendations([item.model_dump() for item in body.items])
+
+
+_ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
+_MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5 MB
+_EXT_MAP = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
+
+
+@router.post("/resume/profile-image", dependencies=[Depends(get_admin_auth)])
+async def upload_profile_image(
+    file: UploadFile,
+    db: DatabaseAPI = Depends(get_db_api),
+    storage: StorageService = Depends(get_storage),
+) -> Any:
+    """Upload a profile image to S3 and save the URL to the database."""
+    if file.content_type not in _ALLOWED_IMAGE_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid file type: {file.content_type}. Allowed: jpeg, png, webp",
+        )
+
+    file_data = await file.read()
+    if len(file_data) > _MAX_IMAGE_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File too large. Maximum size is 5 MB.",
+        )
+
+    ext = _EXT_MAP[file.content_type]
+    key = f"profile/profile-image.{ext}"
+    url = storage.upload_file(file_data, key, file.content_type)
+
+    await db.upsert_resume_profile_image({"image_url": url})
+
+    return {"success": True, "image_url": url}
