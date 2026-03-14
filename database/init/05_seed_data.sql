@@ -205,53 +205,69 @@ end
 $$;
 
 -- ============================================================
---  Resume Sections
+--  Resume Summary
 -- ============================================================
 do $$
 begin
-    if not exists (select 1 from internal.resume_sections limit 1) then
-        insert into internal.resume_sections (section_type, content)
+    if not exists (select 1 from internal.resume_summary limit 1) then
+        insert into internal.resume_summary (headline, text)
+        values
+        (
+            null,
+            'Database engineer with 12+ years of experience architecting, optimizing, and operating SQL Server and PostgreSQL environments at enterprise scale. Proven track record delivering high-impact database migrations, performance tuning, CI/CD automation, and data warehouse solutions. Published author on SQLServerCentral.com.'
+        );
+    end if;
+end
+$$;
+
+-- ============================================================
+--  Resume Contact
+-- ============================================================
+do $$
+begin
+    if not exists (select 1 from internal.resume_contact limit 1) then
+        insert into internal.resume_contact (linkedin, github, email)
+        values
+        (
+            'https://www.linkedin.com/in/jason-rowland-6712097',
+            'https://github.com/dfw-dba',
+            'email@jasonrowland.me'
+        );
+    end if;
+end
+$$;
+
+-- ============================================================
+--  Resume Recommendations
+-- ============================================================
+do $$
+begin
+    if not exists (select 1 from internal.resume_recommendations limit 1) then
+        insert into internal.resume_recommendations (author, title, text, sort_order)
         values
             (
-                'summary',
-                '{
-                    "text": "Database engineer with 12+ years of experience architecting, optimizing, and operating SQL Server and PostgreSQL environments at enterprise scale. Proven track record delivering high-impact database migrations, performance tuning, CI/CD automation, and data warehouse solutions. Published author on SQLServerCentral.com."
-                }'::jsonb
+                'Eduardo Camacho',
+                'Senior Database Developer/Administrator at TeamHealth',
+                'Jason is that database professional any company wants and wishes they could clone. Always stays abreast of the latest trends in the database world, exemplary troubleshooting ability and easy to get along with.',
+                1
             ),
             (
-                'contact',
-                '{
-                    "linkedin": "https://www.linkedin.com/in/jason-rowland-6712097",
-                    "github": "https://github.com/dfw-dba",
-                    "email": "email@jasonrowland.me"
-                }'::jsonb
+                'Stephen Swienton',
+                'VP Product Development and Strategy',
+                'Jason has a tremendous amount of personal integrity, a strong work ethic and goes above and beyond when it comes to tackling his assignments. Partnered with his superior SQL/DBA skills, Jason possesses a robust mix of experience that makes him an attractive hire to any perspective employer.',
+                2
             ),
             (
-                'recommendations',
-                '{
-                    "items": [
-                        {
-                            "author": "Eduardo Camacho",
-                            "title": "Senior Database Developer/Administrator at TeamHealth",
-                            "text": "Jason is that database professional any company wants and wishes they could clone. Always stays abreast of the latest trends in the database world, exemplary troubleshooting ability and easy to get along with."
-                        },
-                        {
-                            "author": "Stephen Swienton",
-                            "title": "VP Product Development and Strategy",
-                            "text": "Jason has a tremendous amount of personal integrity, a strong work ethic and goes above and beyond when it comes to tackling his assignments. Partnered with his superior SQL/DBA skills, Jason possesses a robust mix of experience that makes him an attractive hire to any perspective employer."
-                        },
-                        {
-                            "author": "Ben Gatzke",
-                            "title": "CEO at BorrowWorks",
-                            "text": "Jason is a talented DBA and very committed to the systems he administers. A constant learner, Jason digs into the systems and technologies he is responsible for to understand why and how they work and does not accept that, when they work well, they cannot work better. Jason''s creativity is bounded only by his prudence. Two thumbs up for Jason!"
-                        },
-                        {
-                            "author": "Prodip K. Saha, MBA",
-                            "title": "Information Security Architect Principal at Fannie Mae",
-                            "text": "Jason is an excellent Database Administrator. As a Team Lead, I frequented Jason to get his opinion when designing database schema for my applications. I think he would be an wonderful asset to any company."
-                        }
-                    ]
-                }'::jsonb
+                'Ben Gatzke',
+                'CEO at BorrowWorks',
+                'Jason is a talented DBA and very committed to the systems he administers. A constant learner, Jason digs into the systems and technologies he is responsible for to understand why and how they work and does not accept that, when they work well, they cannot work better. Jason''s creativity is bounded only by his prudence. Two thumbs up for Jason!',
+                3
+            ),
+            (
+                'Prodip K. Saha, MBA',
+                'Information Security Architect Principal at Fannie Mae',
+                'Jason is an excellent Database Administrator. As a Team Lead, I frequented Jason to get his opinion when designing database schema for my applications. I think he would be an wonderful asset to any company.',
+                4
             );
     end if;
 end

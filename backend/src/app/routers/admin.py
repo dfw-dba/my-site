@@ -3,7 +3,13 @@ from typing import Any
 from fastapi import APIRouter, Depends
 
 from src.app.dependencies import get_admin_auth, get_db_api
-from src.app.schemas.resume import PerformanceReviewCreate, ResumeEntryCreate, ResumeSectionCreate
+from src.app.schemas.resume import (
+    PerformanceReviewCreate,
+    ResumeContactCreate,
+    ResumeEntryCreate,
+    ResumeRecommendationsReplace,
+    ResumeSummaryCreate,
+)
 from src.app.services.db_functions import DatabaseAPI
 
 router = APIRouter()
@@ -48,10 +54,28 @@ async def delete_performance_review(
     return await db.delete_performance_review(review_id)
 
 
-@router.post("/resume/section", dependencies=[Depends(get_admin_auth)])
-async def upsert_resume_section(
-    body: ResumeSectionCreate,
+@router.post("/resume/summary", dependencies=[Depends(get_admin_auth)])
+async def upsert_resume_summary(
+    body: ResumeSummaryCreate,
     db: DatabaseAPI = Depends(get_db_api),
 ) -> Any:
-    """Create or update a resume section."""
-    return await db.upsert_resume_section(body.model_dump())
+    """Create or update the resume summary."""
+    return await db.upsert_resume_summary(body.model_dump())
+
+
+@router.post("/resume/contact", dependencies=[Depends(get_admin_auth)])
+async def upsert_resume_contact(
+    body: ResumeContactCreate,
+    db: DatabaseAPI = Depends(get_db_api),
+) -> Any:
+    """Create or update the resume contact info."""
+    return await db.upsert_resume_contact(body.model_dump())
+
+
+@router.post("/resume/recommendations", dependencies=[Depends(get_admin_auth)])
+async def replace_resume_recommendations(
+    body: ResumeRecommendationsReplace,
+    db: DatabaseAPI = Depends(get_db_api),
+) -> Any:
+    """Replace all resume recommendations."""
+    return await db.replace_resume_recommendations([item.model_dump() for item in body.items])

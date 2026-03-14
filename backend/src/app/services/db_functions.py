@@ -43,11 +43,27 @@ class DatabaseAPI:
         )
         return result.scalar_one()
 
-    async def upsert_resume_section(self, data: dict[str, Any]) -> Any:
-        """Insert or update a resume section."""
+    async def upsert_resume_summary(self, data: dict[str, Any]) -> Any:
+        """Insert or update the resume summary."""
         result = await self.session.execute(
-            text("SELECT api.upsert_resume_section(CAST(:data AS jsonb))"),
+            text("SELECT api.upsert_resume_summary(CAST(:data AS jsonb))"),
             {"data": json.dumps(data, default=str)},
+        )
+        return result.scalar_one()
+
+    async def upsert_resume_contact(self, data: dict[str, Any]) -> Any:
+        """Insert or update the resume contact info."""
+        result = await self.session.execute(
+            text("SELECT api.upsert_resume_contact(CAST(:data AS jsonb))"),
+            {"data": json.dumps(data, default=str)},
+        )
+        return result.scalar_one()
+
+    async def replace_resume_recommendations(self, items: list[dict[str, Any]]) -> Any:
+        """Replace all recommendations."""
+        result = await self.session.execute(
+            text("SELECT api.replace_resume_recommendations(CAST(:items AS jsonb))"),
+            {"items": json.dumps(items, default=str)},
         )
         return result.scalar_one()
 

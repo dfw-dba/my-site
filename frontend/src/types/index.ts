@@ -23,9 +23,25 @@ export interface ProfessionalEntry {
   performance_reviews: PerformanceReview[];
 }
 
-export interface ResumeSection {
-  section_type: string;
-  content: Record<string, unknown>;
+export interface ResumeSummaryCreate {
+  headline?: string | null;
+  text: string;
+}
+
+export interface ResumeContactCreate {
+  linkedin?: string | null;
+  github?: string | null;
+  email?: string | null;
+}
+
+export interface ResumeRecommendationItem {
+  author: string;
+  title: string;
+  text: string;
+}
+
+export interface ResumeRecommendationsReplace {
+  items: ResumeRecommendationItem[];
 }
 
 export interface ContactInfo {
@@ -51,11 +67,6 @@ export interface ResumeEntryCreate {
   highlights?: string[];
   technologies?: string[];
   sort_order?: number;
-}
-
-export interface ResumeSectionCreate {
-  section_type: string;
-  content: Record<string, unknown>;
 }
 
 export interface PerformanceReviewCreate {

@@ -6,7 +6,9 @@ import {
   useAdminResume,
   useAdminUpsertResumeEntry,
   useAdminDeleteResumeEntry,
-  useAdminUpsertResumeSection,
+  useAdminUpsertResumeSummary,
+  useAdminUpsertResumeContact,
+  useAdminReplaceRecommendations,
   useAdminUpsertPerformanceReview,
   useAdminDeletePerformanceReview,
 } from "../../src/hooks/useAdminApi";
@@ -15,18 +17,22 @@ vi.mock("../../src/hooks/useAdminApi", () => ({
   useAdminResume: vi.fn(),
   useAdminUpsertResumeEntry: vi.fn(),
   useAdminDeleteResumeEntry: vi.fn(),
-  useAdminUpsertResumeSection: vi.fn(),
+  useAdminUpsertResumeSummary: vi.fn(),
+  useAdminUpsertResumeContact: vi.fn(),
+  useAdminReplaceRecommendations: vi.fn(),
   useAdminUpsertPerformanceReview: vi.fn(),
   useAdminDeletePerformanceReview: vi.fn(),
 }));
 
-const mockMutation = { mutate: vi.fn(), isPending: false };
+const mockMutation = { mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false };
 
 describe("ResumeEditor", () => {
   beforeEach(() => {
     vi.mocked(useAdminUpsertResumeEntry).mockReturnValue(mockMutation as any);
     vi.mocked(useAdminDeleteResumeEntry).mockReturnValue(mockMutation as any);
-    vi.mocked(useAdminUpsertResumeSection).mockReturnValue(mockMutation as any);
+    vi.mocked(useAdminUpsertResumeSummary).mockReturnValue(mockMutation as any);
+    vi.mocked(useAdminUpsertResumeContact).mockReturnValue(mockMutation as any);
+    vi.mocked(useAdminReplaceRecommendations).mockReturnValue(mockMutation as any);
     vi.mocked(useAdminUpsertPerformanceReview).mockReturnValue(mockMutation as any);
     vi.mocked(useAdminDeletePerformanceReview).mockReturnValue(mockMutation as any);
   });
@@ -72,18 +78,24 @@ describe("ResumeEditor", () => {
     expect(screen.getAllByText("Acme Corp").length).toBeGreaterThan(0);
   });
 
-  it("switches to sections tab", async () => {
+  it("switches to sections tab and shows typed forms", async () => {
     vi.mocked(useAdminResume).mockReturnValue({
       isLoading: false,
       data: {
-        sections: { summary: { text: "Hello world" } },
+        sections: {
+          summary: { headline: "Engineer", text: "Hello world" },
+          contact: { linkedin: "https://linkedin.com", github: null, email: null },
+          recommendations: { items: [] },
+        },
         entries: {},
       },
     } as any);
 
     renderWithProviders(<ResumeEditor />);
     await userEvent.click(screen.getByText("Sections"));
-    expect(screen.getByText("summary")).toBeInTheDocument();
+    expect(screen.getByText("Summary")).toBeInTheDocument();
+    expect(screen.getByText("Contact")).toBeInTheDocument();
+    expect(screen.getByText("Recommendations")).toBeInTheDocument();
   });
 
   it("shows empty state for entries", () => {

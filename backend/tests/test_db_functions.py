@@ -77,16 +77,14 @@ async def test_upsert_professional_entry(db_api: DatabaseAPI) -> None:
     assert entry_data["title"] in titles
 
 
-async def test_upsert_resume_section(db_api: DatabaseAPI) -> None:
-    """Upserting a resume section returns a success result."""
-    section_data = {
-        "section_type": "summary",
-        "content": {"text": f"Test summary {_unique()}"},
-    }
+async def test_upsert_resume_summary(db_api: DatabaseAPI) -> None:
+    """Upserting the resume summary returns a success result."""
+    summary_data = {"headline": "Test Headline", "text": f"Test summary {_unique()}"}
 
-    upsert_result = _parse(await db_api.upsert_resume_section(section_data))
+    upsert_result = _parse(await db_api.upsert_resume_summary(summary_data))
     assert upsert_result is not None
     assert isinstance(upsert_result, dict)
+    assert upsert_result.get("success") is True
 
 
 async def test_delete_professional_entry(db_api: DatabaseAPI) -> None:

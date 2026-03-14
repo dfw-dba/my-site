@@ -27,20 +27,58 @@ comment on column internal.professional_entries.highlights is 'JSON array of bul
 comment on column internal.professional_entries.technologies is 'JSON array of technology name strings';
 
 -- ============================================================
--- resume_sections
+-- resume_summary (single-row)
 -- ============================================================
-create table if not exists internal.resume_sections
+create table if not exists internal.resume_summary
 (
-  id           int2 generated always as identity primary key,
-  section_type text unique not null check (section_type in ('summary', 'contact', 'recommendations')),
-  content      jsonb not null,
+  id           int4 generated always as identity primary key,
+  headline     text,
+  text         text not null,
   created_at   timestamptz default now(),
   updated_at   timestamptz default now()
 );
 
-comment on table internal.resume_sections is 'Free-form resume sections keyed by type (summary, contact, recommendations)';
-comment on column internal.resume_sections.section_type is 'One of: summary, contact, recommendations';
-comment on column internal.resume_sections.content is 'JSONB content whose structure varies by section_type';
+comment on table internal.resume_summary is 'Single-row table holding the resume summary/headline text';
+comment on column internal.resume_summary.headline is 'Optional headline displayed above the summary text';
+comment on column internal.resume_summary.text is 'Plain-text summary; newlines are preserved for display';
+
+-- ============================================================
+-- resume_contact (single-row)
+-- ============================================================
+create table if not exists internal.resume_contact
+(
+  id           int4 generated always as identity primary key,
+  linkedin     text,
+  github       text,
+  email        text,
+  created_at   timestamptz default now(),
+  updated_at   timestamptz default now()
+);
+
+comment on table internal.resume_contact is 'Single-row table holding contact/social links';
+comment on column internal.resume_contact.linkedin is 'LinkedIn profile URL';
+comment on column internal.resume_contact.github is 'GitHub profile URL';
+comment on column internal.resume_contact.email is 'Contact email address';
+
+-- ============================================================
+-- resume_recommendations (multi-row)
+-- ============================================================
+create table if not exists internal.resume_recommendations
+(
+  id           int4 generated always as identity primary key,
+  author       text not null,
+  title        text not null,
+  text         text not null,
+  sort_order   int4 default 0,
+  created_at   timestamptz default now(),
+  updated_at   timestamptz default now()
+);
+
+comment on table internal.resume_recommendations is 'LinkedIn recommendations displayed on the resume page';
+comment on column internal.resume_recommendations.author is 'Name of the person who wrote the recommendation';
+comment on column internal.resume_recommendations.title is 'Job title of the recommender';
+comment on column internal.resume_recommendations.text is 'Full text of the recommendation';
+comment on column internal.resume_recommendations.sort_order is 'Display order; lower values appear first';
 
 -- ============================================================
 -- performance_reviews

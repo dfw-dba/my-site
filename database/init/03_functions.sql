@@ -12,11 +12,53 @@ returns jsonb as $$
 declare
     v_sections jsonb;
     v_entries  jsonb;
+    v_summary  jsonb;
+    v_contact  jsonb;
+    v_recs     jsonb;
 begin
-    -- Collect all resume sections keyed by section_type
-    select coalesce(jsonb_object_agg(rs.section_type, rs.content), '{}'::jsonb)
-      into v_sections
-      from internal.resume_sections as rs;
+    -- Build summary section
+    select jsonb_build_object(
+               'headline', rs.headline,
+               'text',     rs.text
+           )
+      into v_summary
+      from internal.resume_summary as rs
+     limit 1;
+
+    -- Build contact section
+    select jsonb_build_object(
+               'linkedin', rc.linkedin,
+               'github',   rc.github,
+               'email',    rc.email
+           )
+      into v_contact
+      from internal.resume_contact as rc
+     limit 1;
+
+    -- Build recommendations section
+    select jsonb_build_object(
+               'items', coalesce(jsonb_agg(
+                   jsonb_build_object(
+                       'author', rr.author,
+                       'title',  rr.title,
+                       'text',   rr.text
+                   ) order by rr.sort_order
+               ), '[]'::jsonb)
+           )
+      into v_recs
+      from internal.resume_recommendations as rr;
+
+    -- Assemble sections object
+    v_sections := '{}'::jsonb;
+    if v_summary is not null then
+        v_sections := v_sections || jsonb_build_object('summary', v_summary);
+    end if;
+    if v_contact is not null then
+        v_sections := v_sections || jsonb_build_object('contact', v_contact);
+    end if;
+    if v_recs is not null then
+        v_sections := v_sections || jsonb_build_object('recommendations', v_recs);
+    end if;
 
     -- Collect professional entries grouped by entry_type
     select coalesce(jsonb_object_agg(sub.entry_type, sub.items), '{}'::jsonb)
@@ -69,15 +111,19 @@ security definer;
 
 
 -- api.get_contact_info()
--- Returns the contact section content (linkedin, github, email, etc.).
+-- Returns the contact info (linkedin, github, email).
 create or replace function api.get_contact_info()
 returns jsonb as $$
 begin
     return coalesce(
     (
-        select rs.content
-          from internal.resume_sections as rs
-         where rs.section_type = 'contact'
+        select jsonb_build_object(
+                   'linkedin', rc.linkedin,
+                   'github',   rc.github,
+                   'email',    rc.email
+               )
+          from internal.resume_contact as rc
+         limit 1
     ), '{}'::jsonb);
 end;
 $$ language plpgsql stable
@@ -164,25 +210,77 @@ $$ language plpgsql volatile
 security definer;
 
 
--- api.upsert_resume_section(p_data JSONB)
--- Insert or update by section_type.
-create or replace function api.upsert_resume_section(p_data jsonb)
+-- api.upsert_resume_summary(p_data JSONB)
+-- Upsert the single summary row.
+create or replace function api.upsert_resume_summary(p_data jsonb)
 returns jsonb as $$
 declare
-    v_id int2;
+    v_id int4;
 begin
-    insert into internal.resume_sections (section_type, content)
-    values
-    (
-        p_data->>'section_type',
-        p_data->'content'
-    )
-    on conflict (section_type) do update set
-        content    = excluded.content,
-        updated_at = now()
-    returning id into v_id;
+    if exists (select 1 from internal.resume_summary limit 1) then
+        update internal.resume_summary set
+            headline   = p_data->>'headline',
+            text       = coalesce(p_data->>'text', text),
+            updated_at = now()
+        returning id into v_id;
+    else
+        insert into internal.resume_summary (headline, text)
+        values (p_data->>'headline', p_data->>'text')
+        returning id into v_id;
+    end if;
 
     return jsonb_build_object('id', v_id, 'success', true);
+end;
+$$ language plpgsql volatile
+security definer;
+
+
+-- api.upsert_resume_contact(p_data JSONB)
+-- Upsert the single contact row.
+create or replace function api.upsert_resume_contact(p_data jsonb)
+returns jsonb as $$
+declare
+    v_id int4;
+begin
+    if exists (select 1 from internal.resume_contact limit 1) then
+        update internal.resume_contact set
+            linkedin   = p_data->>'linkedin',
+            github     = p_data->>'github',
+            email      = p_data->>'email',
+            updated_at = now()
+        returning id into v_id;
+    else
+        insert into internal.resume_contact (linkedin, github, email)
+        values (p_data->>'linkedin', p_data->>'github', p_data->>'email')
+        returning id into v_id;
+    end if;
+
+    return jsonb_build_object('id', v_id, 'success', true);
+end;
+$$ language plpgsql volatile
+security definer;
+
+
+-- api.replace_resume_recommendations(p_items JSONB)
+-- Delete all existing recommendations and insert from the provided JSON array.
+create or replace function api.replace_resume_recommendations(p_items jsonb)
+returns jsonb as $$
+declare
+    v_count int4;
+begin
+    delete from internal.resume_recommendations;
+
+    insert into internal.resume_recommendations (author, title, text, sort_order)
+    select
+        item->>'author',
+        item->>'title',
+        item->>'text',
+        row_number() over ()::int4
+    from jsonb_array_elements(p_items) as item;
+
+    get diagnostics v_count = row_count;
+
+    return jsonb_build_object('count', v_count, 'success', true);
 end;
 $$ language plpgsql volatile
 security definer;
