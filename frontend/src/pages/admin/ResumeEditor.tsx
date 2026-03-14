@@ -279,9 +279,7 @@ export default function ResumeEditor() {
                   label="Author"
                   value={item.author}
                   onChange={(v) => {
-                    const updated = [...recsItems];
-                    updated[idx] = { ...updated[idx], author: v };
-                    setRecsItems(updated);
+                    setRecsItems(recsItems.map((r, i) => i === idx ? { ...r, author: v } : r));
                     setRecsDirty(true);
                   }}
                   required
@@ -290,9 +288,7 @@ export default function ResumeEditor() {
                   label="Title"
                   value={item.title}
                   onChange={(v) => {
-                    const updated = [...recsItems];
-                    updated[idx] = { ...updated[idx], title: v };
-                    setRecsItems(updated);
+                    setRecsItems(recsItems.map((r, i) => i === idx ? { ...r, title: v } : r));
                     setRecsDirty(true);
                   }}
                   required
@@ -301,9 +297,7 @@ export default function ResumeEditor() {
                   label="Text"
                   value={item.text}
                   onChange={(v) => {
-                    const updated = [...recsItems];
-                    updated[idx] = { ...updated[idx], text: v };
-                    setRecsItems(updated);
+                    setRecsItems(recsItems.map((r, i) => i === idx ? { ...r, text: v } : r));
                     setRecsDirty(true);
                   }}
                   rows={3}
