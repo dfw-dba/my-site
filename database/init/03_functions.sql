@@ -12,10 +12,19 @@ returns jsonb as $$
 declare
     v_sections jsonb;
     v_entries  jsonb;
+    v_title    jsonb;
     v_summary  jsonb;
     v_contact  jsonb;
     v_recs     jsonb;
 begin
+    -- Build title section
+    select jsonb_build_object(
+               'title', rt.title
+           )
+      into v_title
+      from internal.resume_title as rt
+     limit 1;
+
     -- Build summary section
     select jsonb_build_object(
                'headline', rs.headline,
@@ -50,6 +59,9 @@ begin
 
     -- Assemble sections object
     v_sections := '{}'::jsonb;
+    if v_title is not null then
+        v_sections := v_sections || jsonb_build_object('title', v_title);
+    end if;
     if v_summary is not null then
         v_sections := v_sections || jsonb_build_object('summary', v_summary);
     end if;
@@ -226,6 +238,30 @@ begin
     else
         insert into internal.resume_summary (headline, text)
         values (p_data->>'headline', p_data->>'text')
+        returning id into v_id;
+    end if;
+
+    return jsonb_build_object('id', v_id, 'success', true);
+end;
+$$ language plpgsql volatile
+security definer;
+
+
+-- api.upsert_resume_title(p_data JSONB)
+-- Upsert the single title row.
+create or replace function api.upsert_resume_title(p_data jsonb)
+returns jsonb as $$
+declare
+    v_id int4;
+begin
+    if exists (select 1 from internal.resume_title limit 1) then
+        update internal.resume_title set
+            title      = coalesce(p_data->>'title', title),
+            updated_at = now()
+        returning id into v_id;
+    else
+        insert into internal.resume_title (title)
+        values (p_data->>'title')
         returning id into v_id;
     end if;
 

@@ -31,6 +31,12 @@ class PerformanceReviewCreate(BaseModel):
     sort_order: int = 0
 
 
+class ResumeTitleCreate(BaseModel):
+    """Schema for creating/updating the resume title."""
+
+    title: str
+
+
 class ResumeSummaryCreate(BaseModel):
     """Schema for creating/updating the resume summary."""
 

@@ -5,6 +5,16 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      seed_data:
+        description: "Load sample seed data into the test database"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
 jobs:
   backend:
@@ -43,6 +53,12 @@ jobs:
             echo "Running $f..."
             PGPASSWORD=localdev psql -h localhost -U mysite -d mysite -f "$f"
           done
+
+      - name: Load seed data
+        if: inputs.seed_data == 'true'
+        run: |
+          echo "Loading seed data..."
+          PGPASSWORD=localdev psql -h localhost -U mysite -d mysite -f database/seed/05_seed_data.sql
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4

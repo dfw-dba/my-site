@@ -23,3 +23,4 @@ _Updated after each correction or insight. Review at session start._
 - **Database as API**: ALL data access goes through `api.*` stored functions. No direct table queries. No ORM queries.
 - **Thin routers**: FastAPI routers delegate to DatabaseAPI service. No business logic in routers.
 - **Fork-friendly**: No hardcoded domains, AWS account IDs, or personal info. Everything parameterized via config/site.json.
+- **Optional behavior via flags, not comments (2026-03-14)**: Never make features optional by requiring users to uncomment code. Use env vars, CLI flags, or scripts with flags instead. Applies to docker-compose, CI workflows, and any config.

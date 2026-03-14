@@ -6,6 +6,7 @@ import {
   useAdminResume,
   useAdminUpsertResumeEntry,
   useAdminDeleteResumeEntry,
+  useAdminUpsertResumeTitle,
   useAdminUpsertResumeSummary,
   useAdminUpsertResumeContact,
   useAdminReplaceRecommendations,
@@ -17,6 +18,7 @@ vi.mock("../../src/hooks/useAdminApi", () => ({
   useAdminResume: vi.fn(),
   useAdminUpsertResumeEntry: vi.fn(),
   useAdminDeleteResumeEntry: vi.fn(),
+  useAdminUpsertResumeTitle: vi.fn(),
   useAdminUpsertResumeSummary: vi.fn(),
   useAdminUpsertResumeContact: vi.fn(),
   useAdminReplaceRecommendations: vi.fn(),
@@ -30,6 +32,7 @@ describe("ResumeEditor", () => {
   beforeEach(() => {
     vi.mocked(useAdminUpsertResumeEntry).mockReturnValue(mockMutation as any);
     vi.mocked(useAdminDeleteResumeEntry).mockReturnValue(mockMutation as any);
+    vi.mocked(useAdminUpsertResumeTitle).mockReturnValue(mockMutation as any);
     vi.mocked(useAdminUpsertResumeSummary).mockReturnValue(mockMutation as any);
     vi.mocked(useAdminUpsertResumeContact).mockReturnValue(mockMutation as any);
     vi.mocked(useAdminReplaceRecommendations).mockReturnValue(mockMutation as any);

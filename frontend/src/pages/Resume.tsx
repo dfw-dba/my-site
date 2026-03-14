@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useResume } from "../hooks/useApi";
 import Timeline from "../components/Timeline";
 import ProfileImage from "../components/ProfileImage";
@@ -25,6 +26,20 @@ function ErrorMessage({ message }: { message: string }) {
 
 export default function Resume() {
   const { data, isLoading, isError, error } = useResume();
+
+  const titleValue =
+    data?.sections?.title && typeof (data.sections.title as SectionContent).title === "string"
+      ? ((data.sections.title as SectionContent).title as string)
+      : null;
+
+  useEffect(() => {
+    if (titleValue) {
+      document.title = titleValue;
+    }
+    return () => {
+      document.title = "";
+    };
+  }, [titleValue]);
 
   if (isLoading) return <LoadingSpinner />;
   if (isError)

@@ -4,6 +4,7 @@ import {
   useAdminResume,
   useAdminUpsertResumeEntry,
   useAdminDeleteResumeEntry,
+  useAdminUpsertResumeTitle,
   useAdminUpsertResumeSummary,
   useAdminUpsertResumeContact,
   useAdminReplaceRecommendations,
@@ -65,6 +66,7 @@ export default function ResumeEditor() {
   const { data: resume, isLoading } = useAdminResume();
   const upsertEntry = useAdminUpsertResumeEntry();
   const deleteEntry = useAdminDeleteResumeEntry();
+  const upsertTitle = useAdminUpsertResumeTitle();
   const upsertSummary = useAdminUpsertResumeSummary();
   const upsertContact = useAdminUpsertResumeContact();
   const replaceRecommendations = useAdminReplaceRecommendations();
@@ -74,6 +76,10 @@ export default function ResumeEditor() {
   const [tab, setTab] = useState<Tab>("entries");
   const [editingEntryId, setEditingEntryId] = useState<number | "new" | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ProfessionalEntry | null>(null);
+
+  // Title form state
+  const [titleText, setTitleText] = useState("");
+  const [titleDirty, setTitleDirty] = useState(false);
 
   // Summary form state
   const [summaryHeadline, setSummaryHeadline] = useState("");
@@ -101,12 +107,15 @@ export default function ResumeEditor() {
       : editingEntryId;
 
   // Sync form state when resume data loads or tab switches
+  const titleSection = resume?.sections?.title as { title?: string } | undefined;
   const summarySection = resume?.sections?.summary as { headline?: string; text?: string } | undefined;
   const contactSection = resume?.sections?.contact as { linkedin?: string; github?: string; email?: string } | undefined;
   const recsSection = resume?.sections?.recommendations as { items?: { author: string; title: string; text: string }[] } | undefined;
 
   // Reset form state from server data when switching to sections tab
   function resetSectionForms() {
+    setTitleText(titleSection?.title ?? "");
+    setTitleDirty(false);
     setSummaryHeadline(summarySection?.headline ?? "");
     setSummaryText(summarySection?.text ?? "");
     setSummaryDirty(false);
@@ -179,6 +188,29 @@ export default function ResumeEditor() {
         </>
       ) : (
         <div className="space-y-6">
+          {/* Title */}
+          <div className="bg-gray-700/50 rounded-lg p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-white">Title</h3>
+            <FormInput
+              label="Title"
+              value={titleText}
+              onChange={(v) => { setTitleText(v); setTitleDirty(true); }}
+              placeholder="Displayed in the browser tab"
+            />
+            <div className="flex justify-end">
+              <button
+                onClick={async () => {
+                  await upsertTitle.mutateAsync({ title: titleText });
+                  setTitleDirty(false);
+                }}
+                disabled={!titleDirty || upsertTitle.isPending}
+                className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-50"
+              >
+                {upsertTitle.isPending ? "Saving..." : "Save Title"}
+              </button>
+            </div>
+          </div>
+
           {/* Summary */}
           <div className="bg-gray-700/50 rounded-lg p-4 space-y-3">
             <h3 className="text-sm font-semibold text-white">Summary</h3>
