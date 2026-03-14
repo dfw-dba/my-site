@@ -1,7 +1,7 @@
 """
 CDK Custom Resource handler for RDS database migration.
-Executes SQL init scripts (00–05) to set up schemas, tables, functions,
-permissions, and seed data. Connects using master credentials passed via
+Executes SQL init scripts (00–04) to set up schemas, tables, functions,
+and permissions. Connects using master credentials passed via
 environment variables.
 """
 

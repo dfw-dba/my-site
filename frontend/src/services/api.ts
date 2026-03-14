@@ -3,6 +3,7 @@ import type {
   ResumeData,
   ProfessionalEntry,
   ResumeEntryCreate,
+  ResumeTitleCreate,
   ResumeSummaryCreate,
   ResumeContactCreate,
   ResumeRecommendationsReplace,
@@ -67,6 +68,12 @@ export const api = {
         request<ApiSuccess>(`/api/admin/resume/entry/${id}`, {
           method: "DELETE",
           headers: await adminHeaders(),
+        }),
+      upsertTitle: async (data: ResumeTitleCreate) =>
+        request<ApiSuccess>("/api/admin/resume/title", {
+          method: "POST",
+          headers: await adminHeaders(),
+          body: JSON.stringify(data),
         }),
       upsertSummary: async (data: ResumeSummaryCreate) =>
         request<ApiSuccess>("/api/admin/resume/summary", {

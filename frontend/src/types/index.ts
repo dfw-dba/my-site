@@ -23,6 +23,10 @@ export interface ProfessionalEntry {
   performance_reviews: PerformanceReview[];
 }
 
+export interface ResumeTitleCreate {
+  title: string;
+}
+
 export interface ResumeSummaryCreate {
   headline?: string | null;
   text: string;

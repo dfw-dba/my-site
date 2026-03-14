@@ -74,7 +74,7 @@ cp .env.example .env
 cp config/site.example.json config/site.json
 
 # 2. Start all services
-docker compose up -d
+./dev.sh
 
 # 3. Access the app
 #    Frontend:  http://localhost:5173
@@ -83,6 +83,22 @@ docker compose up -d
 ```
 
 Local dev uses API key auth (`ADMIN_API_KEY` in `.env`). Cognito auth is only required in production.
+
+### Seed Data
+
+The database starts empty by default. To load sample seed data (fictional companies, reviews, and contact info), pass the `--seed` flag:
+
+```bash
+./dev.sh --seed
+```
+
+Or set the environment variable:
+
+```bash
+SEED_DATA=true ./dev.sh
+```
+
+The seed script is idempotent — it only inserts rows when tables are empty, so running it multiple times is safe. Seed data lives in `database/seed/` and is never loaded automatically in production or CI.
 
 ---
 
@@ -306,7 +322,7 @@ aws lambda update-function-code \
 
 ### 11. Database Initialization
 
-The database is initialized automatically. The `MySiteData` stack includes a migration Lambda that runs all SQL init scripts (`database/init/00–05`) on every deploy. No manual SQL setup is needed.
+The database is initialized automatically. The `MySiteData` stack includes a migration Lambda that runs all SQL init scripts (`database/init/00–04`) on every deploy. No manual SQL setup is needed. Seed data is not loaded in production.
 
 ### 12. Connecting to the Database (Bastion Host)
 
@@ -507,7 +523,10 @@ Backend and frontend deploy in parallel after infrastructure.
 │   │   ├── services/      # API client + auth service
 │   │   └── types/         # TypeScript interfaces
 │   └── tests/             # Frontend tests
-├── database/init/         # SQL init scripts (schemas, tables, functions, seed data)
+├── database/
+│   ├── init/              # SQL init scripts (schemas, tables, functions, permissions)
+│   └── seed/              # Optional sample seed data (loaded via ./dev.sh --seed)
+├── dev.sh                 # Local dev startup script (supports --seed flag)
 ├── docker/                # Dockerfiles (dev, production, Lambda)
 ├── infrastructure/cdk/    # AWS CDK stacks (TypeScript)
 │   ├── lib/               # Stack definitions (DNS, Cert, Data, App)

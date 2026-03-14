@@ -9,6 +9,7 @@ from src.app.schemas.resume import (
     ResumeEntryCreate,
     ResumeRecommendationsReplace,
     ResumeSummaryCreate,
+    ResumeTitleCreate,
 )
 from src.app.services.db_functions import DatabaseAPI
 
@@ -52,6 +53,15 @@ async def delete_performance_review(
 ) -> Any:
     """Delete a performance review by ID."""
     return await db.delete_performance_review(review_id)
+
+
+@router.post("/resume/title", dependencies=[Depends(get_admin_auth)])
+async def upsert_resume_title(
+    body: ResumeTitleCreate,
+    db: DatabaseAPI = Depends(get_db_api),
+) -> Any:
+    """Create or update the resume title."""
+    return await db.upsert_resume_title(body.model_dump())
 
 
 @router.post("/resume/summary", dependencies=[Depends(get_admin_auth)])

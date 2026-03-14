@@ -43,6 +43,20 @@ comment on column internal.resume_summary.headline is 'Optional headline display
 comment on column internal.resume_summary.text is 'Plain-text summary; newlines are preserved for display';
 
 -- ============================================================
+-- resume_title (single-row)
+-- ============================================================
+create table if not exists internal.resume_title
+(
+  id           int4 generated always as identity primary key,
+  title        text not null,
+  created_at   timestamptz default now(),
+  updated_at   timestamptz default now()
+);
+
+comment on table internal.resume_title is 'Single-row table holding the browser tab title for the resume page';
+comment on column internal.resume_title.title is 'The text displayed in the browser tab when viewing the resume';
+
+-- ============================================================
 -- resume_contact (single-row)
 -- ============================================================
 create table if not exists internal.resume_contact

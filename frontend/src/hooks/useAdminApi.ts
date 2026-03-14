@@ -3,6 +3,7 @@ import { api } from "../services/api";
 import { showToast } from "../components/admin/Toast";
 import type {
   ResumeEntryCreate,
+  ResumeTitleCreate,
   ResumeSummaryCreate,
   ResumeContactCreate,
   ResumeRecommendationsReplace,
@@ -41,6 +42,19 @@ export function useAdminDeleteResumeEntry() {
     mutationFn: (id: number) => api.admin.resume.deleteEntry(id),
     onSuccess: () => {
       showToast("Entry deleted", "success");
+      qc.invalidateQueries({ queryKey: ["admin-resume"] });
+      qc.invalidateQueries({ queryKey: ["resume"] });
+    },
+    onError: onMutationError,
+  });
+}
+
+export function useAdminUpsertResumeTitle() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: ResumeTitleCreate) => api.admin.resume.upsertTitle(data),
+    onSuccess: () => {
+      showToast("Title saved", "success");
       qc.invalidateQueries({ queryKey: ["admin-resume"] });
       qc.invalidateQueries({ queryKey: ["resume"] });
     },

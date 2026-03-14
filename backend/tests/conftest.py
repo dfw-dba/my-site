@@ -56,6 +56,7 @@ def mock_db_api() -> AsyncMock:
     mock.get_resume.return_value = {"sections": [], "entries": {}}
     mock.get_professional_timeline.return_value = []
     mock.upsert_professional_entry.return_value = {"success": True}
+    mock.upsert_resume_title.return_value = {"success": True}
     mock.upsert_resume_summary.return_value = {"success": True}
     mock.upsert_resume_contact.return_value = {"success": True}
     mock.replace_resume_recommendations.return_value = {"count": 0, "success": True}
