@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.app.config import settings
 from src.app.database import async_session_factory
 from src.app.services.db_functions import DatabaseAPI
+from src.app.services.storage import StorageService
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
@@ -24,6 +25,11 @@ async def get_db_api(
 ) -> AsyncGenerator[DatabaseAPI, None]:
     """Yield a DatabaseAPI instance wrapping the current session."""
     yield DatabaseAPI(session)
+
+
+def get_storage() -> StorageService:
+    """Return a StorageService instance."""
+    return StorageService()
 
 
 # Lazily initialised Cognito verifier (created on first use when configured)

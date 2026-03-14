@@ -126,3 +126,16 @@ export function useAdminDeletePerformanceReview() {
     onError: onMutationError,
   });
 }
+
+export function useAdminUploadProfileImage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => api.admin.resume.uploadProfileImage(file),
+    onSuccess: () => {
+      showToast("Profile image uploaded", "success");
+      qc.invalidateQueries({ queryKey: ["admin-resume"] });
+      qc.invalidateQueries({ queryKey: ["resume"] });
+    },
+    onError: onMutationError,
+  });
+}

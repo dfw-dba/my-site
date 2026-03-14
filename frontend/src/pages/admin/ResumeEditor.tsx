@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useAdminResume,
@@ -10,6 +10,7 @@ import {
   useAdminReplaceRecommendations,
   useAdminUpsertPerformanceReview,
   useAdminDeletePerformanceReview,
+  useAdminUploadProfileImage,
 } from "../../hooks/useAdminApi";
 import FormInput from "../../components/admin/FormInput";
 import DataTable from "../../components/admin/DataTable";
@@ -72,6 +73,8 @@ export default function ResumeEditor() {
   const replaceRecommendations = useAdminReplaceRecommendations();
   const upsertReview = useAdminUpsertPerformanceReview();
   const deleteReview = useAdminDeletePerformanceReview();
+  const uploadProfileImage = useAdminUploadProfileImage();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [tab, setTab] = useState<Tab>("entries");
   const [editingEntryId, setEditingEntryId] = useState<number | "new" | null>(null);
@@ -111,6 +114,7 @@ export default function ResumeEditor() {
   const summarySection = resume?.sections?.summary as { headline?: string; text?: string } | undefined;
   const contactSection = resume?.sections?.contact as { linkedin?: string; github?: string; email?: string } | undefined;
   const recsSection = resume?.sections?.recommendations as { items?: { author: string; title: string; text: string }[] } | undefined;
+  const profileImageSection = resume?.sections?.profile_image as { image_url?: string } | undefined;
 
   // Reset form state from server data when switching to sections tab
   function resetSectionForms() {
@@ -188,6 +192,40 @@ export default function ResumeEditor() {
         </>
       ) : (
         <div className="space-y-6">
+          {/* Profile Image */}
+          <div className="bg-gray-700/50 rounded-lg p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-white">Profile Image</h3>
+            {profileImageSection?.image_url && (
+              <img
+                src={profileImageSection.image_url}
+                alt="Profile"
+                className="h-24 w-24 rounded-full object-cover"
+              />
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  await uploadProfileImage.mutateAsync(file);
+                }
+                if (fileInputRef.current) fileInputRef.current.value = "";
+              }}
+            />
+            <div className="flex justify-end">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadProfileImage.isPending}
+                className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-50"
+              >
+                {uploadProfileImage.isPending ? "Uploading..." : "Upload Image"}
+              </button>
+            </div>
+          </div>
+
           {/* Title */}
           <div className="bg-gray-700/50 rounded-lg p-4 space-y-3">
             <h3 className="text-sm font-semibold text-white">Title</h3>

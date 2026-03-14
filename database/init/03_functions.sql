@@ -10,12 +10,13 @@
 create or replace function api.get_resume()
 returns jsonb as $$
 declare
-    v_sections jsonb;
-    v_entries  jsonb;
-    v_title    jsonb;
-    v_summary  jsonb;
-    v_contact  jsonb;
-    v_recs     jsonb;
+    v_sections      jsonb;
+    v_entries       jsonb;
+    v_title         jsonb;
+    v_summary       jsonb;
+    v_contact       jsonb;
+    v_recs          jsonb;
+    v_profile_image jsonb;
 begin
     -- Build title section
     select jsonb_build_object(
@@ -57,6 +58,14 @@ begin
       into v_recs
       from internal.resume_recommendations as rr;
 
+    -- Build profile image section
+    select jsonb_build_object(
+               'image_url', rpi.image_url
+           )
+      into v_profile_image
+      from internal.resume_profile_image as rpi
+     limit 1;
+
     -- Assemble sections object
     v_sections := '{}'::jsonb;
     if v_title is not null then
@@ -70,6 +79,9 @@ begin
     end if;
     if v_recs is not null then
         v_sections := v_sections || jsonb_build_object('recommendations', v_recs);
+    end if;
+    if v_profile_image is not null then
+        v_sections := v_sections || jsonb_build_object('profile_image', v_profile_image);
     end if;
 
     -- Collect professional entries grouped by entry_type
@@ -395,6 +407,30 @@ begin
         'success', (v_count > 0)::boolean,
         'id',      p_id
     );
+end;
+$$ language plpgsql volatile
+security definer;
+
+
+-- api.upsert_resume_profile_image(p_data JSONB)
+-- Upsert the single profile image row.
+create or replace function api.upsert_resume_profile_image(p_data jsonb)
+returns jsonb as $$
+declare
+    v_id int4;
+begin
+    if exists (select 1 from internal.resume_profile_image limit 1) then
+        update internal.resume_profile_image set
+            image_url  = coalesce(p_data->>'image_url', image_url),
+            updated_at = now()
+        returning id into v_id;
+    else
+        insert into internal.resume_profile_image (image_url)
+        values (p_data->>'image_url')
+        returning id into v_id;
+    end if;
+
+    return jsonb_build_object('id', v_id, 'success', true);
 end;
 $$ language plpgsql volatile
 security definer;

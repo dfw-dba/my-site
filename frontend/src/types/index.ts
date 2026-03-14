@@ -83,6 +83,11 @@ export interface PerformanceReviewCreate {
   sort_order?: number;
 }
 
+export interface ProfileImageUploadResponse {
+  success: boolean;
+  image_url: string;
+}
+
 export interface ApiSuccess {
   success: boolean;
   id?: number;

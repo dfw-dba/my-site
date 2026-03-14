@@ -38,6 +38,13 @@ class Settings(BaseSettings):
     COGNITO_APP_CLIENT_ID: str = ""
     COGNITO_REGION: str = "us-east-1"
 
+    # S3 / MinIO storage
+    S3_ENDPOINT: str = ""
+    MEDIA_BUCKET: str = "media"
+    AWS_ACCESS_KEY_ID: str = ""
+    AWS_SECRET_ACCESS_KEY: str = ""
+    AWS_REGION: str = "us-east-1"
+
     # RDS connection details (Lambda only)
     DB_HOST: str = ""
     DB_PORT: str = "5432"

@@ -8,6 +8,7 @@ import type {
   ResumeContactCreate,
   ResumeRecommendationsReplace,
   PerformanceReviewCreate,
+  ProfileImageUploadResponse,
   ApiSuccess,
 } from "../types";
 import { getIdToken, isCognitoConfigured } from "./auth";
@@ -30,6 +31,16 @@ async function adminHeaders(): Promise<HeadersInit> {
     "Content-Type": "application/json",
     "X-Admin-Key": import.meta.env.VITE_ADMIN_API_KEY ?? "local-dev-admin-key",
   };
+}
+
+async function adminAuthHeaders(): Promise<HeadersInit> {
+  if (isCognitoConfigured) {
+    const token = await getIdToken();
+    if (token) {
+      return { Authorization: `Bearer ${token}` };
+    }
+  }
+  return { "X-Admin-Key": import.meta.env.VITE_ADMIN_API_KEY ?? "local-dev-admin-key" };
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -104,6 +115,20 @@ export const api = {
           method: "DELETE",
           headers: await adminHeaders(),
         }),
+      uploadProfileImage: async (file: File) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        const headers = await adminAuthHeaders();
+        const response = await fetch(`${BASE_URL}/api/admin/resume/profile-image`, {
+          method: "POST",
+          headers,
+          body: formData,
+        });
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status} ${response.statusText}`);
+        }
+        return response.json() as Promise<ProfileImageUploadResponse>;
+      },
     },
   },
 };
