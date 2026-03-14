@@ -3,9 +3,9 @@ import { useAuthContext } from "../../contexts/AuthContext";
 import Login from "../../pages/admin/Login";
 
 export default function ProtectedRoute() {
-  const { isAuthenticated, isLoading } = useAuthContext();
+  const { isAuthenticated, isInitializing } = useAuthContext();
 
-  if (isLoading) {
+  if (isInitializing) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-900">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-600 border-t-blue-500" />
