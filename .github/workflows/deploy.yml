@@ -171,6 +171,7 @@ jobs:
         env:
           API_URL: ${{ needs.deploy-infra.outputs.api-url }}
           DOMAIN_NAME: ${{ vars.CDK_DOMAIN_NAME }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           chmod +x .github/scripts/post-deploy-validate.sh
           .github/scripts/post-deploy-validate.sh /tmp/pr-body.md || true
