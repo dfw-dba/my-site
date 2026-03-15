@@ -11,9 +11,16 @@
 - Branch naming: `feature/short-description` for new work, `fix/short-description` for bug fixes.
 - Every PR test plan item must be executable and verified before suggesting the PR is ready to merge. Do not write test plan items that cannot be verified pre-merge. Execute each test plan item, check them off using `gh api`.
 - Create post deploy plan items as part of the PR creation that will be used to validate deployment in a separate section of the pr below all of the test plan items.
-- Post-deploy validation items must be executable from the CLI (e.g., curl, gh api, or similar commands). Items that require
-  manual AWS console access, infrastructure changes, or credentials not available in the local environment should not be
-  post-deploy items — validate those via code review during the test plan phase instead.
+- **Post-deploy runner constraints (MANDATORY)**: The post-deploy runner is a bare GitHub Actions
+  `ubuntu-latest` environment. It has ONLY these tools and env vars:
+  - `curl` — for testing HTTP endpoints
+  - `gh` CLI — for GitHub API operations (authenticated via `${GH_TOKEN}`)
+  - `${API_URL}` — the deployed API endpoint
+  - `${DOMAIN_NAME}` — the site domain
+  - `${GH_TOKEN}` — GitHub token
+- **DO NOT use in post-deploy items**: `aws` CLI, `psql`, `docker`, or any command requiring
+  AWS credentials, AWS profiles, database access, or secrets beyond `${GH_TOKEN}`.
+  If validation requires these, do it in the test plan phase (pre-merge) instead.
 - Post-deploy items should test the actual production behavior introduced by the PR. Consider whether the change affects
   infrastructure served by the deployed stack (e.g., CloudFront, Lambda, API Gateway) versus local-only configuration (e.g.,
   Docker, nginx.conf) and write validation items accordingly.
