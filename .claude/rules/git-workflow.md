@@ -11,6 +11,12 @@
 - Branch naming: `feature/short-description` for new work, `fix/short-description` for bug fixes.
 - Every PR test plan item must be executable and verified before suggesting the PR is ready to merge. Do not write test plan items that cannot be verified pre-merge. Execute each test plan item, check them off using `gh api`.
 - Create post deploy plan items as part of the PR creation that will be used to validate deployment in a separate section of the pr below all of the test plan items.
+- Post-deploy validation items must be executable from the CLI (e.g., curl, gh api, or similar commands). Items that require    
+  manual AWS console access, infrastructure changes, or credentials not available in the local environment should not be          
+  post-deploy items — validate those via code review during the test plan phase instead.                                          
+- Post-deploy items should test the actual production behavior introduced by the PR. Consider whether the change affects        
+  infrastructure served by the deployed stack (e.g., CloudFront, Lambda, API Gateway) versus local-only configuration (e.g.,      
+  Docker, nginx.conf) and write validation items accordingly.  
 - Monitor CI job after submitting PR and mark CI test plan item complete if it completes successfully. Never suggest to merge a PULL REQUEST if the CI workflow is failing.
 - After successful completion of CI job and Test plan items, merge the PR and monitor the deploy job as it runs.
 - Execute the post deploy plan items and if they pass mark as complete after the deploy job completes with success.
