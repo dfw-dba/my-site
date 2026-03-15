@@ -19,7 +19,7 @@
   Docker, nginx.conf) and write validation items accordingly.
 - **Post-deploy item format (REQUIRED)**: Each post-deploy item must include an executable command in a fenced `bash` block.
   The deploy workflow automatically extracts and runs these commands after deploy completes, comments results on the PR,
-  and checks off passed items. Available env vars: `${API_URL}`, `${DOMAIN_NAME}`. Exit code 0 = pass, non-zero = fail.
+  and checks off passed items. Available env vars: `${API_URL}`, `${DOMAIN_NAME}`, `${GH_TOKEN}` (for `gh` CLI commands). Exit code 0 = pass, non-zero = fail.
   Example format:
   ```markdown
   ## Post-deploy validation
