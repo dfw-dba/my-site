@@ -211,6 +211,12 @@ export class DataStack extends cdk.Stack {
       },
     });
 
+    // --- VPC Endpoint for S3 (Lambda in VPC needs this for media uploads) ---
+
+    this.vpc.addGatewayEndpoint("S3Endpoint", {
+      service: ec2.GatewayVpcEndpointAwsService.S3,
+    });
+
     // --- Bastion Host (SSM Session Manager, no SSH keys) ---
 
     const bastionSg = new ec2.SecurityGroup(this, "BastionSg", {
