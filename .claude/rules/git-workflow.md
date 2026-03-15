@@ -9,6 +9,9 @@
 - Push the branch, create a PR targeting `main`, and merge via the PR.
 - ***Always squash merge*** into `main` (`gh pr merge --squash`). No merge commits or rebase merges.
 - Branch naming: `feature/short-description` for new work, `fix/short-description` for bug fixes.
-- Always wait for the CI job to finish after a push, and never suggest a PULL REQUEST if the CI workflow is failing.
-- Every PR test plan item must be executable and verified before suggesting the PR is ready to merge. Do not write test plan items that cannot be verified pre-merge.
-- After CI passes, execute each test plan item, check them off using `gh api`, and only then suggest the PR is ready to merge.
+- Every PR test plan item must be executable and verified before suggesting the PR is ready to merge. Do not write test plan items that cannot be verified pre-merge. Execute each test plan item, check them off using `gh api`.
+- Create post deploy plan items as part of the PR creation that will be used to validate deployment in a separate section of the pr below all of the test plan items.
+- Monitor CI job after submitting PR and mark CI test plan item complete if it completes successfully. Never suggest to merge a PULL REQUEST if the CI workflow is failing.
+- After successful completion of CI job and Test plan items, merge the PR and monitor the deploy job as it runs.
+- Execute the post deploy plan items and if they pass mark as complete after the deploy job completes with success.
+- If a new commit is pushed to the head branch this invalidates the test plan items and the CI outcome. The CI must be run again and tes plan items must be unchecked, test plan items must be executed again and marked as complete upon success.
