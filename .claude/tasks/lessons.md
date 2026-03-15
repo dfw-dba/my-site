@@ -24,3 +24,5 @@ _Updated after each correction or insight. Review at session start._
 - **Thin routers**: FastAPI routers delegate to DatabaseAPI service. No business logic in routers.
 - **Fork-friendly**: No hardcoded domains, AWS account IDs, or personal info. Everything parameterized via config/site.json.
 - **Optional behavior via flags, not comments (2026-03-14)**: Never make features optional by requiring users to uncomment code. Use env vars, CLI flags, or scripts with flags instead. Applies to docker-compose, CI workflows, and any config.
+- **Post-deploy items: curl and gh only (2026-03-15)**: The post-deploy runner has only `curl`, `gh`, `${API_URL}`, `${DOMAIN_NAME}`, and `${GH_TOKEN}`. Never use `aws` CLI, `psql`, `docker`, or commands requiring AWS credentials/profiles. If validation needs AWS access, put it in the test plan (pre-merge).
+- **Bump CDK migration version after DB schema changes (2026-03-15)**: The `DbMigration` Custom Resource in `data-stack.ts` only re-runs when its `version` property changes. After adding/modifying tables or functions in `database/init/`, bump the version or the changes won't apply to production.
