@@ -1,5 +1,6 @@
 """Tests for the admin endpoints."""
 
+import io
 from unittest.mock import AsyncMock
 
 from httpx import AsyncClient
@@ -101,3 +102,100 @@ async def test_replace_resume_recommendations(
     assert response.status_code == 200
     assert response.json()["success"] is True
     mock_db_api.replace_resume_recommendations.assert_called_once()
+
+
+# ── Schema validation (M4) ────────────────────────────────────────────────
+
+
+async def test_create_entry_invalid_type(admin_client: AsyncClient) -> None:
+    """entry_type must be one of the allowed literals."""
+    payload = {
+        "entry_type": "invalid",
+        "title": "Test",
+        "organization": "Acme",
+        "start_date": "2024-01-01",
+    }
+    response = await admin_client.post("/api/admin/resume/entry", json=payload)
+    assert response.status_code == 422
+
+
+async def test_create_entry_title_too_long(admin_client: AsyncClient) -> None:
+    """Title exceeding 200 characters is rejected."""
+    payload = {
+        "entry_type": "work",
+        "title": "A" * 300,
+        "organization": "Acme",
+        "start_date": "2024-01-01",
+    }
+    response = await admin_client.post("/api/admin/resume/entry", json=payload)
+    assert response.status_code == 422
+
+
+async def test_create_entry_negative_sort_order(admin_client: AsyncClient) -> None:
+    """Negative sort_order is rejected."""
+    payload = {
+        "entry_type": "work",
+        "title": "Test",
+        "organization": "Acme",
+        "start_date": "2024-01-01",
+        "sort_order": -1,
+    }
+    response = await admin_client.post("/api/admin/resume/entry", json=payload)
+    assert response.status_code == 422
+
+
+async def test_contact_invalid_email(admin_client: AsyncClient) -> None:
+    """Invalid email format is rejected."""
+    payload = {"email": "not-an-email"}
+    response = await admin_client.post("/api/admin/resume/contact", json=payload)
+    assert response.status_code == 422
+
+
+async def test_contact_invalid_linkedin(admin_client: AsyncClient) -> None:
+    """LinkedIn URL must match the linkedin.com pattern."""
+    payload = {"linkedin": "http://evil.com"}
+    response = await admin_client.post("/api/admin/resume/contact", json=payload)
+    assert response.status_code == 422
+
+
+# ── Magic byte validation (M5) ────────────────────────────────────────────
+
+
+async def test_upload_valid_jpeg(admin_upload_client: AsyncClient) -> None:
+    """Valid JPEG magic bytes are accepted."""
+    jpeg_data = b"\xff\xd8\xff" + b"\x00" * 100
+    response = await admin_upload_client.post(
+        "/api/admin/resume/profile-image",
+        files={"file": ("photo.jpg", io.BytesIO(jpeg_data), "image/jpeg")},
+    )
+    assert response.status_code == 200
+    assert response.json()["success"] is True
+
+
+async def test_upload_spoofed_content_type(admin_upload_client: AsyncClient) -> None:
+    """Content-type says JPEG but bytes are PNG — rejected."""
+    png_data = b"\x89PNG\r\n\x1a\n" + b"\x00" * 100
+    response = await admin_upload_client.post(
+        "/api/admin/resume/profile-image",
+        files={"file": ("photo.jpg", io.BytesIO(png_data), "image/jpeg")},
+    )
+    assert response.status_code == 400
+
+
+async def test_upload_valid_png(admin_upload_client: AsyncClient) -> None:
+    """Valid PNG magic bytes are accepted."""
+    png_data = b"\x89PNG\r\n\x1a\n" + b"\x00" * 100
+    response = await admin_upload_client.post(
+        "/api/admin/resume/profile-image",
+        files={"file": ("photo.png", io.BytesIO(png_data), "image/png")},
+    )
+    assert response.status_code == 200
+    assert response.json()["success"] is True
+
+
+# ── Rate limiter (M2) ─────────────────────────────────────────────────────
+
+
+async def test_rate_limiter_configured(app) -> None:
+    """The app should have a limiter attached to its state."""
+    assert hasattr(app.state, "limiter")

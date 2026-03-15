@@ -2,15 +2,16 @@
 
 import os
 from collections.abc import AsyncGenerator
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
-from src.app.dependencies import get_db_api
+from src.app.dependencies import get_db_api, get_storage
 from src.app.main import create_app
 from src.app.services.db_functions import DatabaseAPI
+from src.app.services.storage import StorageService
 
 # ── Real database fixtures (for stored procedure tests) ──────────────────────
 
@@ -63,7 +64,16 @@ def mock_db_api() -> AsyncMock:
     mock.delete_professional_entry.return_value = {"success": True}
     mock.upsert_performance_review.return_value = {"success": True}
     mock.delete_performance_review.return_value = {"success": True}
+    mock.upsert_resume_profile_image.return_value = {"success": True}
 
+    return mock
+
+
+@pytest.fixture
+def mock_storage() -> MagicMock:
+    """Mocked StorageService for upload tests."""
+    mock = MagicMock(spec=StorageService)
+    mock.upload_file.return_value = "https://example.com/profile/profile-image.jpg"
     return mock
 
 
@@ -92,6 +102,23 @@ async def admin_client(app, mock_db_api) -> AsyncGenerator[AsyncClient, None]:
     Uses API key fallback (COGNITO_USER_POOL_ID is empty by default in tests).
     """
     app.dependency_overrides[get_db_api] = lambda: mock_db_api
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(
+        transport=transport,
+        base_url="http://testserver",
+        headers={"X-Admin-Key": "local-dev-admin-key"},
+    ) as ac:
+        yield ac
+
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+async def admin_upload_client(app, mock_db_api, mock_storage) -> AsyncGenerator[AsyncClient, None]:
+    """Admin client with both DB and storage mocked — for file upload tests."""
+    app.dependency_overrides[get_db_api] = lambda: mock_db_api
+    app.dependency_overrides[get_storage] = lambda: mock_storage
 
     transport = ASGITransport(app=app)
     async with AsyncClient(

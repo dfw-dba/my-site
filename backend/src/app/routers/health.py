@@ -1,9 +1,12 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
+
+from src.app.middleware.rate_limit import limiter
 
 router = APIRouter()
 
 
 @router.get("/health", tags=["health"])
-async def health_check() -> dict[str, str]:
+@limiter.limit("60/minute")
+async def health_check(request: Request) -> dict[str, str]:
     """Basic health check endpoint."""
     return {"status": "healthy", "version": "0.1.0"}
