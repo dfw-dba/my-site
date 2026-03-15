@@ -365,6 +365,23 @@
 
 ---
 
+## Sprint 24: Security Audit — Phase 1 (Critical + High + Select Medium)
+
+- [x] 24.1 C1: Add `token_use` claim validation to JWT verification — `backend/src/app/services/cognito.py`
+  - After `jwt.decode()`, reject tokens where `token_use != "id"` (prevents access tokens granting admin)
+- [x] 24.2 H1: Restrict CORS methods and headers — `backend/src/app/middleware/cors.py`
+  - Replace `allow_methods=["*"]` / `allow_headers=["*"]` with explicit lists
+- [x] 24.3 H2: Add security headers to nginx — `docker/frontend/nginx.conf`
+  - X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy
+- [x] 24.4 M1: Guard against API key fallback in production — `backend/src/app/dependencies.py`
+  - When `AWS_LAMBDA_FUNCTION_NAME` is set, require Cognito config; fail with 500 instead of falling back to API key
+- [x] 24.5 M3: Sanitize auth error messages — `backend/src/app/dependencies.py`
+  - Replace `f"Invalid token: {exc}"` with generic "Invalid or expired token"; log detail server-side
+- [ ] 24.6 Verification: ruff + pytest + tsc + vitest all pass
+- [ ] 24.7 Push branch and create PR
+
+---
+
 ## Notes
 - DB port mapped to 5433 on host (5432 in use by local PostgreSQL)
 - `uv` installed at ~/.local/bin/uv

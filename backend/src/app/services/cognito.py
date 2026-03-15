@@ -45,7 +45,7 @@ class CognitoJWTVerifier:
 
         public_key = self._get_public_key(kid)
 
-        return jwt.decode(
+        claims = jwt.decode(
             token,
             key=public_key,
             algorithms=["RS256"],
@@ -53,3 +53,8 @@ class CognitoJWTVerifier:
             audience=self.app_client_id,
             options={"require": ["exp", "iss", "aud", "token_use"]},
         )
+
+        if claims.get("token_use") != "id":
+            raise jwt.InvalidTokenError("Invalid token type")
+
+        return claims
