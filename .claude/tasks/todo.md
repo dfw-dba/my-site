@@ -382,6 +382,19 @@
 
 ---
 
+## Sprint 25: Security Audit — Phase 2 (Medium Severity)
+
+- [x] 25.1 M6: Increase DB backup retention from 7 to 30 days — `infrastructure/cdk/lib/data-stack.ts`
+- [x] 25.2 M4: Add Pydantic field constraints (max_length, Literal, pattern, ge/le) — `backend/src/app/schemas/resume.py`
+- [x] 25.3 M5: Add magic byte validation for file uploads — `backend/src/app/routers/admin.py`
+- [x] 25.4 M2: Add slowapi rate limiting to all endpoints — `backend/src/app/middleware/rate_limit.py`, all routers
+- [x] 25.5 Add new tests (schema validation, magic byte, rate limiter) — `backend/tests/test_admin.py`, `backend/tests/conftest.py`
+- [x] 25.6 Verification: ruff + pytest (35 pass) + tsc + vitest (22 pass) all pass
+- [ ] 25.7 Push branch and create PR
+- [ ] 25.8 Monitor CI and merge
+
+---
+
 ## Notes
 - DB port mapped to 5433 on host (5432 in use by local PostgreSQL)
 - `uv` installed at ~/.local/bin/uv

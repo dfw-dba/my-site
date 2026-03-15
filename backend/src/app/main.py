@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from src.app.middleware.cors import configure_cors
+from src.app.middleware.rate_limit import configure_rate_limiting
 from src.app.routers import admin, health, resume
 
 
@@ -14,6 +15,7 @@ def create_app() -> FastAPI:
 
     # Middleware
     configure_cors(application)
+    configure_rate_limiting(application)
 
     # Routers
     application.include_router(health.router, prefix="/api")

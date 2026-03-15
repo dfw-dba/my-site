@@ -56,7 +56,7 @@ export class DataStack extends cdk.Stack {
       allocatedStorage: 20,
       maxAllocatedStorage: 20,
       multiAz: false,
-      backupRetention: cdk.Duration.days(7),
+      backupRetention: cdk.Duration.days(30),
       iamAuthentication: true,
       deletionProtection: true,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
