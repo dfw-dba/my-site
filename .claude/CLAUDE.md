@@ -1,7 +1,7 @@
 # Workflow Orchestration
 
 ### 1. Plan Mode Default
-When the user initiates any task :
+When the user initiates any task:
 
 - **Enter plan mode**: Explore the codebase, ask clarifying questions, and design the approach.
 - **Prompt user to clear context**: Before starting implementation, suggest the user clear context and enable auto-accept edits for a clean implementation session.
@@ -42,3 +42,7 @@ When the user initiates any task :
 - **Keep agent/rule files current**: When adding, moving, or removing files referenced in `.claude/agents/` or `.claude/rules/`, update those files to match.
 - **Cost vs Quality**: Cost and quality, sustainable architecture are equal. If there is a discrepancy where the lowest cost will impact the quality of the site, engage in conversation to arrive at a compromise.
 
+### 8. Security strategy
+- ***Always perform a security audit for each change***
+- ***Perform comprehensive security audit when prompted***
+- subagent for security audits: .claude/agents/security-auditor.md

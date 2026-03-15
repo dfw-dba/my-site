@@ -1,3 +1,5 @@
+import logging
+import os
 from collections.abc import AsyncGenerator
 
 from fastapi import Depends, HTTPException, Request, status
@@ -7,6 +9,8 @@ from src.app.config import settings
 from src.app.database import async_session_factory
 from src.app.services.db_functions import DatabaseAPI
 from src.app.services.storage import StorageService
+
+logger = logging.getLogger(__name__)
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
@@ -70,11 +74,19 @@ async def get_admin_auth(request: Request) -> dict | str:
             verifier = _get_cognito_verifier()
             claims = verifier.verify_token(token)
         except Exception as exc:
+            logger.warning("Token validation failed: %s", exc)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"Invalid token: {exc}",
+                detail="Invalid or expired token",
             ) from exc
         return claims
+
+    # In production (Lambda), Cognito must be configured — never fall back to API key
+    if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Authentication not configured",
+        )
 
     # Fallback: API key auth for local dev
     api_key = request.headers.get("X-Admin-Key", "")
