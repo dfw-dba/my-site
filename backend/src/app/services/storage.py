@@ -13,10 +13,11 @@ class StorageService:
             "region_name": settings.AWS_REGION,
         }
         if settings.S3_ENDPOINT:
+            # Local dev (MinIO) — use explicit endpoint and credentials
             client_kwargs["endpoint_url"] = settings.S3_ENDPOINT
-        if settings.AWS_ACCESS_KEY_ID:
-            client_kwargs["aws_access_key_id"] = settings.AWS_ACCESS_KEY_ID
-            client_kwargs["aws_secret_access_key"] = settings.AWS_SECRET_ACCESS_KEY
+            if settings.AWS_ACCESS_KEY_ID:
+                client_kwargs["aws_access_key_id"] = settings.AWS_ACCESS_KEY_ID
+                client_kwargs["aws_secret_access_key"] = settings.AWS_SECRET_ACCESS_KEY
 
         self.client = boto3.client("s3", **client_kwargs)
         self.bucket = settings.MEDIA_BUCKET
