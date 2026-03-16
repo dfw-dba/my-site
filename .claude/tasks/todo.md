@@ -408,6 +408,21 @@
 
 ---
 
+## Fix: Profile Image Upload Shows Stale Image in Production
+
+- [x] 27.1 Add `CF_DISTRIBUTION_ID` setting to backend config — `backend/src/app/config.py`
+- [x] 27.2 Add CloudFront client + `invalidate_cache()` method to StorageService — `backend/src/app/services/storage.py`
+- [x] 27.3 Call `invalidate_cache()` after upload + append `?v={timestamp}` cache-buster — `backend/src/app/routers/admin.py`
+- [x] 27.4 Pass `CF_DISTRIBUTION_ID` env var + grant `cloudfront:CreateInvalidation` IAM — `infrastructure/cdk/lib/app-stack.ts`
+- [x] 27.5 Update `mock_storage` fixture with `invalidate_cache` — `backend/tests/conftest.py`
+- [x] 27.6 Update upload tests to verify invalidation + `?v=` param — `backend/tests/test_admin.py`
+- [x] 27.7 Update README architecture diagram + cost notes + services description — `README.md`
+- [x] 27.8 Verification: ruff + pytest (35 pass) + CDK type-check all pass
+- [ ] 27.9 Push branch, create PR, monitor CI
+- [ ] 27.10 Post-deploy: upload profile image, verify immediate display
+
+---
+
 ## Notes
 - DB port mapped to 5433 on host (5432 in use by local PostgreSQL)
 - `uv` installed at ~/.local/bin/uv

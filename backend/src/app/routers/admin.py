@@ -1,3 +1,4 @@
+import time
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, status
@@ -158,7 +159,10 @@ async def upload_profile_image(
     ext = _EXT_MAP[file.content_type]
     key = f"media/profile/profile-image.{ext}"
     url = storage.upload_file(file_data, key, file.content_type)
+    storage.invalidate_cache([key])
 
-    await db.upsert_resume_profile_image({"image_url": url})
+    cache_buster = f"?v={int(time.time())}"
+    url_with_version = f"{url}{cache_buster}"
+    await db.upsert_resume_profile_image({"image_url": url_with_version})
 
-    return {"success": True, "image_url": url}
+    return {"success": True, "image_url": url_with_version}

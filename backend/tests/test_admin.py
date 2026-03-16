@@ -1,7 +1,7 @@
 """Tests for the admin endpoints."""
 
 import io
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 from httpx import AsyncClient
 
@@ -161,15 +161,18 @@ async def test_contact_invalid_linkedin(admin_client: AsyncClient) -> None:
 # ── Magic byte validation (M5) ────────────────────────────────────────────
 
 
-async def test_upload_valid_jpeg(admin_upload_client: AsyncClient) -> None:
-    """Valid JPEG magic bytes are accepted."""
+async def test_upload_valid_jpeg(admin_upload_client: AsyncClient, mock_storage: MagicMock) -> None:
+    """Valid JPEG magic bytes are accepted, cache is invalidated, URL has version."""
     jpeg_data = b"\xff\xd8\xff" + b"\x00" * 100
     response = await admin_upload_client.post(
         "/api/admin/resume/profile-image",
         files={"file": ("photo.jpg", io.BytesIO(jpeg_data), "image/jpeg")},
     )
     assert response.status_code == 200
-    assert response.json()["success"] is True
+    data = response.json()
+    assert data["success"] is True
+    assert "?v=" in data["image_url"]
+    mock_storage.invalidate_cache.assert_called_once_with(["media/profile/profile-image.jpg"])
 
 
 async def test_upload_spoofed_content_type(admin_upload_client: AsyncClient) -> None:
@@ -182,15 +185,18 @@ async def test_upload_spoofed_content_type(admin_upload_client: AsyncClient) -> 
     assert response.status_code == 400
 
 
-async def test_upload_valid_png(admin_upload_client: AsyncClient) -> None:
-    """Valid PNG magic bytes are accepted."""
+async def test_upload_valid_png(admin_upload_client: AsyncClient, mock_storage: MagicMock) -> None:
+    """Valid PNG magic bytes are accepted, cache is invalidated, URL has version."""
     png_data = b"\x89PNG\r\n\x1a\n" + b"\x00" * 100
     response = await admin_upload_client.post(
         "/api/admin/resume/profile-image",
         files={"file": ("photo.png", io.BytesIO(png_data), "image/png")},
     )
     assert response.status_code == 200
-    assert response.json()["success"] is True
+    data = response.json()
+    assert data["success"] is True
+    assert "?v=" in data["image_url"]
+    mock_storage.invalidate_cache.assert_called_once_with(["media/profile/profile-image.png"])
 
 
 # ── Rate limiter (M2) ─────────────────────────────────────────────────────

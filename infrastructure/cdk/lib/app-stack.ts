@@ -153,6 +153,7 @@ export class AppStack extends cdk.Stack {
         DB_USER: dbUser,
         DB_NAME: "mysite",
         AWS_LWA_INVOKE_MODE: "BUFFERED",
+        CF_DISTRIBUTION_ID: distribution.distributionId,
       },
     });
 
@@ -168,6 +169,16 @@ export class AppStack extends cdk.Stack {
 
     // Grant Lambda access to media bucket
     mediaBucket.grantReadWrite(backendFn);
+
+    // Grant Lambda permission to invalidate CloudFront cache (for media uploads)
+    backendFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["cloudfront:CreateInvalidation"],
+        resources: [
+          `arn:aws:cloudfront::${this.account}:distribution/${distribution.distributionId}`,
+        ],
+      }),
+    );
 
     // --- API Gateway v2 ---
 

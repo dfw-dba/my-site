@@ -74,6 +74,7 @@ def mock_storage() -> MagicMock:
     """Mocked StorageService for upload tests."""
     mock = MagicMock(spec=StorageService)
     mock.upload_file.return_value = "https://example.com/media/profile/profile-image.jpg"
+    mock.invalidate_cache.return_value = None
     return mock
 
 

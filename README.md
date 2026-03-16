@@ -30,8 +30,8 @@ A fork-friendly, full-stack personal site with a "database as API" architecture 
          ▼                                           ▼
 ┌─────────────────┐                        ┌──────────────────┐
 │   CloudFront    │                        │  API Gateway v2  │
-│  (frontend SPA) │                        │ api.yourdomain   │
-│   S3 + OAC     │                        │  throttled       │
+│ (SPA + media)   │                        │ api.yourdomain   │
+│   S3 + OAC      │                        │  throttled       │
 └─────────────────┘                        └────────┬─────────┘
                                                     │
                                                     ▼
@@ -64,7 +64,7 @@ A fork-friendly, full-stack personal site with a "database as API" architecture 
 | CloudFront / S3 / Lambda / API GW / Cognito / ACM | ~$0 | ~$0 |
 | **Total** | **~$8/month** | **~$20/month** |
 
-Built-in cost safeguards: API Gateway throttling (10 req/s), Lambda reserved concurrency (5), and a configurable budget alarm.
+Built-in cost safeguards: API Gateway throttling (10 req/s), Lambda reserved concurrency (5), and a configurable budget alarm. CloudFront invalidations are used when media is uploaded (first 1,000 paths/month free, no cost impact expected).
 
 ## Running Locally
 
@@ -472,7 +472,7 @@ aws rds start-db-instance --db-instance-identifier $RDS_ID
 |----------|-------------|-------|
 | Route 53 hosted zone | $0.50 | Fixed |
 | VPC endpoint (cognito-idp) | $7.20 | Fixed; required for Lambda to verify auth tokens |
-| CloudFront, S3, Lambda, API GW, Cognito | ~$0 | Pay-per-use, mostly covered by free tier |
+| CloudFront, S3, Lambda, API GW, Cognito | ~$0 | Pay-per-use, mostly covered by free tier. Includes cache invalidation (free for low-volume usage) |
 
 ### Quick Reference
 
@@ -514,7 +514,7 @@ Backend and frontend deploy in parallel after infrastructure.
 │   ├── src/app/           # Application code
 │   │   ├── routers/       # API route handlers
 │   │   ├── schemas/       # Pydantic request models
-│   │   └── services/      # DatabaseAPI + Cognito verifier
+│   │   └── services/      # DatabaseAPI, storage, Cognito verifier
 │   ├── src/lambda_handler.py  # Mangum wrapper for Lambda
 │   └── tests/             # Backend tests
 ├── frontend/              # React SPA
