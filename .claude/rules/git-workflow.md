@@ -2,6 +2,9 @@
 > Before making ANY file change (including `.claude/tasks/todo.md`, `CLAUDE.md`, or any other file),
 > you MUST first create and switch to a feature or fix branch. This applies to every change,
 > no matter how small — documentation, config, task tracking, everything.
+>
+> A broken deploy pipeline is **NOT** an exception. Create a `fix/` branch, push, and
+> fast-track the PR. It takes under a minute. "It's just one line" is never a justification.
 
 - **NEVER commit directly to `main`**. All changes must go through a pull request.
 - **NEVER edit files while on `main`**. Switch to a branch FIRST, then make edits.
