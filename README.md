@@ -2,7 +2,7 @@
 
 Personal website and portfolio built with FastAPI and React.
 
-A fork-friendly, full-stack personal site with a "database as API" architecture — all data access goes through PostgreSQL stored functions, keeping the application layer thin and the schema the single source of truth.
+A fork-friendly, full-stack personal site with a "database as API" architecture — all data access goes through PostgreSQL stored functions, keeping the application layer thin and the schema the single source of truth. Includes an admin dashboard with built-in application logging (request logs, error tracebacks, response time stats) stored in PostgreSQL — no external logging service required.
 
 ## Tech Stack
 
@@ -424,6 +424,7 @@ aws cloudfront create-invalidation \
 - `https://yourdomain.com` — resume loads
 - `https://api.yourdomain.com/api/health` — returns 200
 - `https://yourdomain.com/admin` — Cognito login works with MFA
+- `https://yourdomain.com/admin` → Dashboard — shows request logs, error counts, and response times
 - Push a change to `main` — CD pipeline deploys automatically
 
 ---
@@ -517,6 +518,7 @@ Backend and frontend deploy in parallel after infrastructure.
 ```
 ├── backend/               # FastAPI application
 │   ├── src/app/           # Application code
+│   │   ├── middleware/    # CORS, rate limiting, request logging
 │   │   ├── routers/       # API route handlers
 │   │   ├── schemas/       # Pydantic request models
 │   │   └── services/      # DatabaseAPI, storage, Cognito verifier

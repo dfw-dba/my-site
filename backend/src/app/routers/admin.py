@@ -1,10 +1,11 @@
 import time
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile, status
 
 from src.app.dependencies import get_admin_auth, get_db_api, get_storage
 from src.app.middleware.rate_limit import limiter
+from src.app.schemas.logs import PurgeLogs
 from src.app.schemas.resume import (
     PerformanceReviewCreate,
     ResumeContactCreate,
@@ -108,6 +109,49 @@ async def replace_resume_recommendations(
 ) -> Any:
     """Replace all resume recommendations."""
     return await db.replace_resume_recommendations([item.model_dump() for item in body.items])
+
+
+# ── Logs ───────────────────────────────────────────────────────────────────
+
+
+@router.get("/logs", dependencies=[Depends(get_admin_auth)])
+@limiter.limit("60/minute")
+async def get_logs(
+    request: Request,
+    db: DatabaseAPI = Depends(get_db_api),
+    level: str | None = None,
+    search: str | None = None,
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+) -> Any:
+    """Fetch paginated application logs with optional filters."""
+    filters: dict[str, Any] = {"limit": limit, "offset": offset}
+    if level:
+        filters["level"] = level
+    if search:
+        filters["search"] = search
+    return await db.get_app_logs(filters)
+
+
+@router.get("/logs/stats", dependencies=[Depends(get_admin_auth)])
+@limiter.limit("60/minute")
+async def get_log_stats(
+    request: Request,
+    db: DatabaseAPI = Depends(get_db_api),
+) -> Any:
+    """Fetch application log stats for the last 24 hours."""
+    return await db.get_app_log_stats()
+
+
+@router.post("/logs/purge", dependencies=[Depends(get_admin_auth)])
+@limiter.limit("5/minute")
+async def purge_logs(
+    request: Request,
+    body: PurgeLogs,
+    db: DatabaseAPI = Depends(get_db_api),
+) -> Any:
+    """Delete application logs older than the specified number of days."""
+    return await db.purge_app_logs(body.days)
 
 
 _ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}

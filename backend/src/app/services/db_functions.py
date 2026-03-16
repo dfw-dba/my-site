@@ -99,6 +99,37 @@ class DatabaseAPI:
         )
         return result.scalar_one()
 
+    # ── App Logs ────────────────────────────────────────────────────────────
+
+    async def insert_app_log(self, data: dict[str, Any]) -> Any:
+        """Insert a single application log row."""
+        result = await self.session.execute(
+            text("SELECT api.insert_app_log(CAST(:data AS jsonb))"),
+            {"data": json.dumps(data, default=str)},
+        )
+        return result.scalar_one()
+
+    async def get_app_logs(self, filters: dict[str, Any]) -> Any:
+        """Fetch paginated application logs with optional filters."""
+        result = await self.session.execute(
+            text("SELECT api.get_app_logs(CAST(:filters AS jsonb))"),
+            {"filters": json.dumps(filters, default=str)},
+        )
+        return result.scalar_one()
+
+    async def get_app_log_stats(self) -> Any:
+        """Fetch application log stats for the last 24 hours."""
+        result = await self.session.execute(text("SELECT api.get_app_log_stats()"))
+        return result.scalar_one()
+
+    async def purge_app_logs(self, days: int) -> Any:
+        """Delete application logs older than N days."""
+        result = await self.session.execute(
+            text("SELECT api.purge_app_logs(:days)"),
+            {"days": days},
+        )
+        return result.scalar_one()
+
     async def delete_professional_entry(self, entry_id: int) -> Any:
         """Delete a professional entry by ID."""
         result = await self.session.execute(

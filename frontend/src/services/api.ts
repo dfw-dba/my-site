@@ -10,6 +10,8 @@ import type {
   PerformanceReviewCreate,
   ProfileImageUploadResponse,
   ApiSuccess,
+  AppLogsResponse,
+  AppLogStats,
 } from "../types";
 import { getIdToken, isCognitoConfigured } from "./auth";
 
@@ -67,6 +69,30 @@ export const api = {
   },
 
   admin: {
+    logs: {
+      list: async (params: { level?: string; search?: string; limit?: number; offset?: number } = {}) => {
+        const headers = await adminHeaders();
+        const qs = new URLSearchParams();
+        if (params.level) qs.set("level", params.level);
+        if (params.search) qs.set("search", params.search);
+        if (params.limit !== undefined) qs.set("limit", String(params.limit));
+        if (params.offset !== undefined) qs.set("offset", String(params.offset));
+        const query = qs.toString();
+        return request<AppLogsResponse>(`/api/admin/logs${query ? `?${query}` : ""}`, { headers });
+      },
+      stats: async () => {
+        const headers = await adminHeaders();
+        return request<AppLogStats>("/api/admin/logs/stats", { headers });
+      },
+      purge: async (days: number) => {
+        const headers = await adminHeaders();
+        return request<ApiSuccess>("/api/admin/logs/purge", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ days }),
+        });
+      },
+    },
     resume: {
       get: () => request<ResumeData>("/api/resume/"),
       upsertEntry: async (data: ResumeEntryCreate) =>

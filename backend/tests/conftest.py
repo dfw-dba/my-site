@@ -66,6 +66,17 @@ def mock_db_api() -> AsyncMock:
     mock.delete_performance_review.return_value = {"success": True}
     mock.upsert_resume_profile_image.return_value = {"success": True}
 
+    # Log defaults
+    mock.insert_app_log.return_value = {"id": 1, "success": True}
+    mock.get_app_logs.return_value = {"logs": [], "total": 0}
+    mock.get_app_log_stats.return_value = {
+        "total_24h": 0,
+        "errors_24h": 0,
+        "warnings_24h": 0,
+        "avg_duration_ms": 0,
+    }
+    mock.purge_app_logs.return_value = {"deleted": 0, "success": True}
+
     return mock
 
 

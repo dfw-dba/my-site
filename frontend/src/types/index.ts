@@ -94,6 +94,33 @@ export interface ApiSuccess {
   slug?: string;
 }
 
+export interface AppLog {
+  id: number;
+  level: string;
+  message: string;
+  logger: string | null;
+  request_method: string | null;
+  request_path: string | null;
+  status_code: number | null;
+  duration_ms: number | null;
+  client_ip: string | null;
+  error_detail: string | null;
+  extra: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface AppLogStats {
+  total_24h: number;
+  errors_24h: number;
+  warnings_24h: number;
+  avg_duration_ms: number;
+}
+
+export interface AppLogsResponse {
+  logs: AppLog[];
+  total: number;
+}
+
 export interface AuthState {
   isAuthenticated: boolean;
   isInitializing: boolean;

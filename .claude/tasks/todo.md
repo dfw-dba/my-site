@@ -450,6 +450,28 @@
 
 ---
 
+## Sprint 30: Application Logging Dashboard
+
+- [x] 30.1 Database: Add `internal.app_logs` table — `database/init/02_tables.sql`
+- [x] 30.2 Database: Add 4 stored functions (insert, get, stats, purge) — `database/init/03_functions.sql`
+- [x] 30.3 CDK: Bump migration version from "4" to "5" — `infrastructure/cdk/lib/data-stack.ts`
+- [x] 30.4 Backend: Create request logging middleware — `backend/src/app/middleware/logging.py`
+- [x] 30.5 Backend: Add 4 DatabaseAPI methods — `backend/src/app/services/db_functions.py`
+- [x] 30.6 Backend: Add PurgeLogs schema — `backend/src/app/schemas/logs.py`
+- [x] 30.7 Backend: Add 3 log endpoints (GET /logs, GET /logs/stats, POST /logs/purge) — `backend/src/app/routers/admin.py`
+- [x] 30.8 Backend: Register logging middleware — `backend/src/app/main.py`
+- [x] 30.9 Frontend: Add log types (AppLog, AppLogStats, AppLogsResponse) — `frontend/src/types/index.ts`
+- [x] 30.10 Frontend: Add log API methods — `frontend/src/services/api.ts`
+- [x] 30.11 Frontend: Add log hooks (useAdminLogs, useAdminLogStats, useAdminPurgeLogs) — `frontend/src/hooks/useAdminApi.ts`
+- [x] 30.12 Frontend: Rewrite Dashboard page with stat cards, filters, log table, pagination — `frontend/src/pages/admin/Dashboard.tsx`
+- [x] 30.13 Backend tests: Add log mock fixtures + 6 test cases — `backend/tests/conftest.py`, `backend/tests/test_admin.py`
+- [x] 30.14 Frontend tests: Update Dashboard tests for new UI — `frontend/tests/admin/Dashboard.test.tsx`
+- [x] 30.15 Verification: ruff + pytest (41 pass) + tsc + vitest (25 pass) all pass
+- [ ] 30.16 Push branch, create PR, monitor CI
+- [ ] 30.17 Post-deploy: verify logs appear in admin dashboard after making API requests
+
+---
+
 ## Notes
 - DB port mapped to 5433 on host (5432 in use by local PostgreSQL)
 - `uv` installed at ~/.local/bin/uv

@@ -129,3 +129,26 @@ comment on column internal.performance_reviews.entry_id is 'FK to professional_e
 comment on column internal.performance_reviews.reviewer_name is 'Name of the reviewer (e.g. manager, peer)';
 comment on column internal.performance_reviews.reviewer_title is 'Job title or role of the reviewer';
 comment on column internal.performance_reviews.review_text is 'The performance review excerpt text';
+
+-- ============================================================
+-- app_logs
+-- ============================================================
+create table if not exists internal.app_logs
+(
+  id              int8 generated always as identity primary key,
+  level           text not null check (level in ('DEBUG', 'INFO', 'WARNING', 'ERROR')),
+  message         text not null,
+  logger          text,
+  request_method  text,
+  request_path    text,
+  status_code     int2,
+  duration_ms     int4,
+  client_ip       text,
+  error_detail    text,
+  extra           jsonb default '{}',
+  created_at      timestamptz default now()
+);
+
+comment on table internal.app_logs is 'Application request and error logs for admin dashboard visibility';
+comment on column internal.app_logs.level is 'One of: DEBUG, INFO, WARNING, ERROR';
+comment on column internal.app_logs.error_detail is 'Full traceback for error-level logs';
