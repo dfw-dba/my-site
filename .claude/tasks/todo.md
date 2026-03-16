@@ -418,8 +418,23 @@
 - [x] 27.6 Update upload tests to verify invalidation + `?v=` param — `backend/tests/test_admin.py`
 - [x] 27.7 Update README architecture diagram + cost notes + services description — `README.md`
 - [x] 27.8 Verification: ruff + pytest (35 pass) + CDK type-check all pass
-- [ ] 27.9 Push branch, create PR, monitor CI
-- [ ] 27.10 Post-deploy: upload profile image, verify immediate display
+- [x] 27.9 Push branch, create PR, monitor CI
+- [x] 27.10 Post-deploy: upload profile image, verify immediate display
+
+---
+
+## Fix: Profile Image Upload Timeout (Lambda can't reach CloudFront API from VPC)
+
+- [x] 28.1 Replace `CACHING_OPTIMIZED` with custom cache policy including query strings for `media/*` — `infrastructure/cdk/lib/app-stack.ts`
+- [x] 28.2 Remove `CF_DISTRIBUTION_ID` env var + `cloudfront:CreateInvalidation` IAM — `infrastructure/cdk/lib/app-stack.ts`
+- [x] 28.3 Remove `CF_DISTRIBUTION_ID` setting — `backend/src/app/config.py`
+- [x] 28.4 Remove CloudFront client + `invalidate_cache()` from StorageService — `backend/src/app/services/storage.py`
+- [x] 28.5 Remove `invalidate_cache()` call from upload handler — `backend/src/app/routers/admin.py`
+- [x] 28.6 Update tests: remove invalidation assertions, keep `?v=` assertions — `backend/tests/`
+- [x] 28.7 Remove invalidation cost notes from README — `README.md`
+- [x] 28.8 Verification: ruff + pytest + CDK type-check all pass
+- [ ] 28.9 Push branch, create PR, monitor CI
+- [ ] 28.10 Post-deploy: upload profile image, verify immediate display
 
 ---
 

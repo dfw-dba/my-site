@@ -45,7 +45,6 @@ class Settings(BaseSettings):
     AWS_SECRET_ACCESS_KEY: str = ""
     AWS_REGION: str = "us-east-1"
     MEDIA_CDN_URL: str = ""
-    CF_DISTRIBUTION_ID: str = ""
 
     # RDS connection details (Lambda only)
     DB_HOST: str = ""
