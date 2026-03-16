@@ -89,7 +89,7 @@ export class AppStack extends cdk.Stack {
       this,
       "MediaCachePolicy",
       {
-        cachePolicyName: `${config.domainName}-media-cache`,
+        cachePolicyName: `${config.domainName.replace(/\./g, "-")}-media-cache`,
         defaultTtl: cdk.Duration.hours(24),
         maxTtl: cdk.Duration.days(365),
         minTtl: cdk.Duration.seconds(0),
