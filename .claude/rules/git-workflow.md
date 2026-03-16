@@ -27,12 +27,14 @@
 - **Post-deploy item format (REQUIRED)**: Each post-deploy item must include an executable command in a fenced `bash` block.
   The deploy workflow automatically extracts and runs these commands after deploy completes, comments results on the PR,
   and checks off passed items. Available env vars: `${API_URL}`, `${DOMAIN_NAME}`, `${GH_TOKEN}` (for `gh` CLI commands). Exit code 0 = pass, non-zero = fail.
+  **IMPORTANT**: `${API_URL}` is the API Gateway domain (e.g. `https://api.example.com`) — it does NOT include
+  the `/api` path prefix. All backend routes are mounted under `/api/`, so use `${API_URL}/api/...` in commands.
   Example format:
   ```markdown
   ## Post-deploy validation
   - [ ] Verify health endpoint responds
     ```bash
-    curl -sf "${API_URL}/health"
+    curl -sf "${API_URL}/api/health"
     ```
     Expected: HTTP 200 with JSON response
   ```
