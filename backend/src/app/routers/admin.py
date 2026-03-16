@@ -156,7 +156,7 @@ async def upload_profile_image(
         )
 
     ext = _EXT_MAP[file.content_type]
-    key = f"profile/profile-image.{ext}"
+    key = f"media/profile/profile-image.{ext}"
     url = storage.upload_file(file_data, key, file.content_type)
 
     await db.upsert_resume_profile_image({"image_url": url})
