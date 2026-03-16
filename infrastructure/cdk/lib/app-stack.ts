@@ -82,6 +82,23 @@ export class AppStack extends cdk.Stack {
       ],
     });
 
+    // Cache policy for media: includes query strings in cache key so that
+    // ?v={timestamp} busts the CDN cache after re-uploads (avoids needing
+    // CloudFront invalidation API calls, which can't be made from VPC Lambda)
+    const mediaCachePolicy = new cloudfront.CachePolicy(
+      this,
+      "MediaCachePolicy",
+      {
+        cachePolicyName: `${config.domainName}-media-cache`,
+        defaultTtl: cdk.Duration.hours(24),
+        maxTtl: cdk.Duration.days(365),
+        minTtl: cdk.Duration.seconds(0),
+        queryStringBehavior: cloudfront.CacheQueryStringBehavior.all(),
+        enableAcceptEncodingGzip: true,
+        enableAcceptEncodingBrotli: true,
+      },
+    );
+
     // Serve media files through CloudFront (same distribution as frontend)
     distribution.addBehavior(
       "media/*",
@@ -89,7 +106,7 @@ export class AppStack extends cdk.Stack {
       {
         viewerProtocolPolicy:
           cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-        cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+        cachePolicy: mediaCachePolicy,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
       },
     );
@@ -153,7 +170,6 @@ export class AppStack extends cdk.Stack {
         DB_USER: dbUser,
         DB_NAME: "mysite",
         AWS_LWA_INVOKE_MODE: "BUFFERED",
-        CF_DISTRIBUTION_ID: distribution.distributionId,
       },
     });
 
@@ -169,16 +185,6 @@ export class AppStack extends cdk.Stack {
 
     // Grant Lambda access to media bucket
     mediaBucket.grantReadWrite(backendFn);
-
-    // Grant Lambda permission to invalidate CloudFront cache (for media uploads)
-    backendFn.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ["cloudfront:CreateInvalidation"],
-        resources: [
-          `arn:aws:cloudfront::${this.account}:distribution/${distribution.distributionId}`,
-        ],
-      }),
-    );
 
     // --- API Gateway v2 ---
 
