@@ -200,6 +200,72 @@ async def test_upload_valid_png(admin_upload_client: AsyncClient) -> None:
 # ── Rate limiter (M2) ─────────────────────────────────────────────────────
 
 
+# ── Logs ───────────────────────────────────────────────────────────────────
+
+
+async def test_get_logs(admin_client: AsyncClient, mock_db_api: AsyncMock) -> None:
+    """GET /api/admin/logs returns paginated log data."""
+    mock_db_api.get_app_logs.return_value = {
+        "logs": [
+            {
+                "id": 1,
+                "level": "INFO",
+                "message": "GET /api/health 200",
+                "created_at": "2026-01-01T00:00:00Z",
+            }
+        ],
+        "total": 1,
+    }
+    response = await admin_client.get("/api/admin/logs")
+    assert response.status_code == 200
+    data = response.json()
+    assert "logs" in data
+    assert data["total"] == 1
+    mock_db_api.get_app_logs.assert_called_once()
+
+
+async def test_get_logs_with_filters(admin_client: AsyncClient, mock_db_api: AsyncMock) -> None:
+    """GET /api/admin/logs passes query params as filters."""
+    response = await admin_client.get("/api/admin/logs?level=ERROR&search=fail&limit=10&offset=5")
+    assert response.status_code == 200
+    call_args = mock_db_api.get_app_logs.call_args[0][0]
+    assert call_args["level"] == "ERROR"
+    assert call_args["search"] == "fail"
+    assert call_args["limit"] == 10
+    assert call_args["offset"] == 5
+
+
+async def test_get_log_stats(admin_client: AsyncClient, mock_db_api: AsyncMock) -> None:
+    """GET /api/admin/logs/stats returns dashboard stats."""
+    response = await admin_client.get("/api/admin/logs/stats")
+    assert response.status_code == 200
+    data = response.json()
+    assert "total_24h" in data
+
+
+async def test_purge_logs(admin_client: AsyncClient, mock_db_api: AsyncMock) -> None:
+    """POST /api/admin/logs/purge deletes old logs."""
+    response = await admin_client.post("/api/admin/logs/purge", json={"days": 30})
+    assert response.status_code == 200
+    assert response.json()["success"] is True
+    mock_db_api.purge_app_logs.assert_called_once_with(30)
+
+
+async def test_purge_logs_invalid_days(admin_client: AsyncClient) -> None:
+    """Purge with days=0 is rejected by schema validation."""
+    response = await admin_client.post("/api/admin/logs/purge", json={"days": 0})
+    assert response.status_code == 422
+
+
+async def test_logs_require_auth(client: AsyncClient) -> None:
+    """Log endpoints return 401 without auth."""
+    response = await client.get("/api/admin/logs")
+    assert response.status_code in (401, 422)
+
+
+# ── Rate limiter (M2) ─────────────────────────────────────────────────────
+
+
 async def test_rate_limiter_configured(app) -> None:
     """The app should have a limiter attached to its state."""
     assert hasattr(app.state, "limiter")

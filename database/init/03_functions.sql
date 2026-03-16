@@ -412,6 +412,139 @@ $$ language plpgsql volatile
 security definer;
 
 
+-- ============================================================
+--  APP LOG FUNCTIONS
+-- ============================================================
+
+-- api.insert_app_log(p_data JSONB)
+-- Insert a single application log row.
+create or replace function api.insert_app_log(p_data jsonb)
+returns jsonb as $$
+declare
+    v_id int8;
+begin
+    insert into internal.app_logs
+    (
+        level, message, logger, request_method, request_path,
+        status_code, duration_ms, client_ip, error_detail, extra
+    )
+    values
+    (
+        p_data->>'level',
+        p_data->>'message',
+        p_data->>'logger',
+        p_data->>'request_method',
+        p_data->>'request_path',
+        (p_data->>'status_code')::int2,
+        (p_data->>'duration_ms')::int4,
+        p_data->>'client_ip',
+        p_data->>'error_detail',
+        coalesce(p_data->'extra', '{}'::jsonb)
+    )
+    returning id into v_id;
+
+    return jsonb_build_object('id', v_id, 'success', true);
+end;
+$$ language plpgsql volatile
+security definer;
+
+
+-- api.get_app_logs(p_filters JSONB)
+-- Paginated log query with optional level and search filters.
+create or replace function api.get_app_logs(p_filters jsonb default '{}')
+returns jsonb as $$
+declare
+    v_level  text    := p_filters->>'level';
+    v_search text    := p_filters->>'search';
+    v_limit  int     := coalesce((p_filters->>'limit')::int, 100);
+    v_offset int     := coalesce((p_filters->>'offset')::int, 0);
+    v_logs   jsonb;
+    v_total  int;
+begin
+    -- Count total matching rows
+    select count(*)
+      into v_total
+      from internal.app_logs as al
+     where (v_level is null or al.level = v_level)
+       and (v_search is null or al.message ilike '%' || v_search || '%'
+            or al.request_path ilike '%' || v_search || '%');
+
+    -- Fetch page
+    select coalesce(jsonb_agg(row_obj order by id desc), '[]'::jsonb)
+      into v_logs
+      from
+      (
+          select jsonb_build_object(
+              'id',             al.id,
+              'level',          al.level,
+              'message',        al.message,
+              'logger',         al.logger,
+              'request_method', al.request_method,
+              'request_path',   al.request_path,
+              'status_code',    al.status_code,
+              'duration_ms',    al.duration_ms,
+              'client_ip',      al.client_ip,
+              'error_detail',   al.error_detail,
+              'extra',          al.extra,
+              'created_at',     al.created_at
+          ) as row_obj,
+          al.id
+          from internal.app_logs as al
+         where (v_level is null or al.level = v_level)
+           and (v_search is null or al.message ilike '%' || v_search || '%'
+                or al.request_path ilike '%' || v_search || '%')
+         order by al.id desc
+         limit v_limit
+        offset v_offset
+      ) as sub;
+
+    return jsonb_build_object('logs', v_logs, 'total', v_total);
+end;
+$$ language plpgsql stable
+security definer;
+
+
+-- api.get_app_log_stats()
+-- Dashboard summary stats for the last 24 hours.
+create or replace function api.get_app_log_stats()
+returns jsonb as $$
+declare
+    v_cutoff timestamptz := now() - interval '24 hours';
+begin
+    return
+    (
+        select jsonb_build_object(
+            'total_24h',      count(*),
+            'errors_24h',     count(*) filter (where al.level = 'ERROR'),
+            'warnings_24h',   count(*) filter (where al.level = 'WARNING'),
+            'avg_duration_ms', coalesce(round(avg(al.duration_ms))::int, 0)
+        )
+        from internal.app_logs as al
+        where al.created_at >= v_cutoff
+    );
+end;
+$$ language plpgsql stable
+security definer;
+
+
+-- api.purge_app_logs(p_days int)
+-- Delete logs older than N days, return count deleted.
+create or replace function api.purge_app_logs(p_days int)
+returns jsonb as $$
+declare
+    v_count int;
+begin
+    delete from internal.app_logs
+     where created_at < now() - make_interval(days => p_days);
+
+    get diagnostics v_count = row_count;
+
+    return jsonb_build_object('deleted', v_count, 'success', true);
+end;
+$$ language plpgsql volatile
+security definer;
+
+
 -- api.upsert_resume_profile_image(p_data JSONB)
 -- Upsert the single profile image row.
 create or replace function api.upsert_resume_profile_image(p_data jsonb)

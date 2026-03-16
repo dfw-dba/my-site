@@ -14,6 +14,42 @@ function onMutationError(error: Error) {
   showToast(error.message || "An error occurred", "error");
 }
 
+// ── Logs ─────────────────────────────────────────────────────────────────────
+
+export function useAdminLogs(filters: {
+  level?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
+} = {}) {
+  return useQuery({
+    queryKey: ["admin-logs", filters],
+    queryFn: () => api.admin.logs.list(filters),
+    refetchInterval: 15_000,
+  });
+}
+
+export function useAdminLogStats() {
+  return useQuery({
+    queryKey: ["admin-log-stats"],
+    queryFn: () => api.admin.logs.stats(),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useAdminPurgeLogs() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (days: number) => api.admin.logs.purge(days),
+    onSuccess: (data) => {
+      showToast(`Logs purged successfully`, "success");
+      qc.invalidateQueries({ queryKey: ["admin-logs"] });
+      qc.invalidateQueries({ queryKey: ["admin-log-stats"] });
+    },
+    onError: onMutationError,
+  });
+}
+
 // ── Resume ───────────────────────────────────────────────────────────────────
 
 export function useAdminResume() {
