@@ -46,3 +46,8 @@ When the user initiates any task:
 - ***Always perform a security audit for each change***
 - ***Perform comprehensive security audit when prompted***
 - subagent for security audits: .claude/agents/security-auditor.md
+
+### 9. Documentation
+- See `.claude/rules/documentation.md`
+- **Every change must evaluate README.md impact** — new features, config changes, infrastructure updates, and workflow changes require README updates in the same PR
+- README.md is the fork-and-deploy guide: it must always be complete enough for a human or AI to clone, run locally, and deploy to AWS

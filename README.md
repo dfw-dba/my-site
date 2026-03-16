@@ -507,6 +507,11 @@ After initial setup, all deployments are automatic:
 
 Backend and frontend deploy in parallel after infrastructure.
 
+> **Path filtering:** CI and deploy are automatically skipped for changes that only touch
+> non-application files (`.claude/`, `*.md`, `docs/`, `.github/scripts/`, `LICENSE`).
+> This avoids wasting CI minutes on documentation-only PRs. Use `workflow_dispatch`
+> to manually trigger CI if needed.
+
 ## Project Structure
 
 ```

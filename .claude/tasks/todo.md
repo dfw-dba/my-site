@@ -438,6 +438,18 @@
 
 ---
 
+## Sprint 29: Skip CI/Deploy for Non-Code Changes + Documentation Rule
+
+- [x] 29.1 Create `.claude/rules/documentation.md` — README update evaluation rule
+- [x] 29.2 Add `### 9. Documentation` section to `.claude/CLAUDE.md`
+- [x] 29.3 Add `paths-ignore` to CI workflow push + pull_request triggers — `.github/workflows/ci.yml`
+- [x] 29.4 Add path filtering note to README Continuous Deployment section — `README.md`
+- [ ] 29.5 Push branch, create PR, monitor CI
+- [ ] 29.6 Verify: CI triggers for this PR (mixed changes include workflow file)
+- [ ] 29.7 Merge PR
+
+---
+
 ## Notes
 - DB port mapped to 5433 on host (5432 in use by local PostgreSQL)
 - `uv` installed at ~/.local/bin/uv
