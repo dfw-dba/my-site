@@ -34,7 +34,7 @@ for i in $(seq 0 $((ITEM_COUNT - 1))); do
 
   if [[ "$PASSED" == "true" ]]; then
     # Escape special regex characters in description for sed
-    ESCAPED_DESC=$(printf '%s\n' "$DESC" | sed 's/[[\.*^$()+?{|]/\\&/g')
+    ESCAPED_DESC=$(printf '%s\n' "$DESC" | sed 's/[][\.*^$/]/\\&/g')
     # Replace unchecked checkbox with checked for this item
     UPDATED_BODY=$(echo "$UPDATED_BODY" | sed "s/- \[ \] ${ESCAPED_DESC}/- [x] ${ESCAPED_DESC}/")
     echo "Checked: $DESC"
