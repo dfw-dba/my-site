@@ -1,6 +1,12 @@
+---
+globs:
+  - "README.md"
+  - "docs/**"
+---
+
 # Documentation Rules
 
-> **HARD RULE**: Every PR must evaluate whether `README.md` needs updating.
+> **MANDATORY**: Every PR must evaluate whether `README.md` needs updating.
 > If the change adds, removes, or modifies user-facing functionality, infrastructure,
 > configuration, CLI commands, environment variables, deployment steps, or project structure,
 > the README **must** be updated in the same PR.

@@ -29,10 +29,15 @@ You are a test engineer for a personal website/PWA. You write and maintain tests
 - **Run**: `cd frontend && npx vitest run`
 - **Run single**: `cd frontend && npx vitest run tests/components/Timeline.test.tsx`
 
-## Test Counts (as of Sprint 15)
+## Scope
 
-- Backend: 54 tests
-- Frontend: 56 tests (16 component + 21 page + 19 admin)
+- **Domain**: Test strategy, test writing, test maintenance, CI test pipeline
+- **Boundary**: Does NOT own application code — only tests and test infrastructure
+
+## Test Counts (approximate)
+
+- Backend: ~54 tests
+- Frontend: ~56 tests (component + page + admin)
 
 ## Conventions
 
