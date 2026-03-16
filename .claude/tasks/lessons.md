@@ -5,6 +5,7 @@ _Updated after each correction or insight. Review at session start._
 ## Process
 
 - **Branch before ANY edit**: NEVER use Edit/Write tools while on `main`. Always `git checkout -b <branch>` FIRST, even for tiny changes like marking a task complete in `todo.md`. The branching rule applies to ALL files, not just code.
+- **Broken deploys don't bypass the branch rule (2026-03-16)**: When a deploy fails after merge, the temptation is to push a hotfix directly to main. This is still a hard rule violation. Create a `fix/` branch, push, create a PR, merge — even for a 1-character change. The extra minute prevents policy erosion.
 - **Background agents can overwrite file moves**: When running subagents in the background, they may recreate files that were moved/deleted in the main context. Always verify file state after all background agents complete.
 - **CLAUDE.md and tasks/ live in `.claude/`**: Not in the project root. All references in CLAUDE.md should use `.claude/tasks/` paths.
 - **Detailed sprint items in todo.md (2026-02-28)**: Each sprint item must include detailed implementation context: files to change, what the change does, acceptance criteria, and technical decisions made during planning.
