@@ -5,6 +5,10 @@ globs:
 
 # Frontend Rules
 
+> **MANDATORY**: TanStack Query for all data fetching — never `useEffect` for API calls.
+
+## Rules
+
 - React 19 functional components only, TypeScript strict mode
 - Tailwind 4 utilities for styling, no CSS modules
 - TanStack Query for all data fetching — never `useEffect` for API calls
@@ -17,5 +21,8 @@ globs:
 - Layouts in `frontend/src/layouts/`
 - Test with Vitest + Testing Library, use `renderWithProviders` from `frontend/tests/setup.tsx`
 - Test files live in `frontend/tests/` mirroring src structure
-- Run `npx tsc --noEmit` before committing frontend changes
-- Run `cd frontend && npx vitest run` to verify tests pass
+
+## Verification
+
+- Type check: `npx tsc --noEmit`
+- Tests: `cd frontend && npx vitest run`

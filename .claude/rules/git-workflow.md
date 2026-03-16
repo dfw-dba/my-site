@@ -1,4 +1,4 @@
-> **HARD RULE — NO EXCEPTIONS**: Never edit, stage, or commit files while on the `main` branch.
+> **MANDATORY — NO EXCEPTIONS**: Never edit, stage, or commit files while on the `main` branch.
 > Before making ANY file change (including `.claude/tasks/todo.md`, `CLAUDE.md`, or any other file),
 > you MUST first create and switch to a feature or fix branch. This applies to every change,
 > no matter how small — documentation, config, task tracking, everything.

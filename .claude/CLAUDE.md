@@ -51,3 +51,8 @@ When the user initiates any task:
 - See `.claude/rules/documentation.md`
 - **Every change must evaluate README.md impact** — new features, config changes, infrastructure updates, and workflow changes require README updates in the same PR
 - README.md is the fork-and-deploy guide: it must always be complete enough for a human or AI to clone, run locally, and deploy to AWS
+
+### 10. Templates
+- New agent files: copy `.claude/templates/agent.md` and fill in sections
+- New rule files: copy `.claude/templates/rule.md` — scoped rules get `globs:` frontmatter, universal rules omit frontmatter
+- New plan files: copy `.claude/templates/plan.md` — name as `yyyy-mm-dd-hhmm-branch-name.md` for chronological ordering
