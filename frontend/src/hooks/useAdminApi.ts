@@ -41,8 +41,8 @@ export function useAdminPurgeLogs() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (days: number) => api.admin.logs.purge(days),
-    onSuccess: (data) => {
-      showToast(`Logs purged successfully`, "success");
+    onSuccess: () => {
+      showToast("Logs purged successfully", "success");
       qc.invalidateQueries({ queryKey: ["admin-logs"] });
       qc.invalidateQueries({ queryKey: ["admin-log-stats"] });
     },
