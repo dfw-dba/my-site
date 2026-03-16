@@ -82,6 +82,18 @@ export class AppStack extends cdk.Stack {
       ],
     });
 
+    // Serve media files through CloudFront (same distribution as frontend)
+    distribution.addBehavior(
+      "media/*",
+      origins.S3BucketOrigin.withOriginAccessControl(mediaBucket),
+      {
+        viewerProtocolPolicy:
+          cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+        allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
+      },
+    );
+
     // --- Backend: Lambda ---
 
     const lambdaSecurityGroup = new ec2.SecurityGroup(
@@ -135,6 +147,7 @@ export class AppStack extends cdk.Stack {
         COGNITO_REGION: config.awsRegion,
         CORS_ORIGINS: `https://${config.domainName}`,
         MEDIA_BUCKET: mediaBucket.bucketName,
+        MEDIA_CDN_URL: `https://${config.domainName}`,
         DB_HOST: props.database.dbInstanceEndpointAddress,
         DB_PORT: "5432",
         DB_USER: dbUser,

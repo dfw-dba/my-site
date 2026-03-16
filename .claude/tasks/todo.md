@@ -395,6 +395,19 @@
 
 ---
 
+## Fix: Profile Image Not Displaying on Resume Page
+
+- [x] 26.1 Add `media/*` CloudFront behavior with OAC to existing distribution — `infrastructure/cdk/lib/app-stack.ts`
+- [x] 26.2 Add `MEDIA_CDN_URL` Lambda environment variable — `infrastructure/cdk/lib/app-stack.ts`
+- [x] 26.3 Add `MEDIA_CDN_URL` setting to backend config — `backend/src/app/config.py`
+- [x] 26.4 Use CDN URL in `_public_url()` when `MEDIA_CDN_URL` is set — `backend/src/app/services/storage.py`
+- [x] 26.5 Change S3 key prefix to `media/profile/` — `backend/src/app/routers/admin.py`
+- [x] 26.6 Verification: ruff + pytest (35 pass) + tsc + vitest (22 pass) + CDK type-check all pass
+- [ ] 26.7 Push branch, create PR, monitor CI
+- [ ] 26.8 After deploy: re-upload profile image via admin UI to store CloudFront URL
+
+---
+
 ## Notes
 - DB port mapped to 5433 on host (5432 in use by local PostgreSQL)
 - `uv` installed at ~/.local/bin/uv

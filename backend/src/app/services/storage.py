@@ -41,4 +41,6 @@ class StorageService:
             # MinIO local dev — rewrite internal URL to localhost for browser access
             host_url = settings.S3_ENDPOINT.replace("minio", "localhost")
             return f"{host_url}/{self.bucket}/{key}"
+        if settings.MEDIA_CDN_URL:
+            return f"{settings.MEDIA_CDN_URL}/{key}"
         return f"https://{self.bucket}.s3.amazonaws.com/{key}"
