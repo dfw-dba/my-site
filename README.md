@@ -63,6 +63,7 @@ A fork-friendly, full-stack personal site with a "database as API" architecture 
 | VPC endpoint (cognito-idp) | $7.20 | $7.20 |
 | CloudFront / S3 / Lambda / API GW / Cognito / ACM | ~$0 | ~$0 |
 | **Total** | **~$8/month** | **~$20/month** |
+| Staging RDS (optional) | $0.00 | +$12.50 |
 
 Built-in cost safeguards: API Gateway throttling (10 req/s), Lambda reserved concurrency (5), and a configurable budget alarm.
 
@@ -296,6 +297,7 @@ Go to **GitHub → your repo → Settings → Secrets and variables → Actions*
 | `AWS_REGION` | `us-east-1` |
 | `CDK_DOMAIN_NAME` | Your domain (e.g., `example.com`) |
 | `CDK_BUDGET_EMAIL` | Your email for budget alerts |
+| `DEPLOY_STAGING` | Set to `true` to enable staging environment (optional) |
 
 ### 8. Deploy Infrastructure
 
@@ -328,11 +330,13 @@ npx cdk deploy --all
 
 > **Why two phases?** The `MySiteCert` stack creates an ACM certificate that uses DNS validation — ACM adds a CNAME record to your Route 53 hosted zone, then queries DNS to verify you own the domain. If your registrar's nameservers are still active, those DNS queries never reach Route 53, and `cdk deploy` will hang indefinitely waiting for certificate validation.
 
-This creates 4 CloudFormation stacks:
+This creates 4 CloudFormation stacks (6 if staging is enabled):
 - **MySiteDns** — Route 53 hosted zone
 - **MySiteCert** — ACM wildcard certificate (us-east-1, DNS-validated)
-- **MySiteData** — RDS PostgreSQL, Cognito user pool, ECR repo, VPC endpoint
+- **MySiteData** — RDS PostgreSQL, Cognito user pool, VPC endpoint, bastion host
 - **MySiteApp** — S3 + CloudFront, Lambda, API Gateway, Route 53 records, budget alarm
+- **MySiteStageData** — *(staging only)* RDS PostgreSQL, migration Lambda
+- **MySiteStageApp** — *(staging only)* S3 + CloudFront, Lambda, API Gateway, Route 53 records
 
 Takes ~10–15 minutes (RDS is the slow part). Note the outputs — you'll need them for the next steps.
 
@@ -583,16 +587,41 @@ After initial setup, all deployments are automatic:
 1. Push to `main` (or merge a PR)
 2. CI runs (lint, type check, tests)
 3. On CI success, the Deploy workflow runs:
-   - **deploy-infra**: `cdk deploy --all` (updates infrastructure if changed)
-   - **deploy-backend**: builds Docker image → pushes to ECR → updates Lambda
+   - **deploy-infra**: `cdk deploy` (updates infrastructure if changed)
    - **deploy-frontend**: builds with Vite → syncs to S3 → invalidates CloudFront
-
-Backend and frontend deploy in parallel after infrastructure.
+   - **post-deploy-validation**: runs validation commands from PR body
 
 > **Path filtering:** CI and deploy are automatically skipped for changes that only touch
 > non-application files (`.claude/`, `*.md`, `docs/`, `.github/scripts/`, `LICENSE`).
 > This avoids wasting CI minutes on documentation-only PRs. Use `workflow_dispatch`
 > to manually trigger CI if needed.
+
+### Staging Environment (Optional)
+
+When `DEPLOY_STAGING=true` is set as a GitHub Actions variable, the deploy workflow adds a staging phase with a manual approval gate before production:
+
+```
+CI → deploy-stage-infra → deploy-stage-frontend → approve-production → deploy-infra → deploy-frontend → post-deploy-validation
+```
+
+**What staging deploys:** A full infrastructure replica with its own RDS, S3 buckets, CloudFront distribution, Lambda function, and API Gateway. Staging shares the production Cognito user pool (same login), DNS hosted zone, and wildcard certificate.
+
+**Staging domains:**
+- Frontend: `stage.<domain>` (e.g., `stage.example.com`)
+- API: `stage-api.<domain>` (e.g., `stage-api.example.com`)
+
+**Approval gate:** After staging deploys, the workflow pauses at the `approve-production` job, which uses a GitHub Environment named `production` with required reviewers. Review the staging site, then approve in GitHub Actions to continue to production.
+
+**Setup:**
+1. Go to repo **Settings → Environments → New environment** → name it `production`
+2. Check **Required reviewers** and add yourself
+3. Go to **Settings → Variables → Actions → New variable** → `DEPLOY_STAGING` = `true`
+
+**Without staging:** When `DEPLOY_STAGING` is not set (or not `true`), the staging and approval jobs are skipped entirely, and production deploys directly after CI — the same behavior as before.
+
+**Database access:** The staging RDS instance is accessible from the production bastion host via a cross-stack security group rule. Use the same SSM Session Manager bastion workflow, but connect to the staging DB endpoint. Staging DB credentials are stored in Secrets Manager under `/mysite/stage/db-credentials`.
+
+**Cost:** Staging adds ~$12.50/month post-free-tier (RDS t4g.micro). All other staging resources (S3, CloudFront, Lambda, API Gateway) are pay-per-use and negligible.
 
 ## Project Structure
 

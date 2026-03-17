@@ -472,6 +472,22 @@
 
 ---
 
+## Sprint 31: Staging Environment with Approval Gate
+
+- [ ] 31.1 Add `deployStaging` config flag — `infrastructure/cdk/config/index.ts`
+- [ ] 31.2 Parameterize `DataStack` for staging (skip Cognito/VPC endpoints/bastion, DESTROY policies, export bastion SG) — `infrastructure/cdk/lib/data-stack.ts`
+- [ ] 31.3 Parameterize `AppStack` for staging (stage domains, skip budget, DESTROY policies) — `infrastructure/cdk/lib/app-stack.ts`
+- [ ] 31.4 Conditionally create staging stacks — `infrastructure/cdk/bin/app.ts`
+- [ ] 31.5 Restructure deploy workflow with staging → approval → prod flow — `.github/workflows/deploy.yml`
+- [ ] 31.6 Update README with staging documentation — `README.md`
+- [ ] 31.7 CDK synth verification (staging disabled)
+- [ ] 31.8 CDK synth verification (staging enabled)
+- [ ] 31.9 Security audit
+- [ ] 31.10 Push branch, create PR, monitor CI
+- [ ] 31.11 Merge PR after CI passes
+
+---
+
 ## Notes
 - DB port mapped to 5433 on host (5432 in use by local PostgreSQL)
 - `uv` installed at ~/.local/bin/uv
