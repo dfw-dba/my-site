@@ -111,10 +111,36 @@ This section walks you through deploying your own instance from a fork. The enti
 ### Prerequisites
 
 - An AWS account
-- A registered domain name
+- A registered domain name (see [Register a Domain Name](#register-a-domain-name) below)
 - Node.js 22+ and npm
 - AWS CLI v2 installed
 - Docker installed (for building Lambda images)
+
+### Register a Domain Name
+
+You need a domain before deploying. There are two paths:
+
+**Option A: Register via Route 53 (recommended)**
+
+The simplest option — Route 53 automatically becomes the authoritative DNS for your domain, so you can skip the nameserver update step entirely.
+
+1. AWS Console → **Route 53** → **Registered domains** → **Register domains**
+2. Search for your domain, add to cart, and complete registration (~$10–14/year for `.com`)
+
+Or via CLI:
+```bash
+aws route53domains register-domain \
+  --domain-name yourdomain.com \
+  --duration-in-years 1 \
+  --admin-contact FirstName=Your,LastName=Name,ContactType=PERSON,Email=you@example.com,PhoneNumber=+1.5555555555,CountryCode=US,AddressLine1="123 Main St",City=Anytown,State=CA,ZipCode=90210 \
+  --registrant-contact FirstName=Your,LastName=Name,ContactType=PERSON,Email=you@example.com,PhoneNumber=+1.5555555555,CountryCode=US,AddressLine1="123 Main St",City=Anytown,State=CA,ZipCode=90210 \
+  --tech-contact FirstName=Your,LastName=Name,ContactType=PERSON,Email=you@example.com,PhoneNumber=+1.5555555555,CountryCode=US,AddressLine1="123 Main St",City=Anytown,State=CA,ZipCode=90210 \
+  --auto-renew
+```
+
+**Option B: Use an existing domain from another registrar**
+
+If you already own a domain through Namecheap, GoDaddy, Cloudflare, etc., you can use it. You'll need to update your nameservers after deploying the DNS stack (covered in [Step 9](#9-update-domain-nameservers)).
 
 ### 1. Fork and Clone
 
@@ -273,16 +299,38 @@ Go to **GitHub → your repo → Settings → Secrets and variables → Actions*
 
 ### 8. Deploy Infrastructure
 
-Run the first deploy from your laptop so you can watch for issues and approve IAM changes:
+Run the first deploy from your laptop so you can watch for issues and approve IAM changes.
+
+> **DNS note:** Route 53 is the authoritative DNS for your domain after deployment. Your registrar only holds the NS delegation that tells the internet "ask Route 53 for this domain's records." All DNS records (CloudFront, API Gateway, certificate validation) are managed by CDK in Route 53.
+
+**If you registered your domain through Route 53** (Option A above), you can deploy everything at once — Route 53 is already authoritative:
 
 ```bash
 cd infrastructure/cdk
 npx cdk deploy --all
 ```
 
+**If your domain is at an external registrar** (Option B), deploy in two phases to avoid a stuck deploy:
+
+```bash
+cd infrastructure/cdk
+
+# Phase 1: Deploy the DNS stack only
+npx cdk deploy MySiteDns
+```
+
+After Phase 1 completes, update your nameservers at your registrar (see [Step 9](#9-update-domain-nameservers)) and wait for propagation. Then deploy the remaining stacks:
+
+```bash
+# Phase 2: Deploy remaining stacks (after nameservers are updated)
+npx cdk deploy --all
+```
+
+> **Why two phases?** The `MySiteCert` stack creates an ACM certificate that uses DNS validation — ACM adds a CNAME record to your Route 53 hosted zone, then queries DNS to verify you own the domain. If your registrar's nameservers are still active, those DNS queries never reach Route 53, and `cdk deploy` will hang indefinitely waiting for certificate validation.
+
 This creates 4 CloudFormation stacks:
 - **MySiteDns** — Route 53 hosted zone
-- **MySiteCert** — ACM wildcard certificate (us-east-1)
+- **MySiteCert** — ACM wildcard certificate (us-east-1, DNS-validated)
 - **MySiteData** — RDS PostgreSQL, Cognito user pool, ECR repo, VPC endpoint
 - **MySiteApp** — S3 + CloudFront, Lambda, API Gateway, Route 53 records, budget alarm
 
@@ -290,12 +338,45 @@ Takes ~10–15 minutes (RDS is the slow part). Note the outputs — you'll need 
 
 ### 9. Update Domain Nameservers
 
-The `MySiteDns` stack outputs **nameserver records**. Go to your domain registrar and replace the existing NS records with the Route 53 nameservers from the output.
+> **Skip this step** if you registered your domain through Route 53 — nameservers are already correct.
 
-Verify propagation:
+After deploying `MySiteDns`, you need to point your domain's NS records at Route 53 so that DNS queries for your domain reach the hosted zone where CDK manages all your records (CloudFront aliases, API Gateway, certificate validation CNAMEs, etc.).
+
+**Find your Route 53 nameservers:**
+
+The `MySiteDns` stack outputs the nameserver values. You can also look them up:
+```bash
+aws route53 list-hosted-zones-by-name --dns-name yourdomain.com --query 'HostedZones[0].Id' --output text | \
+  xargs -I {} aws route53 get-hosted-zone --id {} --query 'DelegationSet.NameServers' --output table
+```
+
+You'll get 4 nameservers like:
+```
+ns-123.awsdns-45.com
+ns-678.awsdns-90.net
+ns-111.awsdns-22.org
+ns-333.awsdns-44.co.uk
+```
+
+**Namecheap:**
+
+1. Log in → **Domain List** → click **Manage** next to your domain
+2. In the **Nameservers** section, switch from "Namecheap BasicDNS" to **Custom DNS**
+3. Paste the 4 Route 53 nameservers (without trailing dots)
+4. Click the green checkmark to save
+
+**Generic registrar:**
+
+Look for a "Nameservers" or "DNS" settings panel. Replace the existing nameservers with the 4 Route 53 values. Most registrars have a "Custom nameservers" option.
+
+**Verify propagation:**
 ```bash
 dig yourdomain.com NS +short
 ```
+
+Expected output should show your Route 53 nameservers (e.g., `ns-123.awsdns-45.com.`). Propagation typically takes minutes but can take up to 48 hours.
+
+**Troubleshooting:** If `cdk deploy` is stuck on `MySiteCert`, it's waiting for ACM certificate DNS validation. Press `Ctrl+C` to cancel safely — no resources are left in a broken state. Update your nameservers, wait for propagation (verify with `dig`), then re-run `npx cdk deploy --all`.
 
 ### 10. Push Initial Backend Image
 
