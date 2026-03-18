@@ -488,6 +488,17 @@
 
 ---
 
+## Sprint 32: Stage Post-Deploy Validation
+
+- [x] 32.1 Add `stage-post-deploy-validation` job to deploy workflow — `.github/workflows/deploy.yml`
+- [x] 32.2 Update `deploy-infra` to depend on `stage-post-deploy-validation` with `always()` condition — `.github/workflows/deploy.yml`
+- [x] 32.3 Update git-workflow.md to document staging validation behavior — `.claude/rules/git-workflow.md`
+- [x] 32.4 YAML syntax validation
+- [ ] 32.5 Push branch, create PR, monitor CI
+- [ ] 32.6 Merge PR after CI passes
+
+---
+
 ## Notes
 - DB port mapped to 5433 on host (5432 in use by local PostgreSQL)
 - `uv` installed at ~/.local/bin/uv
