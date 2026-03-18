@@ -598,10 +598,14 @@ After initial setup, all deployments are automatic:
 
 ### Staging Environment (Optional)
 
-When `DEPLOY_STAGING=true` is set as a GitHub Actions variable, the deploy workflow adds a staging phase with a manual approval gate before production:
+When `DEPLOY_STAGING=true` is set as a GitHub Actions variable, merges to `main` deploy to **staging only**. Production requires a separate manual trigger:
 
 ```
-CI → deploy-stage-infra → deploy-stage-frontend → approve-production → deploy-infra → deploy-frontend → post-deploy-validation
+Merge to main → CI → staging auto-deploys
+                        ↓
+              Review stage.<domain>
+                        ↓
+         Manual workflow_dispatch → production deploys → post-deploy-validation
 ```
 
 **What staging deploys:** A full infrastructure replica with its own RDS, S3 buckets, CloudFront distribution, Lambda function, and API Gateway. Staging shares the production Cognito user pool (same login), DNS hosted zone, and wildcard certificate.
@@ -610,14 +614,16 @@ CI → deploy-stage-infra → deploy-stage-frontend → approve-production → d
 - Frontend: `stage.<domain>` (e.g., `stage.example.com`)
 - API: `stage-api.<domain>` (e.g., `stage-api.example.com`)
 
-**Approval gate:** After staging deploys, the workflow pauses at the `approve-production` job, which uses a GitHub Environment named `production` with required reviewers. Review the staging site, then approve in GitHub Actions to continue to production.
+**Deploying to production after staging review:**
+1. Review the staging site at `stage.<domain>`
+2. Go to **Actions → Deploy → Run workflow** → select `production` → click **Run workflow**
+
+You can also deploy staging on-demand via **Actions → Deploy → Run workflow** → select `staging`.
 
 **Setup:**
-1. Go to repo **Settings → Environments → New environment** → name it `production`
-2. Check **Required reviewers** and add yourself
-3. Go to **Settings → Variables → Actions → New variable** → `DEPLOY_STAGING` = `true`
+1. Go to **Settings → Variables → Actions → New variable** → `DEPLOY_STAGING` = `true`
 
-**Without staging:** When `DEPLOY_STAGING` is not set (or not `true`), the staging and approval jobs are skipped entirely, and production deploys directly after CI — the same behavior as before.
+**Without staging:** When `DEPLOY_STAGING` is not set (or not `true`), production deploys automatically after CI — the same behavior as before.
 
 **Database access:** The staging RDS instance is accessible from the production bastion host via a cross-stack security group rule. Use the same SSM Session Manager bastion workflow, but connect to the staging DB endpoint. Staging DB credentials are stored in Secrets Manager under `/mysite/stage/db-credentials`.
 
