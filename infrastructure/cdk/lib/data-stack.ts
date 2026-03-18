@@ -13,16 +13,22 @@ import { config } from "../config";
 
 interface DataStackProps extends cdk.StackProps {
   hostedZone: route53.IHostedZone;
+  staging?: boolean;
+  bastionSecurityGroup?: ec2.ISecurityGroup;
 }
 
 export class DataStack extends cdk.Stack {
   public readonly database: rds.IDatabaseInstance;
   public readonly databaseSecurityGroup: ec2.ISecurityGroup;
   public readonly vpc: ec2.IVpc;
-  public readonly userPoolId: string;
-  public readonly userPoolClientId: string;
+  public readonly userPoolId?: string;
+  public readonly userPoolClientId?: string;
+  public readonly bastionSecurityGroup?: ec2.ISecurityGroup;
   constructor(scope: Construct, id: string, props: DataStackProps) {
     super(scope, id, props);
+
+    const isStaging = !!props.staging;
+    const ssmPrefix = isStaging ? "/mysite/stage" : "/mysite";
 
     // Use default VPC to avoid NAT Gateway costs
     this.vpc = ec2.Vpc.fromLookup(this, "DefaultVpc", { isDefault: true });
@@ -36,7 +42,7 @@ export class DataStack extends cdk.Stack {
     });
 
     const dbCredentials = rds.Credentials.fromGeneratedSecret("mysite", {
-      secretName: "/mysite/db-credentials",
+      secretName: `${ssmPrefix}/db-credentials`,
     });
 
     const dbInstance = new rds.DatabaseInstance(this, "Database", {
@@ -56,10 +62,10 @@ export class DataStack extends cdk.Stack {
       allocatedStorage: 20,
       maxAllocatedStorage: 20,
       multiAz: false,
-      backupRetention: cdk.Duration.days(30),
+      backupRetention: isStaging ? cdk.Duration.days(1) : cdk.Duration.days(30),
       iamAuthentication: true,
-      deletionProtection: true,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      deletionProtection: !isStaging,
+      removalPolicy: isStaging ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN,
       storageEncrypted: true,
       parameterGroup: new rds.ParameterGroup(this, "DbParams", {
         engine: rds.DatabaseInstanceEngine.postgres({
@@ -140,122 +146,14 @@ export class DataStack extends cdk.Stack {
 
     // Store database URL in SSM (uses the generated secret)
     new ssm.StringParameter(this, "DbEndpointParam", {
-      parameterName: "/mysite/db-endpoint",
+      parameterName: `${ssmPrefix}/db-endpoint`,
       stringValue: dbInstance.dbInstanceEndpointAddress,
     });
 
     new ssm.StringParameter(this, "DbPortParam", {
-      parameterName: "/mysite/db-port",
+      parameterName: `${ssmPrefix}/db-port`,
       stringValue: dbInstance.dbInstanceEndpointPort,
     });
-
-    // --- Cognito User Pool ---
-
-    const userPool = new cognito.UserPool(this, "UserPool", {
-      userPoolName: "mysite-users",
-      selfSignUpEnabled: false,
-      signInAliases: { email: true },
-      autoVerify: { email: true },
-      mfa: cognito.Mfa.REQUIRED,
-      mfaSecondFactor: {
-        sms: false,
-        otp: true,
-      },
-      passwordPolicy: {
-        minLength: 12,
-        requireLowercase: true,
-        requireUppercase: true,
-        requireDigits: true,
-        requireSymbols: true,
-      },
-      accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
-    });
-
-    const userPoolClient = userPool.addClient("SpaClient", {
-      userPoolClientName: "mysite-spa",
-      authFlows: {
-        userSrp: true,
-      },
-      generateSecret: false,
-      preventUserExistenceErrors: true,
-      accessTokenValidity: cdk.Duration.hours(1),
-      idTokenValidity: cdk.Duration.hours(1),
-      refreshTokenValidity: cdk.Duration.days(30),
-    });
-
-    this.userPoolId = userPool.userPoolId;
-    this.userPoolClientId = userPoolClient.userPoolClientId;
-
-    // Store Cognito IDs in SSM
-    new ssm.StringParameter(this, "CognitoPoolIdParam", {
-      parameterName: "/mysite/cognito-pool-id",
-      stringValue: userPool.userPoolId,
-    });
-
-    new ssm.StringParameter(this, "CognitoClientIdParam", {
-      parameterName: "/mysite/cognito-client-id",
-      stringValue: userPoolClient.userPoolClientId,
-    });
-
-    // --- VPC Endpoint for Cognito (Lambda in VPC needs this for JWKS) ---
-
-    new ec2.InterfaceVpcEndpoint(this, "CognitoEndpoint", {
-      vpc: this.vpc,
-      service: ec2.InterfaceVpcEndpointAwsService.COGNITO_IDP,
-      privateDnsEnabled: true,
-      subnets: {
-        availabilityZones: [
-          `${config.awsRegion}b`,
-          `${config.awsRegion}c`,
-        ],
-      },
-    });
-
-    // --- VPC Endpoint for S3 (Lambda in VPC needs this for media uploads) ---
-
-    this.vpc.addGatewayEndpoint("S3Endpoint", {
-      service: ec2.GatewayVpcEndpointAwsService.S3,
-    });
-
-    // --- Bastion Host (SSM Session Manager, no SSH keys) ---
-
-    const bastionSg = new ec2.SecurityGroup(this, "BastionSg", {
-      vpc: this.vpc,
-      description: "Bastion host - outbound only for SSM",
-      allowAllOutbound: true,
-    });
-
-    this.databaseSecurityGroup.addIngressRule(
-      bastionSg,
-      ec2.Port.tcp(5432),
-      "Allow bastion host to connect to RDS",
-    );
-
-    const bastionRole = new iam.Role(this, "BastionRole", {
-      assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),
-      managedPolicies: [
-        iam.ManagedPolicy.fromAwsManagedPolicyName(
-          "AmazonSSMManagedInstanceCore",
-        ),
-      ],
-    });
-
-    const bastion = new ec2.Instance(this, "Bastion", {
-      vpc: this.vpc,
-      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
-      instanceType: ec2.InstanceType.of(
-        ec2.InstanceClass.T4G,
-        ec2.InstanceSize.NANO,
-      ),
-      machineImage: ec2.MachineImage.latestAmazonLinux2023({
-        cpuType: ec2.AmazonLinuxCpuType.ARM_64,
-      }),
-      securityGroup: bastionSg,
-      role: bastionRole,
-    });
-
-    bastion.addUserData("dnf install -y postgresql16");
 
     // --- Outputs ---
 
@@ -263,17 +161,140 @@ export class DataStack extends cdk.Stack {
       value: dbInstance.dbInstanceEndpointAddress,
     });
 
-    new cdk.CfnOutput(this, "UserPoolId", {
-      value: userPool.userPoolId,
-    });
+    // --- Prod-only resources: Cognito, VPC endpoints, bastion ---
 
-    new cdk.CfnOutput(this, "UserPoolClientId", {
-      value: userPoolClient.userPoolClientId,
-    });
+    if (!isStaging) {
+      // --- Cognito User Pool ---
 
-    new cdk.CfnOutput(this, "BastionInstanceId", {
-      value: bastion.instanceId,
-    });
+      const userPool = new cognito.UserPool(this, "UserPool", {
+        userPoolName: "mysite-users",
+        selfSignUpEnabled: false,
+        signInAliases: { email: true },
+        autoVerify: { email: true },
+        mfa: cognito.Mfa.REQUIRED,
+        mfaSecondFactor: {
+          sms: false,
+          otp: true,
+        },
+        passwordPolicy: {
+          minLength: 12,
+          requireLowercase: true,
+          requireUppercase: true,
+          requireDigits: true,
+          requireSymbols: true,
+        },
+        accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
+        removalPolicy: cdk.RemovalPolicy.RETAIN,
+      });
+
+      const userPoolClient = userPool.addClient("SpaClient", {
+        userPoolClientName: "mysite-spa",
+        authFlows: {
+          userSrp: true,
+        },
+        generateSecret: false,
+        preventUserExistenceErrors: true,
+        accessTokenValidity: cdk.Duration.hours(1),
+        idTokenValidity: cdk.Duration.hours(1),
+        refreshTokenValidity: cdk.Duration.days(30),
+      });
+
+      this.userPoolId = userPool.userPoolId;
+      this.userPoolClientId = userPoolClient.userPoolClientId;
+
+      // Store Cognito IDs in SSM
+      new ssm.StringParameter(this, "CognitoPoolIdParam", {
+        parameterName: "/mysite/cognito-pool-id",
+        stringValue: userPool.userPoolId,
+      });
+
+      new ssm.StringParameter(this, "CognitoClientIdParam", {
+        parameterName: "/mysite/cognito-client-id",
+        stringValue: userPoolClient.userPoolClientId,
+      });
+
+      new cdk.CfnOutput(this, "UserPoolId", {
+        value: userPool.userPoolId,
+      });
+
+      new cdk.CfnOutput(this, "UserPoolClientId", {
+        value: userPoolClient.userPoolClientId,
+      });
+
+      // --- VPC Endpoint for Cognito (Lambda in VPC needs this for JWKS) ---
+
+      new ec2.InterfaceVpcEndpoint(this, "CognitoEndpoint", {
+        vpc: this.vpc,
+        service: ec2.InterfaceVpcEndpointAwsService.COGNITO_IDP,
+        privateDnsEnabled: true,
+        subnets: {
+          availabilityZones: [
+            `${config.awsRegion}b`,
+            `${config.awsRegion}c`,
+          ],
+        },
+      });
+
+      // --- VPC Endpoint for S3 (Lambda in VPC needs this for media uploads) ---
+
+      this.vpc.addGatewayEndpoint("S3Endpoint", {
+        service: ec2.GatewayVpcEndpointAwsService.S3,
+      });
+
+      // --- Bastion Host (SSM Session Manager, no SSH keys) ---
+
+      const bastionSg = new ec2.SecurityGroup(this, "BastionSg", {
+        vpc: this.vpc,
+        description: "Bastion host - outbound only for SSM",
+        allowAllOutbound: true,
+      });
+
+      this.databaseSecurityGroup.addIngressRule(
+        bastionSg,
+        ec2.Port.tcp(5432),
+        "Allow bastion host to connect to RDS",
+      );
+
+      const bastionRole = new iam.Role(this, "BastionRole", {
+        assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),
+        managedPolicies: [
+          iam.ManagedPolicy.fromAwsManagedPolicyName(
+            "AmazonSSMManagedInstanceCore",
+          ),
+        ],
+      });
+
+      const bastion = new ec2.Instance(this, "Bastion", {
+        vpc: this.vpc,
+        vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+        instanceType: ec2.InstanceType.of(
+          ec2.InstanceClass.T4G,
+          ec2.InstanceSize.NANO,
+        ),
+        machineImage: ec2.MachineImage.latestAmazonLinux2023({
+          cpuType: ec2.AmazonLinuxCpuType.ARM_64,
+        }),
+        securityGroup: bastionSg,
+        role: bastionRole,
+      });
+
+      bastion.addUserData("dnf install -y postgresql16");
+
+      this.bastionSecurityGroup = bastionSg;
+
+      new cdk.CfnOutput(this, "BastionInstanceId", {
+        value: bastion.instanceId,
+      });
+    }
+
+    // Allow prod bastion to connect to staging RDS
+    if (isStaging && props.bastionSecurityGroup) {
+      this.databaseSecurityGroup.addIngressRule(
+        props.bastionSecurityGroup,
+        ec2.Port.tcp(5432),
+        "Allow prod bastion to connect to staging RDS",
+      );
+    }
 
   }
 }

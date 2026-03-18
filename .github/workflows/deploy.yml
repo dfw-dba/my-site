@@ -10,14 +10,142 @@ permissions:
   id-token: write
   contents: read
   pull-requests: write
+  deployments: write
 
 env:
   AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
 
 jobs:
+  # --- Staging infrastructure (opt-in via DEPLOY_STAGING variable) ---
+  deploy-stage-infra:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      vars.DEPLOY_STAGING == 'true'
+    outputs:
+      frontend-bucket: ${{ steps.cdk-outputs.outputs.frontend-bucket }}
+      distribution-id: ${{ steps.cdk-outputs.outputs.distribution-id }}
+      user-pool-id: ${{ steps.cdk-outputs.outputs.user-pool-id }}
+      user-pool-client-id: ${{ steps.cdk-outputs.outputs.user-pool-client-id }}
+      api-url: ${{ steps.cdk-outputs.outputs.api-url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: infrastructure/cdk/package-lock.json
+
+      - name: Install CDK dependencies
+        run: npm ci
+        working-directory: infrastructure/cdk
+
+      - name: CDK deploy staging
+        run: npx cdk deploy MySiteDns MySiteCert MySiteStageData MySiteStageApp --require-approval never --outputs-file cdk-outputs-stage.json
+        working-directory: infrastructure/cdk
+        env:
+          CDK_DOMAIN_NAME: ${{ vars.CDK_DOMAIN_NAME }}
+          CDK_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+          CDK_REGION: ${{ env.AWS_REGION }}
+          CDK_BUDGET_EMAIL: ${{ vars.CDK_BUDGET_EMAIL }}
+          CDK_DEPLOY_STAGING: "true"
+
+      - name: Extract staging CDK outputs
+        id: cdk-outputs
+        working-directory: infrastructure/cdk
+        run: |
+          echo "frontend-bucket=$(jq -r '.MySiteStageApp.FrontendBucketName' cdk-outputs-stage.json)" >> "$GITHUB_OUTPUT"
+          echo "distribution-id=$(jq -r '.MySiteStageApp.DistributionId' cdk-outputs-stage.json)" >> "$GITHUB_OUTPUT"
+          echo "user-pool-id=$(jq -r '.MySiteData.UserPoolId // .MySiteStageData.UserPoolId // empty' cdk-outputs-stage.json)" >> "$GITHUB_OUTPUT"
+          echo "user-pool-client-id=$(jq -r '.MySiteData.UserPoolClientId // .MySiteStageData.UserPoolClientId // empty' cdk-outputs-stage.json)" >> "$GITHUB_OUTPUT"
+          echo "api-url=$(jq -r '.MySiteStageApp.ApiUrl' cdk-outputs-stage.json)" >> "$GITHUB_OUTPUT"
+
+  # --- Staging frontend deploy ---
+  deploy-stage-frontend:
+    runs-on: ubuntu-latest
+    needs: deploy-stage-infra
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          VITE_API_URL: ${{ needs.deploy-stage-infra.outputs.api-url }}
+          VITE_COGNITO_USER_POOL_ID: ${{ needs.deploy-stage-infra.outputs.user-pool-id }}
+          VITE_COGNITO_APP_CLIENT_ID: ${{ needs.deploy-stage-infra.outputs.user-pool-client-id }}
+          VITE_COGNITO_REGION: ${{ env.AWS_REGION }}
+        run: npm run build
+
+      - name: Deploy to S3
+        run: |
+          aws s3 sync frontend/dist/ "s3://${{ needs.deploy-stage-infra.outputs.frontend-bucket }}" \
+            --delete \
+            --cache-control "public,max-age=31536000,immutable" \
+            --exclude "index.html" \
+            --exclude "sw.js" \
+            --exclude "manifest.webmanifest"
+
+          aws s3 cp frontend/dist/index.html "s3://${{ needs.deploy-stage-infra.outputs.frontend-bucket }}/index.html" \
+            --cache-control "public,max-age=0,must-revalidate"
+
+          aws s3 cp frontend/dist/sw.js "s3://${{ needs.deploy-stage-infra.outputs.frontend-bucket }}/sw.js" \
+            --cache-control "public,max-age=0,must-revalidate" 2>/dev/null || true
+
+          aws s3 cp frontend/dist/manifest.webmanifest "s3://${{ needs.deploy-stage-infra.outputs.frontend-bucket }}/manifest.webmanifest" \
+            --cache-control "public,max-age=0,must-revalidate" 2>/dev/null || true
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ needs.deploy-stage-infra.outputs.distribution-id }}" \
+            --paths "/index.html" "/sw.js" "/manifest.webmanifest"
+
+  # --- Production approval gate (only when staging is enabled) ---
+  approve-production:
+    runs-on: ubuntu-latest
+    needs: deploy-stage-frontend
+    environment: production
+
+    steps:
+      - name: Production deployment approved
+        run: echo "Production deployment approved by reviewer"
+
+  # --- Production infrastructure ---
   deploy-infra:
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'success'
+    needs: [approve-production]
+    if: >-
+      always() &&
+      github.event.workflow_run.conclusion == 'success' &&
+      (needs.approve-production.result == 'success' ||
+       (needs.approve-production.result == 'skipped' && vars.DEPLOY_STAGING != 'true'))
     outputs:
       frontend-bucket: ${{ steps.cdk-outputs.outputs.frontend-bucket }}
       distribution-id: ${{ steps.cdk-outputs.outputs.distribution-id }}
@@ -46,22 +174,24 @@ jobs:
         working-directory: infrastructure/cdk
 
       - name: CDK diff
-        run: npx cdk diff --all 2>&1 || true
+        run: npx cdk diff MySiteDns MySiteCert MySiteData MySiteApp 2>&1 || true
         working-directory: infrastructure/cdk
         env:
           CDK_DOMAIN_NAME: ${{ vars.CDK_DOMAIN_NAME }}
           CDK_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
           CDK_REGION: ${{ env.AWS_REGION }}
           CDK_BUDGET_EMAIL: ${{ vars.CDK_BUDGET_EMAIL }}
+          CDK_DEPLOY_STAGING: ${{ vars.DEPLOY_STAGING }}
 
       - name: CDK deploy
-        run: npx cdk deploy --all --require-approval never --outputs-file cdk-outputs.json
+        run: npx cdk deploy MySiteDns MySiteCert MySiteData MySiteApp --require-approval never --outputs-file cdk-outputs.json
         working-directory: infrastructure/cdk
         env:
           CDK_DOMAIN_NAME: ${{ vars.CDK_DOMAIN_NAME }}
           CDK_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
           CDK_REGION: ${{ env.AWS_REGION }}
           CDK_BUDGET_EMAIL: ${{ vars.CDK_BUDGET_EMAIL }}
+          CDK_DEPLOY_STAGING: ${{ vars.DEPLOY_STAGING }}
 
       - name: Extract CDK outputs
         id: cdk-outputs

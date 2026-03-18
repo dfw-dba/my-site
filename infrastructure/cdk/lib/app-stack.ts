@@ -25,16 +25,23 @@ interface AppStackProps extends cdk.StackProps {
   vpc: ec2.IVpc;
   userPoolId: string;
   userPoolClientId: string;
+  staging?: boolean;
 }
 
 export class AppStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: AppStackProps) {
     super(scope, id, props);
 
+    const isStaging = !!props.staging;
+    const domainPrefix = isStaging ? "stage." : "";
+    const namePrefix = isStaging ? "stage-" : "";
+    const frontendDomain = `${domainPrefix}${config.domainName}`;
+    const apiDomainName = `${namePrefix}api.${config.domainName}`;
+
     // --- Frontend: S3 + CloudFront ---
 
     const frontendBucket = new s3.Bucket(this, "FrontendBucket", {
-      bucketName: `${config.domainName}-frontend`,
+      bucketName: `${domainPrefix}${config.domainName}-frontend`,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
@@ -47,7 +54,7 @@ export class AppStack extends cdk.Stack {
           cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
       },
-      domainNames: [config.domainName],
+      domainNames: [frontendDomain],
       certificate: props.certificate,
       defaultRootObject: "index.html",
       errorResponses: [
@@ -69,13 +76,14 @@ export class AppStack extends cdk.Stack {
     // --- Media S3 Bucket ---
 
     const mediaBucket = new s3.Bucket(this, "MediaBucket", {
-      bucketName: `${config.domainName}-media`,
+      bucketName: `${domainPrefix}${config.domainName}-media`,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      removalPolicy: isStaging ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN,
+      autoDeleteObjects: isStaging,
       cors: [
         {
           allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT],
-          allowedOrigins: [`https://${config.domainName}`],
+          allowedOrigins: [`https://${frontendDomain}`],
           allowedHeaders: ["*"],
           maxAge: 3600,
         },
@@ -89,7 +97,7 @@ export class AppStack extends cdk.Stack {
       this,
       "MediaCachePolicy",
       {
-        cachePolicyName: `${config.domainName.replace(/\./g, "-")}-media-cache`,
+        cachePolicyName: `${domainPrefix.replace(/\./g, "-")}${config.domainName.replace(/\./g, "-")}-media-cache`,
         defaultTtl: cdk.Duration.hours(24),
         maxTtl: cdk.Duration.days(365),
         minTtl: cdk.Duration.seconds(0),
@@ -138,7 +146,7 @@ export class AppStack extends cdk.Stack {
     const repoRoot = path.resolve(__dirname, "..", "..", "..");
 
     const backendFn = new lambda.DockerImageFunction(this, "BackendFunction", {
-      functionName: "mysite-backend",
+      functionName: isStaging ? "mysite-stage-backend" : "mysite-backend",
       code: lambda.DockerImageCode.fromImageAsset(repoRoot, {
         file: "docker/backend/Dockerfile.lambda",
         platform: ecr_assets.Platform.LINUX_AMD64,
@@ -162,9 +170,9 @@ export class AppStack extends cdk.Stack {
         COGNITO_USER_POOL_ID: props.userPoolId,
         COGNITO_APP_CLIENT_ID: props.userPoolClientId,
         COGNITO_REGION: config.awsRegion,
-        CORS_ORIGINS: `https://${config.domainName}`,
+        CORS_ORIGINS: `https://${frontendDomain}`,
         MEDIA_BUCKET: mediaBucket.bucketName,
-        MEDIA_CDN_URL: `https://${config.domainName}`,
+        MEDIA_CDN_URL: `https://${frontendDomain}`,
         DB_HOST: props.database.dbInstanceEndpointAddress,
         DB_PORT: "5432",
         DB_USER: dbUser,
@@ -188,8 +196,6 @@ export class AppStack extends cdk.Stack {
 
     // --- API Gateway v2 ---
 
-    const apiDomainName = `api.${config.domainName}`;
-
     // ACM cert for API subdomain (in the deployment region)
     const apiCert = new acm.Certificate(this, "ApiCertificate", {
       domainName: apiDomainName,
@@ -197,9 +203,9 @@ export class AppStack extends cdk.Stack {
     });
 
     const httpApi = new apigatewayv2.HttpApi(this, "HttpApi", {
-      apiName: "mysite-api",
+      apiName: isStaging ? "mysite-stage-api" : "mysite-api",
       corsPreflight: {
-        allowOrigins: [`https://${config.domainName}`],
+        allowOrigins: [`https://${frontendDomain}`],
         allowMethods: [
           apigatewayv2.CorsHttpMethod.GET,
           apigatewayv2.CorsHttpMethod.POST,
@@ -246,6 +252,7 @@ export class AppStack extends cdk.Stack {
     // Frontend: domain → CloudFront
     new route53.ARecord(this, "FrontendAliasRecord", {
       zone: props.hostedZone,
+      recordName: isStaging ? "stage" : undefined,
       target: route53.RecordTarget.fromAlias(
         new targets.CloudFrontTarget(distribution),
       ),
@@ -254,7 +261,7 @@ export class AppStack extends cdk.Stack {
     // API: api.domain → API Gateway
     new route53.ARecord(this, "ApiAliasRecord", {
       zone: props.hostedZone,
-      recordName: "api",
+      recordName: isStaging ? "stage-api" : "api",
       target: route53.RecordTarget.fromAlias(
         new targets.ApiGatewayv2DomainProperties(
           apiDomain.regionalDomainName,
@@ -263,49 +270,51 @@ export class AppStack extends cdk.Stack {
       ),
     });
 
-    // --- Budget Alarm ---
+    // --- Budget Alarm (prod only) ---
 
-    new budgets.CfnBudget(this, "MonthlyBudget", {
-      budget: {
-        budgetName: "mysite-monthly",
-        budgetType: "COST",
-        timeUnit: "MONTHLY",
-        budgetLimit: {
-          amount: config.budgetLimitUsd,
-          unit: "USD",
-        },
-      },
-      notificationsWithSubscribers: [
-        {
-          notification: {
-            notificationType: "ACTUAL",
-            comparisonOperator: "GREATER_THAN",
-            threshold: 80,
-            thresholdType: "PERCENTAGE",
+    if (!isStaging) {
+      new budgets.CfnBudget(this, "MonthlyBudget", {
+        budget: {
+          budgetName: "mysite-monthly",
+          budgetType: "COST",
+          timeUnit: "MONTHLY",
+          budgetLimit: {
+            amount: config.budgetLimitUsd,
+            unit: "USD",
           },
-          subscribers: [
-            {
-              subscriptionType: "EMAIL",
-              address: config.budgetAlertEmail,
-            },
-          ],
         },
-        {
-          notification: {
-            notificationType: "ACTUAL",
-            comparisonOperator: "GREATER_THAN",
-            threshold: 100,
-            thresholdType: "PERCENTAGE",
+        notificationsWithSubscribers: [
+          {
+            notification: {
+              notificationType: "ACTUAL",
+              comparisonOperator: "GREATER_THAN",
+              threshold: 80,
+              thresholdType: "PERCENTAGE",
+            },
+            subscribers: [
+              {
+                subscriptionType: "EMAIL",
+                address: config.budgetAlertEmail,
+              },
+            ],
           },
-          subscribers: [
-            {
-              subscriptionType: "EMAIL",
-              address: config.budgetAlertEmail,
+          {
+            notification: {
+              notificationType: "ACTUAL",
+              comparisonOperator: "GREATER_THAN",
+              threshold: 100,
+              thresholdType: "PERCENTAGE",
             },
-          ],
-        },
-      ],
-    });
+            subscribers: [
+              {
+                subscriptionType: "EMAIL",
+                address: config.budgetAlertEmail,
+              },
+            ],
+          },
+        ],
+      });
+    }
 
     // --- Outputs ---
 

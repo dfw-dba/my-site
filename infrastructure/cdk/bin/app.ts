@@ -34,8 +34,32 @@ new AppStack(app, "MySiteApp", {
   database: data.database,
   databaseSecurityGroup: data.databaseSecurityGroup,
   vpc: data.vpc,
-  userPoolId: data.userPoolId,
-  userPoolClientId: data.userPoolClientId,
+  userPoolId: data.userPoolId!,
+  userPoolClientId: data.userPoolClientId!,
 });
+
+// --- Staging stacks (opt-in via CDK_DEPLOY_STAGING=true) ---
+
+if (config.deployStaging) {
+  const stageData = new DataStack(app, "MySiteStageData", {
+    env,
+    hostedZone: dns.hostedZone,
+    staging: true,
+    bastionSecurityGroup: data.bastionSecurityGroup,
+  });
+
+  new AppStack(app, "MySiteStageApp", {
+    env,
+    crossRegionReferences: true,
+    hostedZone: dns.hostedZone,
+    certificate: cert.certificate,
+    database: stageData.database,
+    databaseSecurityGroup: stageData.databaseSecurityGroup,
+    vpc: stageData.vpc,
+    userPoolId: data.userPoolId!,
+    userPoolClientId: data.userPoolClientId!,
+    staging: true,
+  });
+}
 
 app.synth();
