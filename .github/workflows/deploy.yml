@@ -5,23 +5,31 @@ on:
     workflows: [CI]
     types: [completed]
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy_target:
+        description: "What to deploy"
+        required: true
+        type: choice
+        options:
+          - production
+          - staging
 
 permissions:
   id-token: write
   contents: read
   pull-requests: write
-  deployments: write
 
 env:
   AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
 
 jobs:
-  # --- Staging infrastructure (opt-in via DEPLOY_STAGING variable) ---
+  # --- Staging infrastructure (auto on CI success when DEPLOY_STAGING=true, or manual) ---
   deploy-stage-infra:
     runs-on: ubuntu-latest
     if: >-
-      github.event.workflow_run.conclusion == 'success' &&
-      vars.DEPLOY_STAGING == 'true'
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && vars.DEPLOY_STAGING == 'true') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy_target == 'staging')
     outputs:
       frontend-bucket: ${{ steps.cdk-outputs.outputs.frontend-bucket }}
       distribution-id: ${{ steps.cdk-outputs.outputs.distribution-id }}
@@ -127,25 +135,12 @@ jobs:
             --distribution-id "${{ needs.deploy-stage-infra.outputs.distribution-id }}" \
             --paths "/index.html" "/sw.js" "/manifest.webmanifest"
 
-  # --- Production approval gate (only when staging is enabled) ---
-  approve-production:
-    runs-on: ubuntu-latest
-    needs: deploy-stage-frontend
-    environment: production
-
-    steps:
-      - name: Production deployment approved
-        run: echo "Production deployment approved by reviewer"
-
   # --- Production infrastructure ---
   deploy-infra:
     runs-on: ubuntu-latest
-    needs: [approve-production]
     if: >-
-      always() &&
-      github.event.workflow_run.conclusion == 'success' &&
-      (needs.approve-production.result == 'success' ||
-       (needs.approve-production.result == 'skipped' && vars.DEPLOY_STAGING != 'true'))
+      (github.event_name == 'workflow_dispatch' && inputs.deploy_target == 'production') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && vars.DEPLOY_STAGING != 'true')
     outputs:
       frontend-bucket: ${{ steps.cdk-outputs.outputs.frontend-bucket }}
       distribution-id: ${{ steps.cdk-outputs.outputs.distribution-id }}
@@ -206,7 +201,6 @@ jobs:
   deploy-frontend:
     runs-on: ubuntu-latest
     needs: deploy-infra
-    if: always() && needs.deploy-infra.result == 'success'
 
     steps:
       - uses: actions/checkout@v4
@@ -264,7 +258,6 @@ jobs:
   post-deploy-validation:
     runs-on: ubuntu-latest
     needs: [deploy-infra, deploy-frontend]
-    if: always() && needs.deploy-infra.result == 'success' && needs.deploy-frontend.result == 'success'
     continue-on-error: true
 
     steps:
@@ -275,7 +268,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          COMMIT_SHA="${{ github.event.workflow_run.head_sha }}"
+          # workflow_run has head_sha on the event, workflow_dispatch uses github.sha
+          COMMIT_SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
           PR_JSON=$(gh api "repos/${{ github.repository }}/commits/${COMMIT_SHA}/pulls" \
             --jq '.[0] // empty')
 
