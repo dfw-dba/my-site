@@ -43,5 +43,8 @@
   ```
 - Monitor CI job after submitting PR and mark CI test plan item complete if it completes successfully. Never suggest to merge a PULL REQUEST if the CI workflow is failing.
 - After successful completion of CI job and Test plan items, merge the PR and monitor the deploy job as it runs.
-- Post-deploy validation runs automatically after deploy via the `post-deploy-validation` job in `deploy.yml`. Results are commented on the PR and passed items are checked off automatically.
+- Post-deploy validation runs automatically **twice** in `deploy.yml`:
+  1. **Staging** (`stage-post-deploy-validation`): runs after `deploy-stage-frontend`, gates the production deploy. `${API_URL}` points to the staging API. If staging validation fails, production is blocked.
+  2. **Production** (`post-deploy-validation`): runs after `deploy-frontend`, validates the production deploy. `${API_URL}` points to the production API.
+  Both runs execute the same PR body commands. Results are commented on the PR and passed items are checked off automatically.
 - If a new commit is pushed to the head branch this invalidates the test plan items and the CI outcome. The CI must be run again and tes plan items must be unchecked, test plan items must be executed again and marked as complete upon success.

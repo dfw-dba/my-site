@@ -135,12 +135,86 @@ jobs:
             --distribution-id "${{ needs.deploy-stage-infra.outputs.distribution-id }}" \
             --paths "/index.html" "/sw.js" "/manifest.webmanifest"
 
+  # --- Staging post-deploy validation (gates production) ---
+  stage-post-deploy-validation:
+    runs-on: ubuntu-latest
+    needs: [deploy-stage-infra, deploy-stage-frontend]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Find merged PR for this commit
+        id: find-pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # workflow_run has head_sha on the event, workflow_dispatch uses github.sha
+          COMMIT_SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
+          PR_JSON=$(gh api "repos/${{ github.repository }}/commits/${COMMIT_SHA}/pulls" \
+            --jq '.[0] // empty')
+
+          if [[ -z "$PR_JSON" ]]; then
+            echo "No PR found for commit ${COMMIT_SHA}. Skipping validation."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          PR_NUMBER=$(echo "$PR_JSON" | jq -r '.number')
+          echo "pr-number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+          echo "Found PR #${PR_NUMBER}"
+
+      - name: Fetch PR body
+        if: steps.find-pr.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr view "${{ steps.find-pr.outputs.pr-number }}" --json body -q '.body' > /tmp/pr-body.md
+
+      - name: Run post-deploy validation
+        if: steps.find-pr.outputs.skip != 'true'
+        id: validate
+        env:
+          API_URL: ${{ needs.deploy-stage-infra.outputs.api-url }}
+          DOMAIN_NAME: ${{ vars.CDK_DOMAIN_NAME }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          chmod +x .github/scripts/post-deploy-validate.sh
+          .github/scripts/post-deploy-validate.sh /tmp/pr-body.md || true
+
+      - name: Comment results on PR
+        if: steps.find-pr.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ -f /tmp/validation-results.md ]]; then
+            gh pr comment "${{ steps.find-pr.outputs.pr-number }}" \
+              --body-file /tmp/validation-results.md
+          fi
+
+      - name: Update PR checkboxes
+        if: steps.find-pr.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ -f /tmp/validation-outcomes.json ]]; then
+            chmod +x .github/scripts/post-deploy-update-checkboxes.sh
+            .github/scripts/post-deploy-update-checkboxes.sh \
+              "${{ steps.find-pr.outputs.pr-number }}" \
+              /tmp/validation-outcomes.json
+          fi
+
   # --- Production infrastructure ---
   deploy-infra:
     runs-on: ubuntu-latest
+    needs: stage-post-deploy-validation
     if: >-
-      (github.event_name == 'workflow_dispatch' && inputs.deploy_target == 'production') ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && vars.DEPLOY_STAGING != 'true')
+      always() &&
+      (needs.stage-post-deploy-validation.result == 'success' || needs.stage-post-deploy-validation.result == 'skipped') &&
+      (
+        (github.event_name == 'workflow_dispatch' && inputs.deploy_target == 'production') ||
+        (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && vars.DEPLOY_STAGING != 'true')
+      )
     outputs:
       frontend-bucket: ${{ steps.cdk-outputs.outputs.frontend-bucket }}
       distribution-id: ${{ steps.cdk-outputs.outputs.distribution-id }}

@@ -601,12 +601,12 @@ After initial setup, all deployments are automatic:
 When `DEPLOY_STAGING=true` is set as a GitHub Actions variable, merges to `main` deploy to **staging only**. Production requires a separate manual trigger:
 
 ```
-Merge to main → CI → staging auto-deploys
-                        ↓
-              Review stage.<domain>
-                        ↓
-         Manual workflow_dispatch → production deploys → post-deploy-validation
+Merge to main → CI → staging auto-deploys → stage-post-deploy-validation
+                                                        ↓
+                                        Manual workflow_dispatch → production deploys → post-deploy-validation
 ```
+
+The `stage-post-deploy-validation` job runs the same PR post-deploy commands against the staging API. If staging validation fails, the production deploy is blocked.
 
 **What staging deploys:** A full infrastructure replica with its own RDS, S3 buckets, CloudFront distribution, Lambda function, and API Gateway. Staging shares the production Cognito user pool (same login), DNS hosted zone, and wildcard certificate.
 
