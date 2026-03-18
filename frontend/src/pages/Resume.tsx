@@ -55,7 +55,7 @@ export default function Resume() {
           src={
             typeof (sections.profile_image as Record<string, unknown>)?.image_url === "string"
               ? ((sections.profile_image as Record<string, unknown>).image_url as string)
-              : "/profile.jpg"
+              : undefined
           }
         />
         {sections.summary && (
