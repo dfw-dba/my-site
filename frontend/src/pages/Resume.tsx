@@ -77,7 +77,7 @@ export default function Resume() {
 
       {sections.recommendations && Array.isArray((sections.recommendations as SectionContent).items) && (
         <RecommendationCarousel
-          items={(sections.recommendations as SectionContent).items as { author: string; title: string; text: string }[]}
+          items={(sections.recommendations as SectionContent).items as { author: string; title: string; text: string; linkedin_url?: string | null }[]}
         />
       )}
 

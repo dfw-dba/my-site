@@ -4,6 +4,7 @@ interface Recommendation {
   author: string;
   title: string;
   text: string;
+  linkedin_url?: string | null;
 }
 
 interface RecommendationCarouselProps {
@@ -27,7 +28,20 @@ function RecommendationTile({ item }: { item: Recommendation }) {
         &ldquo;{item.text}&rdquo;
       </p>
       <p className="mt-3 text-sm font-medium text-gray-500 dark:text-gray-400">
-        &mdash; {item.author}, {item.title}
+        &mdash;{" "}
+        {item.linkedin_url ? (
+          <a
+            href={item.linkedin_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline decoration-gray-400/50 dark:decoration-gray-500/50 hover:decoration-gray-700 dark:hover:decoration-gray-200 underline-offset-2 transition-colors"
+          >
+            {item.author}
+          </a>
+        ) : (
+          item.author
+        )}
+        , {item.title}
       </p>
     </div>
   );

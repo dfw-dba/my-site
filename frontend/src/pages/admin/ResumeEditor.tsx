@@ -113,7 +113,7 @@ export default function ResumeEditor() {
   const titleSection = resume?.sections?.title as { title?: string } | undefined;
   const summarySection = resume?.sections?.summary as { headline?: string; text?: string } | undefined;
   const contactSection = resume?.sections?.contact as { linkedin?: string; github?: string; email?: string } | undefined;
-  const recsSection = resume?.sections?.recommendations as { items?: { author: string; title: string; text: string }[] } | undefined;
+  const recsSection = resume?.sections?.recommendations as { items?: { author: string; title: string; text: string; linkedin_url?: string | null }[] } | undefined;
   const profileImageSection = resume?.sections?.profile_image as { image_url?: string } | undefined;
 
   // Reset form state from server data when switching to sections tab
@@ -323,7 +323,7 @@ export default function ResumeEditor() {
               <h3 className="text-sm font-semibold text-white">Recommendations</h3>
               <button
                 onClick={() => {
-                  setRecsItems([...recsItems, { author: "", title: "", text: "" }]);
+                  setRecsItems([...recsItems, { author: "", title: "", text: "", linkedin_url: null }]);
                   setRecsDirty(true);
                 }}
                 className="text-blue-400 hover:text-blue-300 text-sm"
@@ -362,6 +362,15 @@ export default function ResumeEditor() {
                     setRecsDirty(true);
                   }}
                   required
+                />
+                <FormInput
+                  label="LinkedIn URL"
+                  value={item.linkedin_url ?? ""}
+                  onChange={(v) => {
+                    setRecsItems(recsItems.map((r, i) => i === idx ? { ...r, linkedin_url: v || null } : r));
+                    setRecsDirty(true);
+                  }}
+                  placeholder="https://www.linkedin.com/in/..."
                 />
                 <FormTextarea
                   label="Text"
