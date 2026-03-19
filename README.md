@@ -662,13 +662,31 @@ You can also deploy staging on-demand via **Actions → Deploy → Run workflow*
 
 ## Versioning
 
-This project follows [Semantic Versioning](https://semver.org/).
+This project follows [Semantic Versioning](https://semver.org/) with automated releases via [Release Please](https://github.com/googleapis/release-please).
 
-| Change Type | Version Bump | Example |
-|------------|-------------|---------|
-| Breaking API or schema change | Major (X.0.0) | Redesign database schema |
-| New feature, page, or endpoint | Minor (0.X.0) | Add blog section |
-| Bug fix, style tweak, dependency update | Patch (0.0.X) | Fix mobile layout |
+### Conventional Commits
+
+PR titles must follow the [Conventional Commits](https://www.conventionalcommits.org/) format. Since we squash-merge, the PR title becomes the commit message on `main`.
+
+| Prefix | Purpose | Version Bump |
+|--------|---------|-------------|
+| `feat:` | New feature, page, or endpoint | Minor (0.X.0) |
+| `fix:` | Bug fix | Patch (0.0.X) |
+| `docs:` | Documentation only | Patch (0.0.X) |
+| `chore:` | Maintenance, deps, CI | Patch (0.0.X) |
+| `refactor:` | Code restructuring, no behavior change | Patch (0.0.X) |
+| `test:` | Adding or updating tests | Patch (0.0.X) |
+| `ci:` | CI/CD pipeline changes | Patch (0.0.X) |
+| `feat!:` / `fix!:` | Breaking change (any prefix with `!`) | Major (X.0.0) |
+
+### How Release Please Works
+
+1. Every merge to `main` is analyzed by Release Please
+2. Release Please opens/updates a **Release PR** that bumps versions and updates [CHANGELOG.md](CHANGELOG.md)
+3. Merging the Release PR creates a GitHub Release with a git tag
+4. Deploys happen on every merge — releases are informational, not deploy gates
+
+Version is maintained in a single source (`backend/src/app/_version.py`) and synced across `package.json`, `pyproject.toml`, and CDK config by Release Please.
 
 ## License
 
