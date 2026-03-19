@@ -499,6 +499,21 @@
 
 ---
 
+## Sprint 33: Release Please Versioning & Release Process
+
+- [x] 33.1 Create `backend/src/app/_version.py` — single Python version source with `x-release-please-version` marker
+- [x] 33.2 Refactor `main.py`, `health.py`, `test_health.py` to import version from `_version.py`
+- [x] 33.3 Create `release-please-config.json` + `.release-please-manifest.json`
+- [x] 33.4 Create `.github/workflows/release-please.yml`
+- [x] 33.5 Create `.github/workflows/lint-pr.yml` — PR title conventional commit enforcement
+- [x] 33.6 Update README versioning section with conventional commits + Release Please docs
+- [x] 33.7 Verification: pytest (41 pass) + ruff + tsc + vitest (25 pass) all pass
+- [x] 33.8 Security audit — actions use version tags consistent with project convention, permissions minimal
+- [ ] 33.9 Push branch, create PR, monitor CI
+- [ ] 33.10 Merge PR after CI passes
+
+---
+
 ## Notes
 - DB port mapped to 5433 on host (5432 in use by local PostgreSQL)
 - `uv` installed at ~/.local/bin/uv

@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from src.app._version import __version__
 from src.app.middleware.cors import configure_cors
 from src.app.middleware.logging import RequestLoggingMiddleware
 from src.app.middleware.rate_limit import configure_rate_limiting
@@ -11,7 +12,7 @@ def create_app() -> FastAPI:
     application = FastAPI(
         title="My Site API",
         description="Backend API for personal website — resume.",
-        version="0.1.0",
+        version=__version__,
     )
 
     # Middleware (order matters: last added = first executed)

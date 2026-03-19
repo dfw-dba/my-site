@@ -12,6 +12,10 @@
 - Push the branch, create a PR targeting `main`, and merge via the PR.
 - ***Always squash merge*** into `main` (`gh pr merge --squash`). No merge commits or rebase merges.
 - Branch naming: `feature/short-description` for new work, `fix/short-description` for bug fixes.
+- **PR titles MUST follow [Conventional Commits](https://www.conventionalcommits.org/) format** — enforced by `lint-pr.yml`.
+  Since we squash-merge, the PR title becomes the commit message on `main`, which Release Please parses for versioning.
+  Format: `type: description` or `type(scope): description`. Common types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `ci`.
+  Append `!` for breaking changes (e.g., `feat!: redesign API`).
 - Every PR test plan item must be executable and verified before suggesting the PR is ready to merge. Do not write test plan items that cannot be verified pre-merge. Execute each test plan item, check them off using `gh api`.
 - Create post deploy plan items as part of the PR creation that will be used to validate deployment in a separate section of the pr below all of the test plan items.
 - **Post-deploy runner constraints (MANDATORY)**: The post-deploy runner is a bare GitHub Actions
