@@ -514,6 +514,20 @@
 
 ---
 
+## Sprint 34: Fix Database Migration System & LinkedIn URL Deploy Failure
+
+- [x] 34.1 Make `02_tables.sql` idempotent with `ALTER TABLE ADD COLUMN IF NOT EXISTS` for linkedin_url — `database/init/02_tables.sql`
+- [x] 34.2 Create migration tracking table — `database/init/02a_schema_migrations.sql`
+- [x] 34.3 Seed historical migrations — `database/migrations/000_seed_existing_migrations.sql`
+- [x] 34.4 Add Phase 2 migration execution to handler — `infrastructure/cdk/lib/migration-handler/index.py`
+- [x] 34.5 Bundle migrations dir + bump version to "7" — `infrastructure/cdk/lib/data-stack.ts`
+- [x] 34.6 Verification: ruff + tsc --noEmit pass
+- [ ] 34.7 Security audit
+- [ ] 34.8 Push branch, create PR, monitor CI
+- [ ] 34.9 Post-deploy: verify linkedin_url present in resume API response
+
+---
+
 ## Notes
 - DB port mapped to 5433 on host (5432 in use by local PostgreSQL)
 - `uv` installed at ~/.local/bin/uv

@@ -101,7 +101,7 @@ SEED_DATA=true ./dev.sh
 
 The seed script is idempotent — it only inserts rows when tables are empty, so running it multiple times is safe. Seed data lives in `database/seed/` and is never loaded automatically in production or CI.
 
-**Production note:** The AWS deployment pipeline only runs SQL files from `database/init/`. Since seed data lives in `database/seed/`, it is never bundled into the migration Lambda or executed during `cdk deploy`. Production databases start empty and are populated through the admin UI.
+**Production note:** The AWS deployment pipeline runs SQL files from `database/init/` (idempotent, every deploy) and `database/migrations/` (once each, tracked). Since seed data lives in `database/seed/`, it is never bundled into the migration Lambda or executed during `cdk deploy`. Production databases start empty and are populated through the admin UI.
 
 ---
 
@@ -409,7 +409,12 @@ aws lambda update-function-code \
 
 ### 11. Database Initialization
 
-The database is initialized automatically. The `MySiteData` stack includes a migration Lambda that runs all SQL init scripts (`database/init/00–04`) on every deploy. No manual SQL setup is needed. Seed data is not loaded in production.
+The database is initialized automatically. The `MySiteData` stack includes a migration Lambda that runs in two phases on every deploy:
+
+1. **Init scripts** (`database/init/00–04`): Idempotent scripts that create schemas, tables, functions, and permissions. Safe to re-run on every deploy.
+2. **Migrations** (`database/migrations/*.sql`): Run exactly once, tracked in `internal.schema_migrations`. Each migration executes inside a transaction — if any statement fails, the entire migration rolls back cleanly.
+
+No manual SQL setup is needed. To add a new migration, create a file in `database/migrations/` with a numeric prefix (e.g., `004_add_new_column.sql`). It will execute automatically on the next deploy. Seed data is not loaded in production.
 
 ### 12. Connecting to the Database (Bastion Host)
 
@@ -650,6 +655,7 @@ You can also deploy staging on-demand via **Actions → Deploy → Run workflow*
 │   └── tests/             # Frontend tests
 ├── database/
 │   ├── init/              # SQL init scripts (schemas, tables, functions, permissions)
+│   ├── migrations/        # Versioned migrations (run once, tracked in schema_migrations)
 │   └── seed/              # Optional sample seed data (loaded via ./dev.sh --seed)
 ├── dev.sh                 # Local dev startup script (supports --seed flag)
 ├── docker/                # Dockerfiles (dev, production, Lambda)

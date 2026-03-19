@@ -89,6 +89,13 @@ create table if not exists internal.resume_recommendations
   updated_at   timestamptz default now()
 );
 
+-- Columns added after initial table creation.
+-- CREATE TABLE IF NOT EXISTS is a no-op on existing tables, so columns
+-- added in later revisions need ALTER TABLE ADD COLUMN IF NOT EXISTS
+-- to keep init scripts idempotent across re-runs.
+alter table internal.resume_recommendations
+  add column if not exists linkedin_url text;
+
 comment on table internal.resume_recommendations is 'LinkedIn recommendations displayed on the resume page';
 comment on column internal.resume_recommendations.author is 'Name of the person who wrote the recommendation';
 comment on column internal.resume_recommendations.title is 'Job title of the recommender';

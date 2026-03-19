@@ -107,11 +107,15 @@ export class DataStack extends cdk.Stack {
                 hostPath: path.resolve(__dirname, "../../../database/init"),
                 containerPath: "/sql-input",
               },
+              {
+                hostPath: path.resolve(__dirname, "../../../database/migrations"),
+                containerPath: "/migrations-input",
+              },
             ],
             command: [
               "bash",
               "-c",
-              "pip install pg8000 -t /asset-output && cp /asset-input/*.py /asset-output/ && mkdir -p /asset-output/sql && cp /sql-input/*.sql /asset-output/sql/",
+              "pip install pg8000 -t /asset-output && cp /asset-input/*.py /asset-output/ && mkdir -p /asset-output/sql && cp /sql-input/*.sql /asset-output/sql/ && mkdir -p /asset-output/migrations && cp /migrations-input/*.sql /asset-output/migrations/",
             ],
           },
         },
@@ -140,7 +144,7 @@ export class DataStack extends cdk.Stack {
       serviceToken: migrationProvider.serviceToken,
       properties: {
         // Change this value to trigger the migration again on next deploy
-        version: "6",
+        version: "7",
       },
     });
 

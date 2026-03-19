@@ -1,8 +1,9 @@
 """
 CDK Custom Resource handler for RDS database migration.
-Executes SQL init scripts (00–04) to set up schemas, tables, functions,
-and permissions. Connects using master credentials passed via
-environment variables.
+Phase 1: Executes idempotent init scripts (00–04) to set up schemas, tables,
+functions, and permissions.
+Phase 2: Runs migration files exactly once, tracked in internal.schema_migrations.
+Connects using master credentials passed via environment variables.
 """
 
 import glob
@@ -144,10 +145,11 @@ def handler(event, context):
     )
 
     try:
+        # Phase 1: Init scripts (idempotent, run every deploy)
         sql_dir = os.path.join(os.path.dirname(__file__), "sql")
         sql_files = sorted(glob.glob(os.path.join(sql_dir, "*.sql")))
 
-        print(f"Found {len(sql_files)} SQL files in {sql_dir}")
+        print(f"Found {len(sql_files)} SQL init files in {sql_dir}")
 
         for sql_file in sql_files:
             filename = os.path.basename(sql_file)
@@ -165,7 +167,54 @@ def handler(event, context):
 
             print(f"  {filename} complete")
 
-        print("All SQL files executed successfully")
+        print("All init files executed successfully")
+
+        # Phase 2: Migrations (run exactly once, tracked in schema_migrations)
+        migrations_dir = os.path.join(os.path.dirname(__file__), "migrations")
+        migration_files = sorted(glob.glob(os.path.join(migrations_dir, "*.sql")))
+
+        print(f"Found {len(migration_files)} migration files in {migrations_dir}")
+
+        for migration_file in migration_files:
+            filename = os.path.basename(migration_file)
+
+            already_applied = conn.run(
+                "select 1 from internal.schema_migrations where filename = :fn",
+                fn=filename,
+            )
+
+            if already_applied:
+                print(f"Skipping {filename} (already applied)")
+                continue
+
+            print(f"Applying migration {filename}...")
+
+            with open(migration_file) as f:
+                sql_text = f.read()
+
+            statements = split_sql_statements(sql_text)
+            print(f"  {len(statements)} statement(s)")
+
+            # Wrap each migration in a transaction so partial failures
+            # roll back cleanly instead of leaving the DB inconsistent.
+            conn.run("BEGIN")
+            try:
+                for idx, stmt in enumerate(statements, 1):
+                    print(f"  [{idx}/{len(statements)}] {stmt[:80]}...")
+                    conn.run(stmt)
+
+                conn.run(
+                    "insert into internal.schema_migrations (filename) values (:fn)",
+                    fn=filename,
+                )
+                conn.run("COMMIT")
+            except Exception:
+                conn.run("ROLLBACK")
+                raise
+
+            print(f"  {filename} applied and recorded")
+
+        print("All migrations processed successfully")
 
     finally:
         conn.close()
