@@ -83,6 +83,7 @@ create table if not exists internal.resume_recommendations
   author       text not null,
   title        text not null,
   text         text not null,
+  linkedin_url text,
   sort_order   int4 default 0,
   created_at   timestamptz default now(),
   updated_at   timestamptz default now()
@@ -92,6 +93,7 @@ comment on table internal.resume_recommendations is 'LinkedIn recommendations di
 comment on column internal.resume_recommendations.author is 'Name of the person who wrote the recommendation';
 comment on column internal.resume_recommendations.title is 'Job title of the recommender';
 comment on column internal.resume_recommendations.text is 'Full text of the recommendation';
+comment on column internal.resume_recommendations.linkedin_url is 'LinkedIn profile URL of the recommender';
 comment on column internal.resume_recommendations.sort_order is 'Display order; lower values appear first';
 
 -- ============================================================

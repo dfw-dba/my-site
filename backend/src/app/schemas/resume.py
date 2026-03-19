@@ -63,6 +63,9 @@ class ResumeRecommendationItem(BaseModel):
     author: str = Field(max_length=200)
     title: str = Field(max_length=200)
     text: str = Field(max_length=5000)
+    linkedin_url: str | None = Field(
+        default=None, max_length=500, pattern=r"^https://(www\.)?linkedin\.com/.*$"
+    )
 
 
 class ResumeRecommendationsReplace(BaseModel):

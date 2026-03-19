@@ -49,9 +49,10 @@ begin
     select jsonb_build_object(
                'items', coalesce(jsonb_agg(
                    jsonb_build_object(
-                       'author', rr.author,
-                       'title',  rr.title,
-                       'text',   rr.text
+                       'author',       rr.author,
+                       'title',        rr.title,
+                       'text',         rr.text,
+                       'linkedin_url', rr.linkedin_url
                    ) order by rr.sort_order
                ), '[]'::jsonb)
            )
@@ -318,11 +319,12 @@ declare
 begin
     delete from internal.resume_recommendations;
 
-    insert into internal.resume_recommendations (author, title, text, sort_order)
+    insert into internal.resume_recommendations (author, title, text, linkedin_url, sort_order)
     select
         item->>'author',
         item->>'title',
         item->>'text',
+        item->>'linkedin_url',
         row_number() over ()::int4
     from jsonb_array_elements(p_items) as item;
 

@@ -42,6 +42,7 @@ export interface ResumeRecommendationItem {
   author: string;
   title: string;
   text: string;
+  linkedin_url?: string | null;
 }
 
 export interface ResumeRecommendationsReplace {

@@ -255,30 +255,34 @@ $$;
 do $$
 begin
     if not exists (select 1 from internal.resume_recommendations limit 1) then
-        insert into internal.resume_recommendations (author, title, text, sort_order)
+        insert into internal.resume_recommendations (author, title, text, linkedin_url, sort_order)
         values
             (
                 'Maria Chen',
                 'Senior Database Developer at CloudFirst',
                 'Jane is that database professional any company wants and wishes they could clone. Always stays abreast of the latest trends in the database world, with exemplary troubleshooting ability and easy to work with.',
+                'https://www.linkedin.com/in/maria-chen',
                 1
             ),
             (
                 'David Park',
                 'VP Product Development and Strategy',
                 'Jane has a tremendous amount of personal integrity, a strong work ethic, and goes above and beyond when it comes to tackling her assignments. Paired with her superior database skills, Jane possesses a robust mix of experience that makes her an asset to any team.',
+                'https://www.linkedin.com/in/david-park',
                 2
             ),
             (
                 'Sarah Mitchell',
                 'CTO at Greenfield Software',
                 'Jane is a talented database engineer and very committed to the systems she administers. A constant learner, Jane digs into the systems and technologies she is responsible for to understand why and how they work and does not accept that, when they work well, they cannot work better.',
+                'https://www.linkedin.com/in/sarah-mitchell',
                 3
             ),
             (
                 'Robert Nguyen',
                 'Principal Security Architect at Sentinel Corp',
                 'Jane is an excellent database professional. As a team lead, I frequently sought Jane''s opinion when designing database schemas for our applications. She would be a wonderful asset to any company.',
+                'https://www.linkedin.com/in/robert-nguyen',
                 4
             );
     end if;
