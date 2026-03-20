@@ -12,6 +12,7 @@ import type {
   ApiSuccess,
   AppLogsResponse,
   AppLogStats,
+  ThreatDetectionResponse,
 } from "../types";
 import { getIdToken, isCognitoConfigured } from "./auth";
 
@@ -91,6 +92,10 @@ export const api = {
           headers,
           body: JSON.stringify({ days }),
         });
+      },
+      threats: async (days: number = 30) => {
+        const headers = await adminHeaders();
+        return request<ThreatDetectionResponse>(`/api/admin/logs/threats?days=${days}`, { headers });
       },
     },
     resume: {

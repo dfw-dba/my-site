@@ -130,6 +130,19 @@ class DatabaseAPI:
         )
         return result.scalar_one()
 
+    async def get_threat_detections(self, filters: dict[str, Any]) -> Any:
+        """Fetch threat detection data from app logs."""
+        result = await self.session.execute(
+            text("SELECT api.get_threat_detections(CAST(:filters AS jsonb))"),
+            {"filters": json.dumps(filters, default=str)},
+        )
+        return result.scalar_one()
+
+    async def maintenance_purge_logs(self) -> Any:
+        """Run scheduled maintenance: purge logs older than 14 days."""
+        result = await self.session.execute(text("SELECT api.maintenance_purge_logs()"))
+        return result.scalar_one()
+
     async def delete_professional_entry(self, entry_id: int) -> Any:
         """Delete a professional entry by ID."""
         result = await self.session.execute(

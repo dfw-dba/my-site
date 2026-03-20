@@ -37,6 +37,14 @@ export function useAdminLogStats() {
   });
 }
 
+export function useAdminThreatDetections(days: number = 30) {
+  return useQuery({
+    queryKey: ["admin-threats", days],
+    queryFn: () => api.admin.logs.threats(days),
+    refetchInterval: 60_000,
+  });
+}
+
 export function useAdminPurgeLogs() {
   const qc = useQueryClient();
   return useMutation({

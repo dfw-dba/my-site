@@ -122,6 +122,38 @@ export interface AppLogsResponse {
   total: number;
 }
 
+export interface ThreatDetail {
+  id: number;
+  threat_type: string;
+  request_method: string | null;
+  request_path: string | null;
+  status_code: number | null;
+  client_ip: string | null;
+  created_at: string;
+}
+
+export interface ThreatHour {
+  hour: number;
+  total_threats: number;
+  details: ThreatDetail[];
+}
+
+export interface ThreatDay {
+  date: string;
+  total_threats: number;
+  vulnerability_scan: number;
+  path_traversal: number;
+  sql_injection: number;
+  brute_force: number;
+  unique_ips: number;
+  hours: ThreatHour[];
+}
+
+export interface ThreatDetectionResponse {
+  days: ThreatDay[];
+  total_threats: number;
+}
+
 export interface AuthState {
   isAuthenticated: boolean;
   isInitializing: boolean;
