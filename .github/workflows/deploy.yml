@@ -81,6 +81,8 @@ jobs:
   deploy-stage-frontend:
     runs-on: ubuntu-latest
     needs: deploy-stage-infra
+    outputs:
+      api-url: ${{ needs.deploy-stage-infra.outputs.api-url }}
 
     steps:
       - uses: actions/checkout@v4
@@ -138,7 +140,7 @@ jobs:
   # --- Staging post-deploy validation (gates production) ---
   stage-post-deploy-validation:
     runs-on: ubuntu-latest
-    needs: [deploy-stage-infra, deploy-stage-frontend]
+    needs: deploy-stage-frontend
 
     steps:
       - uses: actions/checkout@v4
@@ -175,12 +177,12 @@ jobs:
         if: steps.find-pr.outputs.skip != 'true'
         id: validate
         env:
-          API_URL: ${{ needs.deploy-stage-infra.outputs.api-url }}
+          API_URL: ${{ needs.deploy-stage-frontend.outputs.api-url }}
           DOMAIN_NAME: ${{ vars.CDK_DOMAIN_NAME }}
           GH_TOKEN: ${{ github.token }}
         run: |
           chmod +x .github/scripts/post-deploy-validate.sh
-          .github/scripts/post-deploy-validate.sh /tmp/pr-body.md || true
+          .github/scripts/post-deploy-validate.sh /tmp/pr-body.md "Post-stage-deploy validation"
 
       - name: Comment results on PR
         if: steps.find-pr.outputs.skip != 'true'
@@ -210,7 +212,10 @@ jobs:
     needs: stage-post-deploy-validation
     if: >-
       always() &&
-      (needs.stage-post-deploy-validation.result == 'success' || needs.stage-post-deploy-validation.result == 'skipped') &&
+      (needs.stage-post-deploy-validation.result == 'success' ||
+       (needs.stage-post-deploy-validation.result == 'skipped' &&
+        github.event_name == 'workflow_dispatch' &&
+        inputs.deploy_target == 'production')) &&
       (
         (github.event_name == 'workflow_dispatch' && inputs.deploy_target == 'production') ||
         (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
@@ -275,6 +280,8 @@ jobs:
   deploy-frontend:
     runs-on: ubuntu-latest
     needs: deploy-infra
+    outputs:
+      api-url: ${{ needs.deploy-infra.outputs.api-url }}
 
     steps:
       - uses: actions/checkout@v4
@@ -331,8 +338,7 @@ jobs:
 
   post-deploy-validation:
     runs-on: ubuntu-latest
-    needs: [deploy-infra, deploy-frontend]
-    continue-on-error: true
+    needs: deploy-frontend
 
     steps:
       - uses: actions/checkout@v4
@@ -369,12 +375,12 @@ jobs:
         if: steps.find-pr.outputs.skip != 'true'
         id: validate
         env:
-          API_URL: ${{ needs.deploy-infra.outputs.api-url }}
+          API_URL: ${{ needs.deploy-frontend.outputs.api-url }}
           DOMAIN_NAME: ${{ vars.CDK_DOMAIN_NAME }}
           GH_TOKEN: ${{ github.token }}
         run: |
           chmod +x .github/scripts/post-deploy-validate.sh
-          .github/scripts/post-deploy-validate.sh /tmp/pr-body.md || true
+          .github/scripts/post-deploy-validate.sh /tmp/pr-body.md "Post-deploy validation"
 
       - name: Comment results on PR
         if: steps.find-pr.outputs.skip != 'true'
