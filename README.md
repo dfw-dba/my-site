@@ -591,10 +591,10 @@ After initial setup, all deployments are automatic:
 
 1. Push to `main` (or merge a PR)
 2. CI runs (lint, type check, tests)
-3. On CI success, the Deploy workflow runs:
-   - **deploy-infra**: `cdk deploy` (updates infrastructure if changed)
-   - **deploy-frontend**: builds with Vite → syncs to S3 → invalidates CloudFront
-   - **post-deploy-validation**: runs validation commands from PR body
+3. On CI success, the Deploy workflow runs a strict sequential chain:
+   - **deploy-stage-infra** → **deploy-stage-frontend** → **stage-post-deploy-validation** (staging)
+   - **deploy-infra** → **deploy-frontend** → **post-deploy-validation** (production)
+   - Staging validation must pass before production begins. If staging fails, production is blocked.
 
 > **Path filtering:** CI and deploy are automatically skipped for changes that only touch
 > non-application files (`.claude/`, `*.md`, `docs/`, `.github/scripts/`, `LICENSE`).
@@ -603,15 +603,15 @@ After initial setup, all deployments are automatic:
 
 ### Staging Environment (Optional)
 
-When `DEPLOY_STAGING=true` is set as a GitHub Actions variable, merges to `main` deploy to **staging only**. Production requires a separate manual trigger:
+When `DEPLOY_STAGING=true` is set as a GitHub Actions variable, merges to `main` deploy through staging first, then automatically continue to production:
 
 ```
-Merge to main → CI → staging auto-deploys → stage-post-deploy-validation
-                                                        ↓
-                                        Manual workflow_dispatch → production deploys → post-deploy-validation
+Merge to main → CI → stage-infra → stage-frontend → stage-validation → prod-infra → prod-frontend → prod-validation
 ```
 
-The `stage-post-deploy-validation` job runs the same PR post-deploy commands against the staging API. If staging validation fails, the production deploy is blocked.
+Staging validation extracts commands from the PR's `## Post-stage-deploy validation` section (with `${API_URL}` pointing to the staging API). Production validation extracts from the `## Post-deploy validation` section (with `${API_URL}` pointing to the production API). If staging validation fails, the production deploy is blocked.
+
+You can also deploy production independently via **Actions → Deploy → Run workflow** → select `production`, which skips staging entirely.
 
 **What staging deploys:** A full infrastructure replica with its own RDS, S3 buckets, CloudFront distribution, Lambda function, and API Gateway. Staging shares the production Cognito user pool (same login), DNS hosted zone, and wildcard certificate.
 
@@ -619,11 +619,7 @@ The `stage-post-deploy-validation` job runs the same PR post-deploy commands aga
 - Frontend: `stage.<domain>` (e.g., `stage.example.com`)
 - API: `stage-api.<domain>` (e.g., `stage-api.example.com`)
 
-**Deploying to production after staging review:**
-1. Review the staging site at `stage.<domain>`
-2. Go to **Actions → Deploy → Run workflow** → select `production` → click **Run workflow**
-
-You can also deploy staging on-demand via **Actions → Deploy → Run workflow** → select `staging`.
+**Manual deploys:** Deploy staging on-demand via **Actions → Deploy → Run workflow** → select `staging`. Deploy production independently (skipping staging) by selecting `production`.
 
 **Setup:**
 1. Go to **Settings → Variables → Actions → New variable** → `DEPLOY_STAGING` = `true`
