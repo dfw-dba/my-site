@@ -4,29 +4,34 @@ set -euo pipefail
 # Reads a PR body from a file, extracts post-deploy validation items,
 # executes each bash command block, and writes results.
 #
-# Usage: post-deploy-validate.sh <pr-body-file>
+# Usage: post-deploy-validate.sh <pr-body-file> [section-header]
 # Env: API_URL, DOMAIN_NAME (injected by workflow)
+#
+# Arguments:
+#   pr-body-file   - path to the file containing the PR body markdown
+#   section-header - (optional) the ## header name to look for (default: "Post-deploy validation")
 #
 # Outputs:
 #   /tmp/validation-results.md   - markdown comment body
 #   /tmp/validation-outcomes.json - JSON array of {description, passed}
 
-PR_BODY_FILE="${1:?Usage: post-deploy-validate.sh <pr-body-file>}"
+PR_BODY_FILE="${1:?Usage: post-deploy-validate.sh <pr-body-file> [section-header]}"
+SECTION_HEADER="${2:-Post-deploy validation}"
 
 if [[ ! -f "$PR_BODY_FILE" ]]; then
   echo "Error: PR body file not found: $PR_BODY_FILE" >&2
   exit 1
 fi
 
-# Extract the post-deploy validation section (from header to next ## or EOF)
-POST_DEPLOY_SECTION=$(awk '
-  /^## [Pp]ost-deploy [Vv]alidation/ { found=1; next }
+# Extract the validation section (from header to next ## or EOF)
+POST_DEPLOY_SECTION=$(awk -v header="$SECTION_HEADER" '
+  $0 ~ "^## " header { found=1; next }
   found && /^## / { exit }
   found { print }
 ' "$PR_BODY_FILE")
 
 if [[ -z "$POST_DEPLOY_SECTION" ]]; then
-  echo "No post-deploy validation section found in PR body."
+  echo "No '${SECTION_HEADER}' section found in PR body."
   echo "[]" > /tmp/validation-outcomes.json
   echo "No post-deploy validation items found." > /tmp/validation-results.md
   exit 0
@@ -137,7 +142,7 @@ if [[ -n "$CURRENT_DESC" ]]; then
 fi
 
 # Write results
-HEADER="## Post-Deploy Validation Results
+HEADER="## ${SECTION_HEADER} Results
 
 **${TOTAL_PASS} passed, ${TOTAL_FAIL} failed** out of $((TOTAL_PASS + TOTAL_FAIL)) items.
 "
