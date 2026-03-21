@@ -7,16 +7,6 @@
       "changelog-path": "CHANGELOG.md",
       "extra-files": [
         {
-          "type": "json",
-          "path": "frontend/package.json",
-          "jsonpath": "$.version"
-        },
-        {
-          "type": "json",
-          "path": "infrastructure/cdk/package.json",
-          "jsonpath": "$.version"
-        },
-        {
           "type": "toml",
           "path": "backend/pyproject.toml",
           "key": "project.version"
