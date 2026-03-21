@@ -4,7 +4,8 @@
     ".": {
       "release-type": "simple",
       "component": "my-site",
-      "changelog-path": "CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md",
+      "include-component-in-tag": false
     }
   },
   "last-release-sha": "824c4ff2d90f5f66d681ae4b0b54b6584ae235ac"

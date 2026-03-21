@@ -141,6 +141,7 @@ After merging a PR:
 4. **If both conditions are met**: trigger Deploy Prod via `gh workflow run deploy-prod.yml`.
 5. **If either condition fails**: notify the user with specific details of what failed. Do **NOT** trigger Deploy Prod.
 6. After triggering Deploy Prod, monitor it to completion and verify Prod-Post-deploy validation results.
+7. After Deploy Prod completes successfully and all Prod-Post-deploy validation items pass, check for an open release-please PR (title matches `chore(main): release my-site *`). If one exists, merge it via `gh pr merge --squash`. This triggers the `release-please.yml` workflow which creates the GitHub Release and version tag. Do not trigger Deploy Prod again — the release-please merge only updates version metadata files which are excluded from CI via `paths-ignore`.
 
 ## Pre-merge Workflow (MANDATORY)
 
