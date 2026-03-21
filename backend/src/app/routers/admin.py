@@ -143,6 +143,17 @@ async def get_log_stats(
     return await db.get_app_log_stats()
 
 
+@router.get("/logs/threats", dependencies=[Depends(get_admin_auth)])
+@limiter.limit("30/minute")
+async def get_threat_detections(
+    request: Request,
+    db: DatabaseAPI = Depends(get_db_api),
+    days: int = Query(default=30, ge=1, le=90),
+) -> Any:
+    """Fetch detected threat patterns from application logs."""
+    return await db.get_threat_detections({"days": days})
+
+
 @router.post("/logs/purge", dependencies=[Depends(get_admin_auth)])
 @limiter.limit("5/minute")
 async def purge_logs(

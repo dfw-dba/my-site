@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useAdminLogs, useAdminLogStats, useAdminPurgeLogs } from "../../hooks/useAdminApi";
-import type { AppLog } from "../../types";
+import { useAdminLogs, useAdminLogStats, useAdminPurgeLogs, useAdminThreatDetections } from "../../hooks/useAdminApi";
+import type { AppLog, ThreatDay, ThreatDetail } from "../../types";
 
 const LEVEL_COLORS: Record<string, string> = {
   ERROR: "bg-red-600 text-white",
@@ -49,6 +49,209 @@ function LogDetailRow({ log }: { log: AppLog }) {
         </div>
       </td>
     </tr>
+  );
+}
+
+const THREAT_COLORS: Record<string, { badge: string; text: string }> = {
+  vulnerability_scan: { badge: "bg-yellow-500/20 text-yellow-400", text: "text-yellow-400" },
+  path_traversal: { badge: "bg-orange-500/20 text-orange-400", text: "text-orange-400" },
+  sql_injection: { badge: "bg-red-500/20 text-red-400", text: "text-red-400" },
+  brute_force: { badge: "bg-purple-500/20 text-purple-400", text: "text-purple-400" },
+};
+
+const THREAT_LABELS: Record<string, string> = {
+  vulnerability_scan: "Vuln Scan",
+  path_traversal: "Path Traversal",
+  sql_injection: "SQL Injection",
+  brute_force: "Brute Force",
+};
+
+function ThreatBadge({ type, count }: { type: string; count: number }) {
+  if (count === 0) return null;
+  const colors = THREAT_COLORS[type] ?? { badge: "bg-gray-600/20 text-gray-400", text: "text-gray-400" };
+  return (
+    <span className={`px-2 py-0.5 rounded text-xs font-medium ${colors.badge}`}>
+      {THREAT_LABELS[type] ?? type}: {count}
+    </span>
+  );
+}
+
+function ThreatDetailRow({ detail }: { detail: ThreatDetail }) {
+  const colors = THREAT_COLORS[detail.threat_type] ?? { badge: "bg-gray-600/20 text-gray-400", text: "text-gray-400" };
+  return (
+    <tr className="border-b border-gray-700/30 text-gray-400 text-xs">
+      <td className="px-4 py-1.5 whitespace-nowrap">
+        {new Date(detail.created_at).toLocaleTimeString()}
+      </td>
+      <td className="px-4 py-1.5">
+        <span className={`px-1.5 py-0.5 rounded text-xs ${colors.badge}`}>
+          {THREAT_LABELS[detail.threat_type] ?? detail.threat_type}
+        </span>
+      </td>
+      <td className="px-4 py-1.5 font-mono">{detail.request_method}</td>
+      <td className="px-4 py-1.5 font-mono max-w-xs truncate">{detail.request_path}</td>
+      <td className="px-4 py-1.5">
+        {detail.status_code && (
+          <span className={detail.status_code >= 500 ? "text-red-400" : detail.status_code >= 400 ? "text-yellow-400" : "text-green-400"}>
+            {detail.status_code}
+          </span>
+        )}
+      </td>
+      <td className="px-4 py-1.5 font-mono">{detail.client_ip}</td>
+    </tr>
+  );
+}
+
+function ThreatDetectionSection() {
+  const [open, setOpen] = useState(false);
+  const [threatDays, setThreatDays] = useState(30);
+  const [expandedDay, setExpandedDay] = useState<string | null>(null);
+  const [expandedHour, setExpandedHour] = useState<string | null>(null);
+
+  const { data, isLoading } = useAdminThreatDetections(threatDays);
+  const totalThreats = data?.total_threats ?? 0;
+
+  return (
+    <div className="mb-6">
+      {/* Section header — always visible */}
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between bg-gray-800 rounded-lg px-4 py-3 hover:bg-gray-700/50 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+          </svg>
+          <span className="text-white font-semibold">Threat Detection</span>
+          {totalThreats > 0 ? (
+            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-red-600 text-white">{totalThreats}</span>
+          ) : (
+            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-600 text-gray-300">0</span>
+          )}
+        </div>
+        <svg
+          className={`w-5 h-5 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`}
+          fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
+
+      {/* Collapsible body */}
+      {open && (
+        <div className="bg-gray-800 rounded-b-lg border-t border-gray-700 px-4 py-3 -mt-1">
+          {/* Time range selector */}
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-sm text-gray-400">Range:</span>
+            {[7, 14, 30].map((d) => (
+              <button
+                key={d}
+                onClick={() => { setThreatDays(d); setExpandedDay(null); setExpandedHour(null); }}
+                className={`px-3 py-1 rounded text-xs font-medium ${
+                  threatDays === d ? "bg-blue-600 text-white" : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                }`}
+              >
+                {d}d
+              </button>
+            ))}
+          </div>
+
+          {isLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-10 bg-gray-700 rounded animate-pulse" />
+              ))}
+            </div>
+          ) : !data || data.days.length === 0 ? (
+            <p className="text-gray-500 text-sm py-4 text-center">No threats detected in the last {threatDays} days.</p>
+          ) : (
+            <div className="space-y-1">
+              {data.days.map((day: ThreatDay) => {
+                const dayKey = day.date;
+                const isDayExpanded = expandedDay === dayKey;
+                return (
+                  <div key={dayKey}>
+                    {/* Day row */}
+                    <button
+                      onClick={() => { setExpandedDay(isDayExpanded ? null : dayKey); setExpandedHour(null); }}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-700/40 transition-colors text-sm"
+                    >
+                      <svg
+                        className={`w-4 h-4 text-gray-500 transition-transform flex-shrink-0 ${isDayExpanded ? "rotate-90" : ""}`}
+                        fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                      </svg>
+                      <span className="text-gray-300 font-mono w-24 text-left">{day.date}</span>
+                      <span className="text-white font-semibold w-20">{day.total_threats} threats</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        <ThreatBadge type="vulnerability_scan" count={day.vulnerability_scan} />
+                        <ThreatBadge type="path_traversal" count={day.path_traversal} />
+                        <ThreatBadge type="sql_injection" count={day.sql_injection} />
+                        <ThreatBadge type="brute_force" count={day.brute_force} />
+                      </div>
+                      <span className="text-gray-500 text-xs ml-auto">{day.unique_ips} IP{day.unique_ips !== 1 ? "s" : ""}</span>
+                    </button>
+
+                    {/* Hour rows */}
+                    {isDayExpanded && (
+                      <div className="ml-6 border-l border-gray-700 pl-3 space-y-0.5">
+                        {day.hours.map((hr) => {
+                          const hourKey = `${dayKey}-${hr.hour}`;
+                          const isHourExpanded = expandedHour === hourKey;
+                          return (
+                            <div key={hourKey}>
+                              <button
+                                onClick={() => setExpandedHour(isHourExpanded ? null : hourKey)}
+                                className="w-full flex items-center gap-3 px-3 py-1.5 rounded hover:bg-gray-700/30 transition-colors text-sm"
+                              >
+                                <svg
+                                  className={`w-3 h-3 text-gray-500 transition-transform flex-shrink-0 ${isHourExpanded ? "rotate-90" : ""}`}
+                                  fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                                </svg>
+                                <span className="text-gray-400 font-mono">
+                                  {String(hr.hour).padStart(2, "0")}:00
+                                </span>
+                                <span className="text-gray-300">{hr.total_threats} threat{hr.total_threats !== 1 ? "s" : ""}</span>
+                              </button>
+
+                              {/* Detail rows */}
+                              {isHourExpanded && (
+                                <div className="ml-6 mt-1 mb-2">
+                                  <table className="w-full">
+                                    <thead>
+                                      <tr className="text-left text-gray-500 text-xs">
+                                        <th className="px-4 py-1 font-medium">Time</th>
+                                        <th className="px-4 py-1 font-medium">Type</th>
+                                        <th className="px-4 py-1 font-medium">Method</th>
+                                        <th className="px-4 py-1 font-medium">Path</th>
+                                        <th className="px-4 py-1 font-medium">Status</th>
+                                        <th className="px-4 py-1 font-medium">IP</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {hr.details.map((detail: ThreatDetail) => (
+                                        <ThreatDetailRow key={detail.id} detail={detail} />
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -144,6 +347,9 @@ export default function Dashboard() {
           </>
         )}
       </div>
+
+      {/* Threat Detection */}
+      <ThreatDetectionSection />
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-4">

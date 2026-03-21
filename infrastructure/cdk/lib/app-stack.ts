@@ -12,6 +12,8 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
 import * as iam from "aws-cdk-lib/aws-iam";
+import * as events from "aws-cdk-lib/aws-events";
+import * as eventsTargets from "aws-cdk-lib/aws-events-targets";
 import * as budgets from "aws-cdk-lib/aws-budgets";
 import * as path from "path";
 import { Construct } from "constructs";
@@ -193,6 +195,15 @@ export class AppStack extends cdk.Stack {
 
     // Grant Lambda access to media bucket
     mediaBucket.grantReadWrite(backendFn);
+
+    // --- Scheduled Log Maintenance (daily at 03:00 UTC) ---
+
+    new events.Rule(this, "LogMaintenanceSchedule", {
+      ruleName: `${namePrefix}mysite-log-maintenance`,
+      description: "Daily purge of app_logs older than 14 days + VACUUM",
+      schedule: events.Schedule.cron({ hour: "3", minute: "0" }),
+      targets: [new eventsTargets.LambdaFunction(backendFn)],
+    });
 
     // --- API Gateway v2 ---
 
