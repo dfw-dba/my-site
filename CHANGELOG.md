@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/dfw-dba/my-site/compare/my-site-v0.3.0...my-site-v0.3.1) (2026-03-21)
+
+
+### Bug Fixes
+
+* guard release-please label step against empty pr output ([#91](https://github.com/dfw-dba/my-site/issues/91)) ([fab05c8](https://github.com/dfw-dba/my-site/commit/fab05c8c80fa4418f3e4498db7f48b0ecb529e1f))
+
 ## [0.3.0](https://github.com/dfw-dba/my-site/compare/my-site-v0.2.0...my-site-v0.3.0) (2026-03-21)
 
 
