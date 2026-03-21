@@ -540,6 +540,19 @@
 
 ---
 
+## Sprint 36: Fix GitHub Actions Node.js 20 Deprecation
+
+- [x] 36.1 Upgrade `actions/checkout` v4 → v5 across ci, deploy-stage, deploy-prod
+- [x] 36.2 Upgrade `actions/setup-node` v4 → v5 across ci, deploy-stage, deploy-prod
+- [x] 36.3 Upgrade `aws-actions/configure-aws-credentials` v4 → v5 in deploy-stage, deploy-prod
+- [x] 36.4 Upgrade `actions/setup-python` v5 → v6 in ci
+- [x] 36.5 Upgrade `astral-sh/setup-uv` v4 → v5 in ci
+- [x] 36.6 Upgrade `amannn/action-semantic-pull-request` v5 → v6 in lint-pr
+- [ ] 36.7 Push branch, create PR, monitor CI
+- [ ] 36.8 Merge PR after CI passes
+
+---
+
 ## Notes
 - DB port mapped to 5433 on host (5432 in use by local PostgreSQL)
 - `uv` installed at ~/.local/bin/uv
