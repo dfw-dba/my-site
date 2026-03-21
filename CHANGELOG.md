@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/dfw-dba/my-site/compare/my-site-v0.2.0...my-site-v0.3.0) (2026-03-21)
+
+
+### Features
+
+* add client_ip filter and expand/collapse to threat detection dashboard ([#88](https://github.com/dfw-dba/my-site/issues/88)) ([cbb19ad](https://github.com/dfw-dba/my-site/commit/cbb19ad3c649ec63bc419bd081ad195081eb3893))
+
+
+### Bug Fixes
+
+* use REST API for release-please labels to avoid GraphQL timing issue ([#90](https://github.com/dfw-dba/my-site/issues/90)) ([922b985](https://github.com/dfw-dba/my-site/commit/922b98535e8dab88033ef7f290131c1a1d6205c0))
+
 ## [0.2.0](https://github.com/dfw-dba/my-site/compare/my-site-v0.1.0...my-site-v0.2.0) (2026-03-21)
 
 
