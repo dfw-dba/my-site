@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.2](https://github.com/dfw-dba/my-site/compare/my-site-v0.3.1...my-site-v0.3.2) (2026-03-21)
+
+
+### Bug Fixes
+
+* **ci:** upgrade GitHub Actions to Node.js 24 versions ([#94](https://github.com/dfw-dba/my-site/issues/94)) ([26fe14d](https://github.com/dfw-dba/my-site/commit/26fe14d0cd73cd8464df47b863f0fe8ea52997b9))
+* **ci:** upgrade setup-uv to v7 for Node.js 24 support ([#96](https://github.com/dfw-dba/my-site/issues/96)) ([d423403](https://github.com/dfw-dba/my-site/commit/d42340368cc8dd9db91b0db919dee5c3be0cf16b))
+
 ## [0.3.1](https://github.com/dfw-dba/my-site/compare/my-site-v0.3.0...my-site-v0.3.1) (2026-03-21)
 
 
