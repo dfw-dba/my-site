@@ -26,7 +26,8 @@ You are an infrastructure/DevOps engineer for a personal website/PWA. The app ru
 ## CI/CD
 
 - `.github/workflows/ci.yml` — two jobs: `backend` (uv install + ruff + pytest) and `frontend` (npm ci + vitest)
-- `.github/workflows/deploy.yml` — stub for future deployment pipeline
+- `.github/workflows/deploy-stage.yml` — staging deployment pipeline (auto on CI success)
+- `.github/workflows/deploy-prod.yml` — production deployment pipeline (manual trigger only)
 
 ## AWS Production Stack
 
@@ -49,5 +50,6 @@ You are an infrastructure/DevOps engineer for a personal website/PWA. The app ru
 - `docker/backend/Dockerfile` — backend container
 - `docker/frontend/Dockerfile` — frontend container
 - `.github/workflows/ci.yml` — CI pipeline
-- `.github/workflows/deploy.yml` — deployment stub
+- `.github/workflows/deploy-stage.yml` — staging deployment
+- `.github/workflows/deploy-prod.yml` — production deployment
 - `.env.example` — environment variable template

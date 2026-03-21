@@ -9,6 +9,8 @@ on:
       - 'docs/**'
       - '.github/scripts/**'
       - 'LICENSE'
+      - '.release-please-manifest.json'
+      - 'release-please-config.json'
   pull_request:
     branches: [main]
     paths-ignore:
@@ -17,6 +19,8 @@ on:
       - 'docs/**'
       - '.github/scripts/**'
       - 'LICENSE'
+      - '.release-please-manifest.json'
+      - 'release-please-config.json'
   workflow_dispatch:
     inputs:
       seed_data:

@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Updates PR checkboxes for passed post-deploy validation items.
+# Updates PR table checkboxes for post-deploy validation items.
+# Marks passed items with :white_check_mark: in the Passed column
+# and failed items with :x: in the Failed column.
 #
 # Usage: post-deploy-update-checkboxes.sh <pr-number> <outcomes-json-file>
 # Requires: gh CLI authenticated with pull-requests:write
@@ -27,22 +29,26 @@ PR_BODY=$(gh pr view "$PR_NUMBER" --json body -q '.body')
 
 UPDATED_BODY="$PR_BODY"
 
-# For each passed item, replace its checkbox from unchecked to checked
+# For each item, update the table row with pass/fail indicator
 for i in $(seq 0 $((ITEM_COUNT - 1))); do
   PASSED=$(echo "$OUTCOMES" | jq -r ".[$i].passed")
   DESC=$(echo "$OUTCOMES" | jq -r ".[$i].description")
 
+  # Escape special regex characters in description for sed (including / delimiter)
+  ESCAPED_DESC=$(printf '%s\n' "$DESC" | sed 's/[]\\/.*^$[]/\\&/g')
+
   if [[ "$PASSED" == "true" ]]; then
-    # Escape special regex characters in description for sed
-    ESCAPED_DESC=$(printf '%s\n' "$DESC" | sed 's/[][\.*^$/]/\\&/g')
-    # Replace unchecked checkbox with checked for this item
-    UPDATED_BODY=$(echo "$UPDATED_BODY" | sed "s/- \[ \] ${ESCAPED_DESC}/- [x] ${ESCAPED_DESC}/")
-    echo "Checked: $DESC"
+    # Replace unmarked row with passed indicator
+    UPDATED_BODY=$(printf '%s' "$UPDATED_BODY" | sed "s/| | | ${ESCAPED_DESC} |/| :white_check_mark: | | ${ESCAPED_DESC} |/")
+    echo "Passed: $DESC"
   else
-    echo "Skipped (failed): $DESC"
+    # Replace unmarked row with failed indicator
+    UPDATED_BODY=$(printf '%s' "$UPDATED_BODY" | sed "s/| | | ${ESCAPED_DESC} |/| | :x: | ${ESCAPED_DESC} |/")
+    echo "Failed: $DESC"
   fi
 done
 
-# Update PR body
-gh pr edit "$PR_NUMBER" --body "$UPDATED_BODY"
-echo "PR #${PR_NUMBER} checkboxes updated."
+# Update PR body using --body-file to avoid shell expansion issues with large content
+printf '%s' "$UPDATED_BODY" > /tmp/updated-pr-body.md
+gh pr edit "$PR_NUMBER" --body-file /tmp/updated-pr-body.md
+echo "PR #${PR_NUMBER} table checkboxes updated."

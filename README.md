@@ -587,31 +587,36 @@ aws rds start-db-instance --db-instance-identifier $RDS_ID
 
 ## Continuous Deployment
 
-After initial setup, all deployments are automatic:
+Deployment uses two separate workflows:
 
 1. Push to `main` (or merge a PR)
 2. CI runs (lint, type check, tests)
-3. On CI success, the Deploy workflow runs a strict sequential chain:
-   - **deploy-stage-infra** → **deploy-stage-frontend** → **stage-post-deploy-validation** (staging)
-   - **deploy-infra** → **deploy-frontend** → **post-deploy-validation** (production)
-   - Staging validation must pass before production begins. If staging fails, production is blocked.
+3. On CI success, **Deploy Stage** runs automatically (when staging is enabled):
+   ```
+   Merge to main → CI → Deploy Stage (stage-infra → stage-frontend → stage-validation)
+   ```
+4. After staging succeeds, **Deploy Prod** is triggered manually:
+   ```
+   Deploy Prod (prod-infra → prod-frontend → prod-validation)
+   ```
 
 > **Path filtering:** CI and deploy are automatically skipped for changes that only touch
-> non-application files (`.claude/`, `*.md`, `docs/`, `.github/scripts/`, `LICENSE`).
-> This avoids wasting CI minutes on documentation-only PRs. Use `workflow_dispatch`
-> to manually trigger CI if needed.
+> non-application files (`.claude/`, `*.md`, `docs/`, `.github/scripts/`, `LICENSE`,
+> `.release-please-manifest.json`, `release-please-config.json`).
+> This avoids wasting CI minutes on documentation-only PRs and release-please merges.
+> Use `workflow_dispatch` to manually trigger CI if needed.
 
 ### Staging Environment (Optional)
 
-When `DEPLOY_STAGING=true` is set as a GitHub Actions variable, merges to `main` deploy through staging first, then automatically continue to production:
+When `DEPLOY_STAGING=true` is set as a GitHub Actions variable, the **Deploy Stage** workflow (`deploy-stage.yml`) runs automatically after CI succeeds on `main`:
 
 ```
-Merge to main → CI → stage-infra → stage-frontend → stage-validation → prod-infra → prod-frontend → prod-validation
+Merge to main → CI → deploy-stage-infra → deploy-stage-frontend → stage-post-deploy-validation
 ```
 
-Staging validation extracts commands from the PR's `## Post-stage-deploy validation` section (with `${API_URL}` pointing to the staging API). Production validation extracts from the `## Post-deploy validation` section (with `${API_URL}` pointing to the production API). If staging validation fails, the production deploy is blocked.
+Staging validation extracts commands from the PR's `## Stage Test Plan` section (with `${API_URL}` pointing to the staging API). Results are commented on the PR, and table items are automatically marked as passed/failed.
 
-You can also deploy production independently via **Actions → Deploy → Run workflow** → select `production`, which skips staging entirely.
+Deploy staging manually via **Actions → Deploy Stage → Run workflow**.
 
 **What staging deploys:** A full infrastructure replica with its own RDS, S3 buckets, CloudFront distribution, Lambda function, and API Gateway. Staging shares the production Cognito user pool (same login), DNS hosted zone, and wildcard certificate.
 
@@ -619,12 +624,22 @@ You can also deploy production independently via **Actions → Deploy → Run wo
 - Frontend: `stage.<domain>` (e.g., `stage.example.com`)
 - API: `stage-api.<domain>` (e.g., `stage-api.example.com`)
 
-**Manual deploys:** Deploy staging on-demand via **Actions → Deploy → Run workflow** → select `staging`. Deploy production independently (skipping staging) by selecting `production`.
-
 **Setup:**
 1. Go to **Settings → Variables → Actions → New variable** → `DEPLOY_STAGING` = `true`
 
-**Without staging:** When `DEPLOY_STAGING` is not set (or not `true`), production deploys automatically after CI — the same behavior as before.
+**Without staging:** When `DEPLOY_STAGING` is not set (or not `true`), Deploy Stage does not run automatically. Deploy Prod can still be triggered manually.
+
+### Production Deployment
+
+Production deployment uses a separate workflow (`deploy-prod.yml`) that is **manual-only**:
+
+```
+Deploy Prod (manual) → deploy-infra → deploy-frontend → post-deploy-validation
+```
+
+Production validation extracts commands from the PR's `## Prod-Post-deploy validation` section (with `${API_URL}` pointing to the production API). Results are commented on the PR.
+
+Deploy production via **Actions → Deploy Prod → Run workflow**.
 
 **Database access:** The staging RDS instance is accessible from the production bastion host via a cross-stack security group rule. Use the same SSM Session Manager bastion workflow, but connect to the staging DB endpoint. Staging DB credentials are stored in Secrets Manager under `/mysite/stage/db-credentials`.
 
