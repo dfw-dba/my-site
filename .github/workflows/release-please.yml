@@ -13,6 +13,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: googleapis/release-please-action@v4
+        id: release
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+          skip-labeling: true
+
+      - name: Label release PR
+        if: steps.release.outputs.pr
+        run: |
+          gh pr edit "${{ fromJSON(steps.release.outputs.pr).number }}" \
+            --repo "${{ github.repository }}" \
+            --add-label "autorelease: pending"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Label tagged release
+        if: steps.release.outputs.releases_created == 'true'
+        run: |
+          gh pr edit "${{ fromJSON(steps.release.outputs.pr).number }}" \
+            --repo "${{ github.repository }}" \
+            --remove-label "autorelease: pending" \
+            --add-label "autorelease: tagged"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
