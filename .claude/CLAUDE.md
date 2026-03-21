@@ -55,4 +55,4 @@ When the user initiates any task:
 ### 10. Templates
 - New agent files: copy `.claude/templates/agent.md` and fill in sections
 - New rule files: copy `.claude/templates/rule.md` — scoped rules get `globs:` frontmatter, universal rules omit frontmatter
-- New plan files: copy `.claude/templates/plan.md` — name as `yyyy-mm-dd-hhmm-branch-name.md` for chronological ordering
+- New plan files: copy `.claude/templates/plan.md` — name as `yyyy-mm-dd-hh-mm-branch-name.md` for chronological ordering

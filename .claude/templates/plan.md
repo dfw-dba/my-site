@@ -1,6 +1,6 @@
 <!-- Plan Template
-     File naming: yyyy-mm-dd-hhmm-branch-name.md
-     Example: 2026-03-16-1400-feature-auth-flow.md
+     File naming: yyyy-mm-dd-hh-mm-branch-name.md
+     Example: 2026-03-16-14-00-feature-auth-flow.md
      This enables chronological ordering in the plans/ directory. -->
 
 # {Plan Title}
