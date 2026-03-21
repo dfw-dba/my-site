@@ -19,6 +19,7 @@ function onMutationError(error: Error) {
 export function useAdminLogs(filters: {
   level?: string;
   search?: string;
+  client_ip?: string;
   limit?: number;
   offset?: number;
 } = {}) {
@@ -37,10 +38,10 @@ export function useAdminLogStats() {
   });
 }
 
-export function useAdminThreatDetections(days: number = 30) {
+export function useAdminThreatDetections(params: { days?: number; client_ip?: string } = {}) {
   return useQuery({
-    queryKey: ["admin-threats", days],
-    queryFn: () => api.admin.logs.threats(days),
+    queryKey: ["admin-threats", params],
+    queryFn: () => api.admin.logs.threats(params),
     refetchInterval: 60_000,
   });
 }

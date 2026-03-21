@@ -121,6 +121,7 @@ async def get_logs(
     db: DatabaseAPI = Depends(get_db_api),
     level: str | None = None,
     search: str | None = None,
+    client_ip: str | None = None,
     limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
 ) -> Any:
@@ -130,6 +131,8 @@ async def get_logs(
         filters["level"] = level
     if search:
         filters["search"] = search
+    if client_ip:
+        filters["client_ip"] = client_ip
     return await db.get_app_logs(filters)
 
 
@@ -149,9 +152,13 @@ async def get_threat_detections(
     request: Request,
     db: DatabaseAPI = Depends(get_db_api),
     days: int = Query(default=30, ge=1, le=90),
+    client_ip: str | None = None,
 ) -> Any:
     """Fetch detected threat patterns from application logs."""
-    return await db.get_threat_detections({"days": days})
+    filters: dict[str, Any] = {"days": days}
+    if client_ip:
+        filters["client_ip"] = client_ip
+    return await db.get_threat_detections(filters)
 
 
 @router.post("/logs/purge", dependencies=[Depends(get_admin_auth)])

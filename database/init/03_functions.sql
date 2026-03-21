@@ -456,12 +456,13 @@ security definer;
 create or replace function api.get_app_logs(p_filters jsonb default '{}')
 returns jsonb as $$
 declare
-    v_level  text    := p_filters->>'level';
-    v_search text    := p_filters->>'search';
-    v_limit  int     := coalesce((p_filters->>'limit')::int, 100);
-    v_offset int     := coalesce((p_filters->>'offset')::int, 0);
-    v_logs   jsonb;
-    v_total  int;
+    v_level     text    := p_filters->>'level';
+    v_search    text    := p_filters->>'search';
+    v_client_ip text    := p_filters->>'client_ip';
+    v_limit     int     := coalesce((p_filters->>'limit')::int, 100);
+    v_offset    int     := coalesce((p_filters->>'offset')::int, 0);
+    v_logs      jsonb;
+    v_total     int;
 begin
     -- Count total matching rows
     select count(*)
@@ -469,7 +470,8 @@ begin
       from internal.app_logs as al
      where (v_level is null or al.level = v_level)
        and (v_search is null or al.message ilike '%' || v_search || '%'
-            or al.request_path ilike '%' || v_search || '%');
+            or al.request_path ilike '%' || v_search || '%')
+       and (v_client_ip is null or al.client_ip = v_client_ip);
 
     -- Fetch page
     select coalesce(jsonb_agg(row_obj order by id desc), '[]'::jsonb)
@@ -495,6 +497,7 @@ begin
          where (v_level is null or al.level = v_level)
            and (v_search is null or al.message ilike '%' || v_search || '%'
                 or al.request_path ilike '%' || v_search || '%')
+           and (v_client_ip is null or al.client_ip = v_client_ip)
          order by al.id desc
          limit v_limit
         offset v_offset
@@ -552,8 +555,9 @@ security definer;
 create or replace function api.get_threat_detections(p_filters jsonb default '{}')
 returns jsonb as $$
 declare
-    v_days   int          := coalesce((p_filters->>'days')::int, 30);
-    v_cutoff timestamptz  := now() - make_interval(days => v_days);
+    v_days      int          := coalesce((p_filters->>'days')::int, 30);
+    v_client_ip text         := p_filters->>'client_ip';
+    v_cutoff    timestamptz  := now() - make_interval(days => v_days);
 begin
     return coalesce(
     (
@@ -575,6 +579,7 @@ begin
             from internal.app_logs as al
             where al.created_at >= v_cutoff
               and al.request_path is not null
+              and (v_client_ip is null or al.client_ip = v_client_ip)
         ),
         brute_force_ips as (
             select distinct al.client_ip
@@ -582,6 +587,7 @@ begin
             where al.created_at >= v_cutoff
               and al.status_code in (401, 403)
               and al.client_ip is not null
+              and (v_client_ip is null or al.client_ip = v_client_ip)
             group by al.client_ip, date_trunc('hour', al.created_at)
             having count(*) >= 5
         ),
@@ -600,6 +606,7 @@ begin
             inner join brute_force_ips as bf on al.client_ip = bf.client_ip
             where al.created_at >= v_cutoff
               and al.status_code in (401, 403)
+              and (v_client_ip is null or al.client_ip = v_client_ip)
               and al.id not in (select tp.id from threat_patterns as tp where tp.threat_type is not null)
         ),
         daily as (
