@@ -11,6 +11,7 @@ on:
       - 'LICENSE'
       - '.release-please-manifest.json'
       - 'release-please-config.json'
+      - 'version.txt'
   pull_request:
     branches: [main]
     paths-ignore:
@@ -21,6 +22,7 @@ on:
       - 'LICENSE'
       - '.release-please-manifest.json'
       - 'release-please-config.json'
+      - 'version.txt'
   workflow_dispatch:
     inputs:
       seed_data:
