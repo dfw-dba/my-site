@@ -142,9 +142,12 @@ After merging a PR:
 5. **If either condition fails**: notify the user with specific details of what failed. Do **NOT** trigger Deploy Prod.
 6. After triggering Deploy Prod, monitor it to completion and verify Prod-Post-deploy validation results.
 
-## Pre-merge Workflow
+## Pre-merge Workflow (MANDATORY)
 
-- Every PR Pre Deploy Checklist item must be verified before suggesting the PR is ready to merge.
-- Monitor CI job after submitting PR and mark CI checklist item complete if it completes successfully. Never suggest to merge a PR if the CI workflow is failing.
-- After successful completion of CI and Pre Deploy Checklist items, merge the PR and begin the Prod Deploy Gate process above.
-- If a new commit is pushed to the head branch, this invalidates the checklist items and the CI outcome. The CI must be run again and checklist items must be unmarked, re-executed, and marked as complete upon success.
+> **Claude MUST merge the PR automatically once all Pre Deploy Checklist items are marked as passed. Do not wait for user confirmation.**
+
+1. Monitor CI job after submitting PR.
+2. Verify every Pre Deploy Checklist item and mark each as passed/failed.
+3. **Once all Pre Deploy Checklist items are marked as passed**: immediately squash-merge the PR (`gh pr merge --squash`). Do **not** prompt the user or wait for approval.
+4. After merge, begin the Prod Deploy Gate process above.
+5. If a new commit is pushed to the head branch, this invalidates the checklist items and the CI outcome. The CI must be run again, checklist items must be unmarked, re-executed, and marked as complete upon success.
