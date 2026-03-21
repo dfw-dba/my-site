@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/dfw-dba/my-site/compare/v0.4.0...v0.4.1) (2026-03-21)
+
+
+### Bug Fixes
+
+* **ci:** add version.txt to paths-ignore to skip CI on release-please merges ([#99](https://github.com/dfw-dba/my-site/issues/99)) ([a01060c](https://github.com/dfw-dba/my-site/commit/a01060c0d9943d8f69c1498056061a40f268003d))
+
 ## [0.4.0](https://github.com/dfw-dba/my-site/compare/v0.3.2...v0.4.0) (2026-03-21)
 
 
