@@ -20,7 +20,7 @@ function StatCard({ label, value, accent }: { label: string; value: string | num
   );
 }
 
-function LogDetailRow({ log }: { log: AppLog }) {
+function LogDetailRow({ log, onIpClick }: { log: AppLog; onIpClick: (ip: string) => void }) {
   return (
     <tr>
       <td colSpan={7} className="px-4 py-3 bg-gray-900/50">
@@ -28,7 +28,12 @@ function LogDetailRow({ log }: { log: AppLog }) {
           {log.client_ip && (
             <div>
               <span className="text-gray-400">Client IP: </span>
-              <span className="text-gray-300">{log.client_ip}</span>
+              <button
+                onClick={(e) => { e.stopPropagation(); onIpClick(log.client_ip!); }}
+                className="text-blue-400 hover:text-blue-300 hover:underline cursor-pointer font-mono"
+              >
+                {log.client_ip}
+              </button>
             </div>
           )}
           {log.extra && Object.keys(log.extra).length > 0 && (
@@ -76,7 +81,7 @@ function ThreatBadge({ type, count }: { type: string; count: number }) {
   );
 }
 
-function ThreatDetailRow({ detail }: { detail: ThreatDetail }) {
+function ThreatDetailRow({ detail, onIpClick }: { detail: ThreatDetail; onIpClick: (ip: string) => void }) {
   const colors = THREAT_COLORS[detail.threat_type] ?? { badge: "bg-gray-600/20 text-gray-400", text: "text-gray-400" };
   return (
     <tr className="border-b border-gray-700/30 text-gray-400 text-xs">
@@ -97,18 +102,56 @@ function ThreatDetailRow({ detail }: { detail: ThreatDetail }) {
           </span>
         )}
       </td>
-      <td className="px-4 py-1.5 font-mono">{detail.client_ip}</td>
+      <td className="px-4 py-1.5 font-mono">
+        {detail.client_ip && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onIpClick(detail.client_ip!); }}
+            className="text-blue-400 hover:text-blue-300 hover:underline cursor-pointer"
+          >
+            {detail.client_ip}
+          </button>
+        )}
+      </td>
     </tr>
   );
 }
 
-function ThreatDetectionSection() {
+function ThreatDetectionSection({ clientIpFilter, onIpClick, onClearIpFilter }: { clientIpFilter: string | null; onIpClick: (ip: string) => void; onClearIpFilter: () => void }) {
   const [open, setOpen] = useState(false);
   const [threatDays, setThreatDays] = useState(30);
-  const [expandedDay, setExpandedDay] = useState<string | null>(null);
-  const [expandedHour, setExpandedHour] = useState<string | null>(null);
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
+  const [expandedHours, setExpandedHours] = useState<Set<string>>(new Set());
 
-  const { data, isLoading } = useAdminThreatDetections(threatDays);
+  const { data, isLoading } = useAdminThreatDetections({ days: threatDays, ...(clientIpFilter ? { client_ip: clientIpFilter } : {}) });
+
+  const toggleDay = (dayKey: string) => {
+    setExpandedDays((prev) => {
+      const next = new Set(prev);
+      if (next.has(dayKey)) next.delete(dayKey); else next.add(dayKey);
+      return next;
+    });
+  };
+
+  const toggleHour = (hourKey: string) => {
+    setExpandedHours((prev) => {
+      const next = new Set(prev);
+      if (next.has(hourKey)) next.delete(hourKey); else next.add(hourKey);
+      return next;
+    });
+  };
+
+  const expandAll = () => {
+    if (!data) return;
+    const allDays = new Set(data.days.map((d) => d.date));
+    const allHours = new Set(data.days.flatMap((d) => d.hours.map((h) => `${d.date}-${h.hour}`)));
+    setExpandedDays(allDays);
+    setExpandedHours(allHours);
+  };
+
+  const collapseAll = () => {
+    setExpandedDays(new Set());
+    setExpandedHours(new Set());
+  };
   const totalThreats = data?.total_threats ?? 0;
 
   return (
@@ -128,6 +171,21 @@ function ThreatDetectionSection() {
           ) : (
             <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-600 text-gray-300">0</span>
           )}
+          {clientIpFilter && (
+            <span
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs bg-blue-900/40 border border-blue-700/50 text-blue-300"
+            >
+              IP: <span className="font-mono font-semibold">{clientIpFilter}</span>
+              <button
+                onClick={(e) => { e.stopPropagation(); onClearIpFilter(); }}
+                className="ml-0.5 text-gray-400 hover:text-white"
+                aria-label="Clear IP filter"
+              >
+                &times;
+              </button>
+            </span>
+          )}
         </div>
         <svg
           className={`w-5 h-5 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`}
@@ -146,7 +204,7 @@ function ThreatDetectionSection() {
             {[7, 14, 30].map((d) => (
               <button
                 key={d}
-                onClick={() => { setThreatDays(d); setExpandedDay(null); setExpandedHour(null); }}
+                onClick={() => { setThreatDays(d); collapseAll(); }}
                 className={`px-3 py-1 rounded text-xs font-medium ${
                   threatDays === d ? "bg-blue-600 text-white" : "bg-gray-700 text-gray-300 hover:bg-gray-600"
                 }`}
@@ -154,6 +212,23 @@ function ThreatDetectionSection() {
                 {d}d
               </button>
             ))}
+            {data && data.days.length > 0 && (
+              <>
+                <span className="mx-1 text-gray-600">|</span>
+                <button
+                  onClick={expandAll}
+                  className="px-3 py-1 rounded text-xs font-medium bg-gray-700 text-gray-300 hover:bg-gray-600"
+                >
+                  Expand All
+                </button>
+                <button
+                  onClick={collapseAll}
+                  className="px-3 py-1 rounded text-xs font-medium bg-gray-700 text-gray-300 hover:bg-gray-600"
+                >
+                  Collapse All
+                </button>
+              </>
+            )}
           </div>
 
           {isLoading ? (
@@ -168,12 +243,12 @@ function ThreatDetectionSection() {
             <div className="space-y-1">
               {data.days.map((day: ThreatDay) => {
                 const dayKey = day.date;
-                const isDayExpanded = expandedDay === dayKey;
+                const isDayExpanded = expandedDays.has(dayKey);
                 return (
                   <div key={dayKey}>
                     {/* Day row */}
                     <button
-                      onClick={() => { setExpandedDay(isDayExpanded ? null : dayKey); setExpandedHour(null); }}
+                      onClick={() => toggleDay(dayKey)}
                       className="w-full flex items-center gap-3 px-3 py-2 rounded hover:bg-gray-700/40 transition-colors text-sm"
                     >
                       <svg
@@ -198,11 +273,11 @@ function ThreatDetectionSection() {
                       <div className="ml-6 border-l border-gray-700 pl-3 space-y-0.5">
                         {day.hours.map((hr) => {
                           const hourKey = `${dayKey}-${hr.hour}`;
-                          const isHourExpanded = expandedHour === hourKey;
+                          const isHourExpanded = expandedHours.has(hourKey);
                           return (
                             <div key={hourKey}>
                               <button
-                                onClick={() => setExpandedHour(isHourExpanded ? null : hourKey)}
+                                onClick={() => toggleHour(hourKey)}
                                 className="w-full flex items-center gap-3 px-3 py-1.5 rounded hover:bg-gray-700/30 transition-colors text-sm"
                               >
                                 <svg
@@ -233,7 +308,7 @@ function ThreatDetectionSection() {
                                     </thead>
                                     <tbody>
                                       {hr.details.map((detail: ThreatDetail) => (
-                                        <ThreatDetailRow key={detail.id} detail={detail} />
+                                        <ThreatDetailRow key={detail.id} detail={detail} onIpClick={onIpClick} />
                                       ))}
                                     </tbody>
                                   </table>
@@ -262,6 +337,7 @@ export default function Dashboard() {
   const [page, setPage] = useState(0);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [showPurgeConfirm, setShowPurgeConfirm] = useState(false);
+  const [clientIpFilter, setClientIpFilter] = useState<string | null>(null);
 
   // Debounce search input
   const [searchTimer, setSearchTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
@@ -275,9 +351,20 @@ export default function Dashboard() {
     setSearchTimer(timer);
   };
 
+  const handleIpClick = (ip: string) => {
+    setClientIpFilter(ip);
+    setPage(0);
+  };
+
+  const clearIpFilter = () => {
+    setClientIpFilter(null);
+    setPage(0);
+  };
+
   const filters = {
     ...(level ? { level } : {}),
     ...(debouncedSearch ? { search: debouncedSearch } : {}),
+    ...(clientIpFilter ? { client_ip: clientIpFilter } : {}),
     limit: PAGE_SIZE,
     offset: page * PAGE_SIZE,
   };
@@ -349,7 +436,10 @@ export default function Dashboard() {
       </div>
 
       {/* Threat Detection */}
-      <ThreatDetectionSection />
+      <ThreatDetectionSection clientIpFilter={clientIpFilter} onIpClick={handleIpClick} onClearIpFilter={clearIpFilter} />
+
+      {/* Log Detail heading */}
+      <h2 className="text-lg font-semibold text-white mb-3">Log Detail</h2>
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
@@ -430,7 +520,7 @@ export default function Dashboard() {
                       </td>
                       <td className="px-4 py-2 max-w-sm truncate">{log.message}</td>
                     </tr>
-                    {expandedId === log.id && <LogDetailRow key={`${log.id}-detail`} log={log} />}
+                    {expandedId === log.id && <LogDetailRow key={`${log.id}-detail`} log={log} onIpClick={handleIpClick} />}
                   </>
                 ))
               )}

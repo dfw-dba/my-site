@@ -71,11 +71,12 @@ export const api = {
 
   admin: {
     logs: {
-      list: async (params: { level?: string; search?: string; limit?: number; offset?: number } = {}) => {
+      list: async (params: { level?: string; search?: string; client_ip?: string; limit?: number; offset?: number } = {}) => {
         const headers = await adminHeaders();
         const qs = new URLSearchParams();
         if (params.level) qs.set("level", params.level);
         if (params.search) qs.set("search", params.search);
+        if (params.client_ip) qs.set("client_ip", params.client_ip);
         if (params.limit !== undefined) qs.set("limit", String(params.limit));
         if (params.offset !== undefined) qs.set("offset", String(params.offset));
         const query = qs.toString();
@@ -93,9 +94,12 @@ export const api = {
           body: JSON.stringify({ days }),
         });
       },
-      threats: async (days: number = 30) => {
+      threats: async (params: { days?: number; client_ip?: string } = {}) => {
         const headers = await adminHeaders();
-        return request<ThreatDetectionResponse>(`/api/admin/logs/threats?days=${days}`, { headers });
+        const qs = new URLSearchParams();
+        qs.set("days", String(params.days ?? 30));
+        if (params.client_ip) qs.set("client_ip", params.client_ip);
+        return request<ThreatDetectionResponse>(`/api/admin/logs/threats?${qs.toString()}`, { headers });
       },
     },
     resume: {

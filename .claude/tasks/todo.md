@@ -526,6 +526,18 @@
 - [ ] 34.8 Push branch, create PR, monitor CI
 - [ ] 34.9 Post-deploy: verify linkedin_url present in resume API response
 
+## Sprint 35: Dashboard IP Filter & Log Detail Heading
+- [x] 35.1 SQL: Add `client_ip` filter to `get_app_logs` and `get_threat_detections` functions
+- [x] 35.2 Migration: Create `004_add_client_ip_filter.sql`
+- [x] 35.3 CDK: Bump migration version to "9"
+- [x] 35.4 Backend: Add `client_ip` query param to `/logs` and `/logs/threats` endpoints
+- [x] 35.5 Frontend API: Pass `client_ip` in API calls
+- [x] 35.6 Frontend hooks: Accept `client_ip` in filter types
+- [x] 35.7 Dashboard: IP filter state, clickable IPs, clear button, "Log Detail" heading
+- [x] 35.8 Verification: lint, type check, all tests pass
+- [ ] 35.9 Push branch, create PR, monitor CI
+- [ ] 35.10 Post-deploy: verify IP filter works on dashboard
+
 ---
 
 ## Notes
