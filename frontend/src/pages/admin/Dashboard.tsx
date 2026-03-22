@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAdminLogs, useAdminLogStats, useAdminPurgeLogs, useAdminThreatDetections } from "../../hooks/useAdminApi";
-import type { AppLog, ThreatDay, ThreatDetail } from "../../types";
+import type { AppLog, ThreatDay, ThreatDetail, ThreatDetectionResponse } from "../../types";
 
 const LEVEL_COLORS: Record<string, string> = {
   ERROR: "bg-red-600 text-white",
@@ -116,13 +116,73 @@ function ThreatDetailRow({ detail, onIpClick }: { detail: ThreatDetail; onIpClic
   );
 }
 
-function ThreatDetectionSection({ clientIpFilter, onIpClick, onClearIpFilter }: { clientIpFilter: string | null; onIpClick: (ip: string) => void; onClearIpFilter: () => void }) {
+function TopThreatsByIp({ data, isLoading, topN, onIpClick }: { data: ThreatDetectionResponse | undefined; isLoading: boolean; topN: number; onIpClick: (ip: string) => void }) {
+  const ipCounts = (() => {
+    if (!data) return [];
+    const counts = new Map<string, number>();
+    for (const day of data.days) {
+      for (const hr of day.hours) {
+        for (const detail of hr.details) {
+          if (detail.client_ip) {
+            counts.set(detail.client_ip, (counts.get(detail.client_ip) ?? 0) + 1);
+          }
+        }
+      }
+    }
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, topN);
+  })();
+
+  return (
+    <div className="bg-gray-800 rounded-lg p-4 h-fit">
+      <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+        <svg className="w-4 h-4 text-orange-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5m.75-9 3-3 2.148 2.148A12.061 12.061 0 0 1 16.5 7.605" />
+        </svg>
+        Top IPs by Threats
+      </h3>
+      {isLoading ? (
+        <div className="space-y-2">
+          {Array.from({ length: topN }).map((_, i) => (
+            <div key={i} className="h-6 bg-gray-700 rounded animate-pulse" />
+          ))}
+        </div>
+      ) : ipCounts.length === 0 ? (
+        <p className="text-gray-500 text-sm">No threats detected.</p>
+      ) : (
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-gray-500 text-xs">
+              <th className="pb-2 font-medium">IP Address</th>
+              <th className="pb-2 font-medium text-right">Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ipCounts.map(([ip, count]) => (
+              <tr key={ip} className="border-t border-gray-700/50">
+                <td className="py-1.5">
+                  <button
+                    onClick={() => onIpClick(ip)}
+                    className="font-mono text-blue-400 hover:text-blue-300 hover:underline cursor-pointer text-xs"
+                  >
+                    {ip}
+                  </button>
+                </td>
+                <td className="py-1.5 text-right text-gray-300 font-mono">{count}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+function ThreatDetectionSection({ data, isLoading, threatDays, setThreatDays, clientIpFilter, onIpClick, onClearIpFilter }: { data: ThreatDetectionResponse | undefined; isLoading: boolean; threatDays: number; setThreatDays: (d: number) => void; clientIpFilter: string | null; onIpClick: (ip: string) => void; onClearIpFilter: () => void }) {
   const [open, setOpen] = useState(false);
-  const [threatDays, setThreatDays] = useState(30);
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
   const [expandedHours, setExpandedHours] = useState<Set<string>>(new Set());
-
-  const { data, isLoading } = useAdminThreatDetections({ days: threatDays, ...(clientIpFilter ? { client_ip: clientIpFilter } : {}) });
 
   const toggleDay = (dayKey: string) => {
     setExpandedDays((prev) => {
@@ -155,7 +215,7 @@ function ThreatDetectionSection({ clientIpFilter, onIpClick, onClearIpFilter }: 
   const totalThreats = data?.total_threats ?? 0;
 
   return (
-    <div className="mb-6">
+    <div>
       {/* Section header — always visible */}
       <button
         onClick={() => setOpen(!open)}
@@ -338,6 +398,7 @@ export default function Dashboard() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [showPurgeConfirm, setShowPurgeConfirm] = useState(false);
   const [clientIpFilter, setClientIpFilter] = useState<string | null>(null);
+  const [threatDays, setThreatDays] = useState(7);
 
   // Debounce search input
   const [searchTimer, setSearchTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
@@ -369,6 +430,7 @@ export default function Dashboard() {
     offset: page * PAGE_SIZE,
   };
 
+  const { data: threatData, isLoading: threatLoading } = useAdminThreatDetections({ days: threatDays, ...(clientIpFilter ? { client_ip: clientIpFilter } : {}) });
   const { data: logsData, isLoading: logsLoading } = useAdminLogs(filters);
   const { data: stats, isLoading: statsLoading } = useAdminLogStats();
   const purgeMutation = useAdminPurgeLogs();
@@ -435,8 +497,11 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Threat Detection */}
-      <ThreatDetectionSection clientIpFilter={clientIpFilter} onIpClick={handleIpClick} onClearIpFilter={clearIpFilter} />
+      {/* Threat Detection + Top IPs */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4 mb-6">
+        <ThreatDetectionSection data={threatData} isLoading={threatLoading} threatDays={threatDays} setThreatDays={setThreatDays} clientIpFilter={clientIpFilter} onIpClick={handleIpClick} onClearIpFilter={clearIpFilter} />
+        <TopThreatsByIp data={threatData} isLoading={threatLoading} topN={5} onIpClick={handleIpClick} />
+      </div>
 
       {/* Log Detail heading */}
       <h2 className="text-lg font-semibold text-white mb-3">Log Detail</h2>
