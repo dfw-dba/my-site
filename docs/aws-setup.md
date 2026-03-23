@@ -212,8 +212,15 @@ npm install
 # Get your account ID
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
+# CDK app requires these env vars to load — they don't affect bootstrap,
+# but the config file will error without them.
+CDK_DOMAIN_NAME=yourdomain.com \
+CDK_ACCOUNT_ID=$ACCOUNT_ID \
+CDK_BUDGET_EMAIL=you@example.com \
 npx cdk bootstrap aws://$ACCOUNT_ID/us-east-1
 ```
+
+Replace `yourdomain.com` and `you@example.com` with your actual domain and email.
 
 Delete the placeholder VPC context so CDK looks up your real VPC:
 ```bash
@@ -378,8 +385,16 @@ export AWS_PROFILE=staging
 STAGE_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
 cd infrastructure/cdk
+
+# CDK app requires these env vars to load — they don't affect bootstrap,
+# but the config file will error without them.
+CDK_DOMAIN_NAME=stage.yourdomain.com \
+CDK_ACCOUNT_ID=$STAGE_ACCOUNT_ID \
+CDK_BUDGET_EMAIL=you@example.com \
 npx cdk bootstrap aws://$STAGE_ACCOUNT_ID/us-east-1
 ```
+
+Replace `stage.yourdomain.com` and `you@example.com` with your actual staging domain and email.
 
 ### 4. Add staging secrets and variables to GitHub
 
