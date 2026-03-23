@@ -35,7 +35,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
-          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ secrets.AWS_STAGE_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Node
@@ -50,24 +50,24 @@ jobs:
         working-directory: infrastructure/cdk
 
       - name: CDK deploy staging
-        run: npx cdk deploy MySiteDns MySiteCert MySiteStageData MySiteStageApp --require-approval never --outputs-file cdk-outputs-stage.json
+        run: npx cdk deploy MySiteDns MySiteCert MySiteData MySiteApp --require-approval never --outputs-file cdk-outputs-stage.json
         working-directory: infrastructure/cdk
         env:
-          CDK_DOMAIN_NAME: ${{ vars.CDK_DOMAIN_NAME }}
-          CDK_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+          CDK_DOMAIN_NAME: ${{ vars.CDK_STAGE_DOMAIN_NAME }}
+          CDK_ACCOUNT_ID: ${{ vars.AWS_STAGE_ACCOUNT_ID }}
           CDK_REGION: ${{ env.AWS_REGION }}
-          CDK_BUDGET_EMAIL: ${{ vars.CDK_BUDGET_EMAIL }}
-          CDK_DEPLOY_STAGING: "true"
+          CDK_BUDGET_EMAIL: ${{ vars.CDK_STAGE_BUDGET_EMAIL || vars.CDK_BUDGET_EMAIL }}
+          CDK_IS_STAGING: "true"
 
       - name: Extract staging CDK outputs
         id: cdk-outputs
         working-directory: infrastructure/cdk
         run: |
-          echo "frontend-bucket=$(jq -r '.MySiteStageApp.FrontendBucketName' cdk-outputs-stage.json)" >> "$GITHUB_OUTPUT"
-          echo "distribution-id=$(jq -r '.MySiteStageApp.DistributionId' cdk-outputs-stage.json)" >> "$GITHUB_OUTPUT"
-          echo "user-pool-id=$(jq -r '.MySiteData.UserPoolId // .MySiteStageData.UserPoolId // empty' cdk-outputs-stage.json)" >> "$GITHUB_OUTPUT"
-          echo "user-pool-client-id=$(jq -r '.MySiteData.UserPoolClientId // .MySiteStageData.UserPoolClientId // empty' cdk-outputs-stage.json)" >> "$GITHUB_OUTPUT"
-          echo "api-url=$(jq -r '.MySiteStageApp.ApiUrl' cdk-outputs-stage.json)" >> "$GITHUB_OUTPUT"
+          echo "frontend-bucket=$(jq -r '.MySiteApp.FrontendBucketName' cdk-outputs-stage.json)" >> "$GITHUB_OUTPUT"
+          echo "distribution-id=$(jq -r '.MySiteApp.DistributionId' cdk-outputs-stage.json)" >> "$GITHUB_OUTPUT"
+          echo "user-pool-id=$(jq -r '.MySiteData.UserPoolId' cdk-outputs-stage.json)" >> "$GITHUB_OUTPUT"
+          echo "user-pool-client-id=$(jq -r '.MySiteData.UserPoolClientId' cdk-outputs-stage.json)" >> "$GITHUB_OUTPUT"
+          echo "api-url=$(jq -r '.MySiteApp.ApiUrl' cdk-outputs-stage.json)" >> "$GITHUB_OUTPUT"
 
   # --- Staging frontend deploy ---
   deploy-stage-frontend:
@@ -82,7 +82,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
-          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ secrets.AWS_STAGE_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Node
@@ -180,7 +180,7 @@ jobs:
         id: validate
         env:
           API_URL: ${{ needs.deploy-stage-frontend.outputs.api-url }}
-          DOMAIN_NAME: ${{ vars.CDK_DOMAIN_NAME }}
+          DOMAIN_NAME: ${{ vars.CDK_STAGE_DOMAIN_NAME }}
           GH_TOKEN: ${{ github.token }}
         run: |
           chmod +x .github/scripts/post-deploy-validate.sh
