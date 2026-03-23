@@ -240,15 +240,15 @@ Go to **GitHub → your repo → Settings → Secrets and variables → Actions*
 | Name | Value |
 |------|-------|
 | `AWS_DEPLOY_ROLE_ARN` | `arn:aws:iam::<PROD_ACCOUNT_ID>:role/github-actions-deploy` |
+| `AWS_ACCOUNT_ID` | Your production AWS account ID |
+| `CDK_BUDGET_EMAIL` | Your email for budget alerts |
 
 **Variables:**
 
 | Name | Value |
 |------|-------|
-| `AWS_ACCOUNT_ID` | Your production AWS account ID |
 | `AWS_REGION` | `us-east-1` |
 | `CDK_DOMAIN_NAME` | Your domain (e.g., `example.com`) |
-| `CDK_BUDGET_EMAIL` | Your email for budget alerts |
 
 ### Staging secrets and variables (optional)
 
@@ -259,14 +259,14 @@ Only needed if you're setting up the staging account:
 | Name | Value |
 |------|-------|
 | `AWS_STAGE_DEPLOY_ROLE_ARN` | `arn:aws:iam::<STAGE_ACCOUNT_ID>:role/github-actions-deploy` |
+| `AWS_STAGE_ACCOUNT_ID` | Your staging AWS account ID |
+| `CDK_STAGE_BUDGET_EMAIL` | Budget email for staging (optional, falls back to `CDK_BUDGET_EMAIL`) |
 
 **Variables:**
 
 | Name | Value |
 |------|-------|
-| `AWS_STAGE_ACCOUNT_ID` | Your staging AWS account ID |
 | `CDK_STAGE_DOMAIN_NAME` | `stage.<yourdomain>` (e.g., `stage.example.com`) |
-| `CDK_STAGE_BUDGET_EMAIL` | Budget email for staging (optional, falls back to `CDK_BUDGET_EMAIL`) |
 | `DEPLOY_STAGING` | `true` (enables automatic staging deploy on CI success) |
 
 ---

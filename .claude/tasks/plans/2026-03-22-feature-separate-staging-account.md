@@ -129,9 +129,9 @@ role-to-assume: ${{ secrets.AWS_STAGE_DEPLOY_ROLE_ARN }}
 **CDK deploy step env vars**:
 ```yaml
 CDK_DOMAIN_NAME: ${{ vars.CDK_STAGE_DOMAIN_NAME }}
-CDK_ACCOUNT_ID: ${{ vars.AWS_STAGE_ACCOUNT_ID }}
+CDK_ACCOUNT_ID: ${{ secrets.AWS_STAGE_ACCOUNT_ID }}
 CDK_REGION: ${{ env.AWS_REGION }}
-CDK_BUDGET_EMAIL: ${{ vars.CDK_STAGE_BUDGET_EMAIL || vars.CDK_BUDGET_EMAIL }}
+CDK_BUDGET_EMAIL: ${{ secrets.CDK_STAGE_BUDGET_EMAIL || secrets.CDK_BUDGET_EMAIL }}
 CDK_IS_STAGING: "true"
 ```
 
@@ -177,13 +177,19 @@ Update these sections:
 | Secret | Description |
 |--------|-------------|
 | `AWS_STAGE_DEPLOY_ROLE_ARN` | IAM role ARN in staging account for GitHub OIDC |
+| `AWS_STAGE_ACCOUNT_ID` | Staging AWS account ID |
+| `CDK_STAGE_BUDGET_EMAIL` | Budget alert email for staging (optional, falls back to `CDK_BUDGET_EMAIL`) |
+
+### Secrets (moved from variables)
+| Secret | Description |
+|--------|-------------|
+| `AWS_ACCOUNT_ID` | Production AWS account ID |
+| `CDK_BUDGET_EMAIL` | Email for budget alerts |
 
 ### Variables (new)
 | Variable | Example | Description |
 |----------|---------|-------------|
-| `AWS_STAGE_ACCOUNT_ID` | `987654321098` | Staging AWS account ID |
 | `CDK_STAGE_DOMAIN_NAME` | `stage.example.com` | Staging domain (subdomain of prod domain) |
-| `CDK_STAGE_BUDGET_EMAIL` | `you@example.com` | Budget alert email for staging (optional, falls back to `CDK_BUDGET_EMAIL`) |
 
 ## Migration Procedure (After PR Merges)
 

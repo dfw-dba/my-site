@@ -519,8 +519,8 @@ Deploy staging manually via **Actions → Deploy Stage → Run workflow**.
    npx cdk bootstrap aws://<STAGING_ACCOUNT_ID>/us-east-1
    ```
 5. Add GitHub secrets and variables (see [Step 7](#7-set-github-repository-secrets-and-variables)):
-   - Secret: `AWS_STAGE_DEPLOY_ROLE_ARN`
-   - Variables: `AWS_STAGE_ACCOUNT_ID`, `CDK_STAGE_DOMAIN_NAME` (e.g., `stage.example.com`), `DEPLOY_STAGING` = `true`
+   - Secrets: `AWS_STAGE_DEPLOY_ROLE_ARN`, `AWS_STAGE_ACCOUNT_ID`, `CDK_STAGE_BUDGET_EMAIL`
+   - Variables: `CDK_STAGE_DOMAIN_NAME` (e.g., `stage.example.com`), `DEPLOY_STAGING` = `true`
 6. Trigger **Deploy Stage** manually — this creates the Route 53 hosted zone for `stage.example.com`
 7. Set up DNS delegation in the **production** account's Route 53 zone:
    - Create an NS record: Name=`stage`, Values=4 nameservers from the staging hosted zone
