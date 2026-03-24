@@ -209,6 +209,9 @@ CDK bootstrap creates an S3 bucket and IAM roles that CDK needs to deploy CloudF
 cd infrastructure/cdk
 npm install
 
+# Set the AWS profile so CDK can authenticate
+export AWS_PROFILE=prod
+
 # Get your account ID
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
