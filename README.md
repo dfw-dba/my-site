@@ -522,8 +522,9 @@ Deploy staging manually via **Actions → Deploy Stage → Run workflow**.
    - Secrets: `AWS_STAGE_DEPLOY_ROLE_ARN`, `AWS_STAGE_ACCOUNT_ID`, `CDK_STAGE_BUDGET_EMAIL`
    - Variables: `CDK_STAGE_DOMAIN_NAME` (e.g., `stage.example.com`), `DEPLOY_STAGING` = `true`
 6. Trigger **Deploy Stage** manually — this creates the Route 53 hosted zone for `stage.example.com`
-7. Set up DNS delegation in the **production** account's Route 53 zone:
-   - Create an NS record: Name=`stage`, Values=4 nameservers from the staging hosted zone
+7. Set up DNS delegation so ACM can validate the staging certificate:
+   - **If prod is deployed:** create an NS record in the prod Route 53 zone (Name=`stage`, Values=4 staging nameservers)
+   - **If prod is NOT deployed yet:** add 4 NS records at your domain registrar (e.g., Namecheap) for Host=`stage` pointing to the staging nameservers — see [aws-setup.md Step 5](docs/aws-setup.md#5-first-staging-deploy-and-dns-delegation) for details
 8. Re-trigger **Deploy Stage** — ACM certificate DNS validation will now succeed
 9. Create a staging admin user in the new Cognito user pool (see [Step 13](#13-create-cognito-admin-user))
 
