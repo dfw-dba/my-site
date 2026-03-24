@@ -488,6 +488,7 @@ If you're deploying staging before production, there's no prod Route 53 zone yet
 > 1. Add the NS delegation for `stage.yourdomain.com` in the prod Route 53 zone (Option A above)
 > 2. Remove the `stage` NS records from your registrar
 
+
 **Verify delegation:**
 
 ```bash
