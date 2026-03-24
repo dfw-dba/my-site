@@ -2,6 +2,7 @@
 globs:
   - "README.md"
   - "docs/**"
+  - ".claude/**"
 ---
 
 # Documentation Rules
@@ -48,3 +49,19 @@ to fork this repo into a new repository and:
 - Include expected output or success indicators where helpful
 - Use tables for configuration with columns: Name, Description/Default, Example
 - Keep prose minimal — let commands and structure speak
+
+## Iteration Review Checklist
+
+> **MANDATORY**: Every PR must also evaluate whether `.claude/` files need updating.
+
+When a change modifies infrastructure, CI/CD, project structure, or development workflow,
+the corresponding `.claude/` files must be updated in the same PR:
+
+- **Agent files** (`.claude/agents/`): Do any agent descriptions reference changed architecture, workflows, or infrastructure?
+- **Rule files** (`.claude/rules/`): Do any rules reference changed patterns, file paths, or conventions?
+- **Lessons** (`.claude/tasks/lessons.md`): Do any lessons reference changed behavior that is no longer accurate?
+- **CLAUDE.md**: Does the workflow orchestration or core principles section need updating?
+
+### When NOT to update `.claude/` files:
+- Changes that don't affect architecture, workflows, conventions, or infrastructure
+- Pure application code changes (new features, bug fixes) that don't change patterns

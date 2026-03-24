@@ -43,5 +43,5 @@ export const config = {
   apiThrottleBurst: Number(optional("CDK_API_THROTTLE_BURST", "50")),
   budgetLimitUsd: Number(optional("CDK_BUDGET_LIMIT_USD", "10")),
   budgetAlertEmail: required("CDK_BUDGET_EMAIL"),
-  deployStaging: process.env.CDK_DEPLOY_STAGING === "true",
+  isStaging: process.env.CDK_IS_STAGING === "true",
 };

@@ -26,17 +26,31 @@ You are an infrastructure/DevOps engineer for a personal website/PWA. The app ru
 ## CI/CD
 
 - `.github/workflows/ci.yml` — two jobs: `backend` (uv install + ruff + pytest) and `frontend` (npm ci + vitest)
-- `.github/workflows/deploy-stage.yml` — staging deployment pipeline (auto on CI success)
-- `.github/workflows/deploy-prod.yml` — production deployment pipeline (manual trigger only)
+- `.github/workflows/deploy-stage.yml` — staging deployment to **staging AWS account** (auto on CI success)
+- `.github/workflows/deploy-prod.yml` — production deployment to **prod AWS account** (manual trigger only)
 
-## AWS Production Stack
+## AWS Stack (per environment)
 
+Each environment (prod and staging) is a fully self-contained deployment in its own AWS account:
+
+- Route 53 hosted zone (prod: `example.com`, staging: `stage.example.com` via subdomain delegation)
+- ACM wildcard certificate (DNS-validated)
+- RDS PostgreSQL with IAM auth
+- Cognito user pool (separate per account)
+- VPC endpoints (Cognito IDP, S3 Gateway)
+- Bastion host (t4g.nano, SSM Session Manager)
 - API Gateway + Lambda for backend
-- RDS PostgreSQL for database
 - S3 + CloudFront for static assets and media
-- Cognito for admin auth
-- Secrets Manager for API keys and DB credentials
+- Budget alarm
 - CDK for infrastructure-as-code
+
+## Staging Environment
+
+- Staging deploys the **same 4 CDK stacks** (`MySiteDns`, `MySiteCert`, `MySiteData`, `MySiteApp`) to a separate AWS account
+- Configuration differences are driven by env vars (`CDK_IS_STAGING=true`, `CDK_DOMAIN_NAME=stage.example.com`)
+- Staging has relaxed operational parameters: 1-day DB backup, no deletion protection, DESTROY removal policies
+- DNS: subdomain delegation from prod Route 53 zone → staging Route 53 zone
+- Staging domains: `stage.example.com` (frontend), `api.stage.example.com` (API)
 
 ## Environment Variables
 

@@ -27,23 +27,21 @@ interface AppStackProps extends cdk.StackProps {
   vpc: ec2.IVpc;
   userPoolId: string;
   userPoolClientId: string;
-  staging?: boolean;
 }
 
 export class AppStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: AppStackProps) {
     super(scope, id, props);
 
-    const isStaging = !!props.staging;
-    const domainPrefix = isStaging ? "stage." : "";
+    const isStaging = config.isStaging;
     const namePrefix = isStaging ? "stage-" : "";
-    const frontendDomain = `${domainPrefix}${config.domainName}`;
-    const apiDomainName = `${namePrefix}api.${config.domainName}`;
+    const frontendDomain = config.domainName;
+    const apiDomainName = `api.${config.domainName}`;
 
     // --- Frontend: S3 + CloudFront ---
 
     const frontendBucket = new s3.Bucket(this, "FrontendBucket", {
-      bucketName: `${domainPrefix}${config.domainName}-frontend`,
+      bucketName: `${config.domainName}-frontend`,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
@@ -78,7 +76,7 @@ export class AppStack extends cdk.Stack {
     // --- Media S3 Bucket ---
 
     const mediaBucket = new s3.Bucket(this, "MediaBucket", {
-      bucketName: `${domainPrefix}${config.domainName}-media`,
+      bucketName: `${config.domainName}-media`,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       removalPolicy: isStaging ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN,
       autoDeleteObjects: isStaging,
@@ -99,7 +97,7 @@ export class AppStack extends cdk.Stack {
       this,
       "MediaCachePolicy",
       {
-        cachePolicyName: `${domainPrefix.replace(/\./g, "-")}${config.domainName.replace(/\./g, "-")}-media-cache`,
+        cachePolicyName: `${config.domainName.replace(/\./g, "-")}-media-cache`,
         defaultTtl: cdk.Duration.hours(24),
         maxTtl: cdk.Duration.days(365),
         minTtl: cdk.Duration.seconds(0),
@@ -263,7 +261,6 @@ export class AppStack extends cdk.Stack {
     // Frontend: domain → CloudFront
     new route53.ARecord(this, "FrontendAliasRecord", {
       zone: props.hostedZone,
-      recordName: isStaging ? "stage" : undefined,
       target: route53.RecordTarget.fromAlias(
         new targets.CloudFrontTarget(distribution),
       ),
@@ -272,7 +269,7 @@ export class AppStack extends cdk.Stack {
     // API: api.domain → API Gateway
     new route53.ARecord(this, "ApiAliasRecord", {
       zone: props.hostedZone,
-      recordName: isStaging ? "stage-api" : "api",
+      recordName: "api",
       target: route53.RecordTarget.fromAlias(
         new targets.ApiGatewayv2DomainProperties(
           apiDomain.regionalDomainName,
@@ -281,51 +278,49 @@ export class AppStack extends cdk.Stack {
       ),
     });
 
-    // --- Budget Alarm (prod only) ---
+    // --- Budget Alarm ---
 
-    if (!isStaging) {
-      new budgets.CfnBudget(this, "MonthlyBudget", {
-        budget: {
-          budgetName: "mysite-monthly",
-          budgetType: "COST",
-          timeUnit: "MONTHLY",
-          budgetLimit: {
-            amount: config.budgetLimitUsd,
-            unit: "USD",
-          },
+    new budgets.CfnBudget(this, "MonthlyBudget", {
+      budget: {
+        budgetName: "mysite-monthly",
+        budgetType: "COST",
+        timeUnit: "MONTHLY",
+        budgetLimit: {
+          amount: config.budgetLimitUsd,
+          unit: "USD",
         },
-        notificationsWithSubscribers: [
-          {
-            notification: {
-              notificationType: "ACTUAL",
-              comparisonOperator: "GREATER_THAN",
-              threshold: 80,
-              thresholdType: "PERCENTAGE",
-            },
-            subscribers: [
-              {
-                subscriptionType: "EMAIL",
-                address: config.budgetAlertEmail,
-              },
-            ],
+      },
+      notificationsWithSubscribers: [
+        {
+          notification: {
+            notificationType: "ACTUAL",
+            comparisonOperator: "GREATER_THAN",
+            threshold: 80,
+            thresholdType: "PERCENTAGE",
           },
-          {
-            notification: {
-              notificationType: "ACTUAL",
-              comparisonOperator: "GREATER_THAN",
-              threshold: 100,
-              thresholdType: "PERCENTAGE",
+          subscribers: [
+            {
+              subscriptionType: "EMAIL",
+              address: config.budgetAlertEmail,
             },
-            subscribers: [
-              {
-                subscriptionType: "EMAIL",
-                address: config.budgetAlertEmail,
-              },
-            ],
+          ],
+        },
+        {
+          notification: {
+            notificationType: "ACTUAL",
+            comparisonOperator: "GREATER_THAN",
+            threshold: 100,
+            thresholdType: "PERCENTAGE",
           },
-        ],
-      });
-    }
+          subscribers: [
+            {
+              subscriptionType: "EMAIL",
+              address: config.budgetAlertEmail,
+            },
+          ],
+        },
+      ],
+    });
 
     // --- Outputs ---
 

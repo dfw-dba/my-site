@@ -47,20 +47,18 @@ jobs:
         working-directory: infrastructure/cdk
         env:
           CDK_DOMAIN_NAME: ${{ vars.CDK_DOMAIN_NAME }}
-          CDK_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+          CDK_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           CDK_REGION: ${{ env.AWS_REGION }}
-          CDK_BUDGET_EMAIL: ${{ vars.CDK_BUDGET_EMAIL }}
-          CDK_DEPLOY_STAGING: ${{ vars.DEPLOY_STAGING }}
+          CDK_BUDGET_EMAIL: ${{ secrets.CDK_BUDGET_EMAIL }}
 
       - name: CDK deploy
         run: npx cdk deploy MySiteDns MySiteCert MySiteData MySiteApp --require-approval never --outputs-file cdk-outputs.json
         working-directory: infrastructure/cdk
         env:
           CDK_DOMAIN_NAME: ${{ vars.CDK_DOMAIN_NAME }}
-          CDK_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+          CDK_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           CDK_REGION: ${{ env.AWS_REGION }}
-          CDK_BUDGET_EMAIL: ${{ vars.CDK_BUDGET_EMAIL }}
-          CDK_DEPLOY_STAGING: ${{ vars.DEPLOY_STAGING }}
+          CDK_BUDGET_EMAIL: ${{ secrets.CDK_BUDGET_EMAIL }}
 
       - name: Extract CDK outputs
         id: cdk-outputs

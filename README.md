@@ -19,42 +19,38 @@ A fork-friendly, full-stack personal site with a "database as API" architecture 
 
 ## Architecture
 
+Production and staging are fully isolated in separate AWS accounts. Each account deploys the same 4 CDK stacks with environment-specific configuration.
+
 ```
-                    ┌─────────────────────┐
-                    │   Route 53 DNS      │
-                    │   yourdomain.com    │
-                    └──────┬──────┬───────┘
-                           │      │
-              A alias      │      │  A alias
-         ┌─────────────────┘      └──────────────────┐
-         ▼                                           ▼
-┌─────────────────┐                        ┌──────────────────┐
-│   CloudFront    │                        │  API Gateway v2  │
-│ (SPA + media)   │                        │ api.yourdomain   │
-│   S3 + OAC      │                        │  throttled       │
-└─────────────────┘                        └────────┬─────────┘
-                                                    │
-                                                    ▼
-                                           ┌──────────────────┐
-                                           │  Lambda (ARM64)  │
-                                           │  FastAPI+Mangum  │
-                                           └────────┬─────────┘
-                                                    │
-                                    ┌───────────────┼───────────────┐
-                                    ▼               ▼               ▼
-                             ┌────────────┐  ┌───────────┐  ┌─────────────┐
-                             │  RDS PG17  │  │ Cognito   │  │ S3 (media)  │
-                             │ t4g.micro  │  │ User Pool │  │             │
-                             └─────┬──────┘  └───────────┘  └─────────────┘
-                                   │
-                             ┌─────┴──────┐
-                             │  Bastion   │
-                             │ t4g.nano   │
-                             │ (SSM only) │
-                             └────────────┘
+  Production Account                          Staging Account
+  ─────────────────                           ───────────────
+  Route 53: yourdomain.com                    Route 53: stage.yourdomain.com
+    │  NS delegation: stage ──────────────►     (delegated zone)
+    │
+    ├── A → CloudFront (SPA + media)          ├── A → CloudFront (SPA + media)
+    │        S3 + OAC                         │        S3 + OAC
+    │                                         │
+    ├── A → API Gateway v2                    ├── A → API Gateway v2
+    │        api.yourdomain.com               │        api.stage.yourdomain.com
+    │        │                                │        │
+    │        ▼                                │        ▼
+    │     Lambda (FastAPI+Mangum)             │     Lambda (FastAPI+Mangum)
+    │        │                                │        │
+    │   ┌────┼────┐                           │   ┌────┼────┐
+    │   ▼    ▼    ▼                           │   ▼    ▼    ▼
+    │  RDS Cognito S3                         │  RDS Cognito S3
+    │  PG17 Pool  (media)                     │  PG17 Pool  (media)
+    │   │                                     │   │
+    │  Bastion (SSM)                          │  Bastion (SSM)
+    │                                         │
+    ├── VPC endpoints (Cognito, S3)           ├── VPC endpoints (Cognito, S3)
+    ├── ACM wildcard cert                     ├── ACM wildcard cert
+    └── Budget alarm                          └── Budget alarm
 ```
 
 ## Cost Estimate
+
+**Production account:**
 
 | Service | Year 1/month | After free tier |
 |---------|-------------|-----------------|
@@ -63,9 +59,19 @@ A fork-friendly, full-stack personal site with a "database as API" architecture 
 | VPC endpoint (cognito-idp) | $7.20 | $7.20 |
 | CloudFront / S3 / Lambda / API GW / Cognito / ACM | ~$0 | ~$0 |
 | **Total** | **~$8/month** | **~$20/month** |
-| Staging RDS (optional) | $0.00 | +$12.50 |
 
-Built-in cost safeguards: API Gateway throttling (10 req/s), Lambda reserved concurrency (5), and a configurable budget alarm.
+**Staging account (optional, separate AWS account):**
+
+| Service | Year 1/month | After free tier |
+|---------|-------------|-----------------|
+| Route 53 hosted zone | $0.50 | $0.50 |
+| RDS db.t4g.micro | $0.00 | $12.50 |
+| VPC endpoint (cognito-idp) | $7.20 | $7.20 |
+| Bastion host (t4g.nano) | ~$3.00 | ~$3.00 |
+| CloudFront / S3 / Lambda / API GW / Cognito / ACM | ~$0 | ~$0 |
+| **Total** | **~$11/month** | **~$23/month** |
+
+Built-in cost safeguards: API Gateway throttling (10 req/s), Lambda reserved concurrency (5), and a configurable budget alarm (per account).
 
 ## Running Locally
 
@@ -111,37 +117,14 @@ This section walks you through deploying your own instance from a fork. The enti
 
 ### Prerequisites
 
-- An AWS account
-- A registered domain name (see [Register a Domain Name](#register-a-domain-name) below)
-- Node.js 22+ and npm
-- AWS CLI v2 installed
-- Docker installed (for building Lambda images)
+Before deploying, complete the AWS account setup:
 
-### Register a Domain Name
+1. **[AWS Account Setup Guide](docs/aws-setup.md)** — Create your AWS account(s), configure IAM Identity Center, register a domain, set up GitHub OIDC authentication, create the deploy IAM role, bootstrap CDK, and configure GitHub secrets/variables. If you want a staging environment (optional), the guide also covers creating a separate staging account with AWS Organizations.
 
-You need a domain before deploying. There are two paths:
-
-**Option A: Register via Route 53 (recommended)**
-
-The simplest option — Route 53 automatically becomes the authoritative DNS for your domain, so you can skip the nameserver update step entirely.
-
-1. AWS Console → **Route 53** → **Registered domains** → **Register domains**
-2. Search for your domain, add to cart, and complete registration (~$10–14/year for `.com`)
-
-Or via CLI:
-```bash
-aws route53domains register-domain \
-  --domain-name yourdomain.com \
-  --duration-in-years 1 \
-  --admin-contact FirstName=Your,LastName=Name,ContactType=PERSON,Email=you@example.com,PhoneNumber=+1.5555555555,CountryCode=US,AddressLine1="123 Main St",City=Anytown,State=CA,ZipCode=90210 \
-  --registrant-contact FirstName=Your,LastName=Name,ContactType=PERSON,Email=you@example.com,PhoneNumber=+1.5555555555,CountryCode=US,AddressLine1="123 Main St",City=Anytown,State=CA,ZipCode=90210 \
-  --tech-contact FirstName=Your,LastName=Name,ContactType=PERSON,Email=you@example.com,PhoneNumber=+1.5555555555,CountryCode=US,AddressLine1="123 Main St",City=Anytown,State=CA,ZipCode=90210 \
-  --auto-renew
-```
-
-**Option B: Use an existing domain from another registrar**
-
-If you already own a domain through Namecheap, GoDaddy, Cloudflare, etc., you can use it. You'll need to update your nameservers after deploying the DNS stack (covered in [Step 9](#9-update-domain-nameservers)).
+2. **Local tools required:**
+   - Node.js 22+ and npm
+   - AWS CLI v2 installed and configured (covered in the setup guide)
+   - Docker installed (for building Lambda images)
 
 ### 1. Fork and Clone
 
@@ -150,31 +133,7 @@ git clone https://github.com/<your-username>/my-site.git
 cd my-site
 ```
 
-### 2. Set Up IAM Identity Center (recommended)
-
-Don't use the root account for deployments. Set up IAM Identity Center for a proper admin user:
-
-1. Sign in as root → AWS Console → **IAM Identity Center** → **Enable**
-   - Choose your primary region (should match where you'll deploy, e.g., `us-east-1`)
-   - Use the default **Identity Center directory**
-2. **Users** → **Add user** → fill in your details
-3. **Permission sets** → **Create** → **Predefined: AdministratorAccess**
-4. **AWS accounts** → select your account → **Assign users** → your user + AdministratorAccess permission set
-5. Configure the AWS CLI:
-   ```bash
-   aws configure sso
-   # SSO start URL: (shown in IAM Identity Center dashboard)
-   # SSO region: us-east-1
-   # CLI profile name: admin
-   ```
-6. Log in:
-   ```bash
-   aws sso login --profile admin
-   export AWS_PROFILE=admin
-   ```
-7. Enable MFA on root account (IAM → Account settings), then stop using root
-
-### 3. Set CDK Environment Variables
+### 2. Set CDK Environment Variables
 
 CDK configuration is read from environment variables — nothing sensitive is hardcoded in the repo.
 
@@ -212,94 +171,7 @@ Delete the placeholder VPC context so CDK looks up your real VPC:
 rm infrastructure/cdk/cdk.context.json
 ```
 
-### 4. Bootstrap CDK
-
-One-time setup that creates the S3 bucket and IAM roles CDK needs:
-
-```bash
-cd infrastructure/cdk
-npm install
-npx cdk bootstrap aws://$CDK_ACCOUNT_ID/us-east-1
-```
-
-### 5. Create GitHub OIDC Provider
-
-This lets GitHub Actions authenticate to AWS without storing credentials.
-
-```bash
-aws iam create-open-id-connect-provider \
-  --url https://token.actions.githubusercontent.com \
-  --client-id-list sts.amazonaws.com \
-  --thumbprint-list 6938fd4d98bab03faadb97b34396831e3780aea1
-```
-
-### 6. Create IAM Role for GitHub Actions
-
-Create `github-actions-trust-policy.json` (replace `<ACCOUNT_ID>` and `<OWNER/REPO>`):
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": {
-        "Federated": "arn:aws:iam::<ACCOUNT_ID>:oidc-provider/token.actions.githubusercontent.com"
-      },
-      "Action": "sts:AssumeRoleWithWebIdentity",
-      "Condition": {
-        "StringEquals": {
-          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
-        },
-        "StringLike": {
-          "token.actions.githubusercontent.com:sub": "repo:<OWNER/REPO>:ref:refs/heads/main"
-        }
-      }
-    }
-  ]
-}
-```
-
-Create the role and attach permissions:
-
-```bash
-aws iam create-role \
-  --role-name github-actions-deploy \
-  --assume-role-policy-document file://github-actions-trust-policy.json
-
-aws iam attach-role-policy \
-  --role-name github-actions-deploy \
-  --policy-arn arn:aws:iam::aws:policy/AdministratorAccess
-```
-
-Note the role ARN:
-```bash
-aws iam get-role --role-name github-actions-deploy --query Role.Arn --output text
-```
-
-> **Note**: AdministratorAccess is broad. For a personal site this is fine. For tighter security, create a custom policy scoped to the services used (CloudFormation, S3, Lambda, ECR, API Gateway, Route 53, RDS, Cognito, IAM, CloudFront, Budgets, SSM, Secrets Manager, EC2).
-
-### 7. Set GitHub Repository Secrets and Variables
-
-Go to **GitHub → your repo → Settings → Secrets and variables → Actions**:
-
-**Secrets:**
-
-| Name | Value |
-|------|-------|
-| `AWS_DEPLOY_ROLE_ARN` | `arn:aws:iam::<ACCOUNT_ID>:role/github-actions-deploy` |
-
-**Variables:**
-
-| Name | Value |
-|------|-------|
-| `AWS_ACCOUNT_ID` | Your AWS account ID |
-| `AWS_REGION` | `us-east-1` |
-| `CDK_DOMAIN_NAME` | Your domain (e.g., `example.com`) |
-| `CDK_BUDGET_EMAIL` | Your email for budget alerts |
-| `DEPLOY_STAGING` | Set to `true` to enable staging environment (optional) |
-
-### 8. Deploy Infrastructure
+### 3. Deploy Infrastructure
 
 Run the first deploy from your laptop so you can watch for issues and approve IAM changes.
 
@@ -321,7 +193,7 @@ cd infrastructure/cdk
 npx cdk deploy MySiteDns
 ```
 
-After Phase 1 completes, update your nameservers at your registrar (see [Step 9](#9-update-domain-nameservers)) and wait for propagation. Then deploy the remaining stacks:
+After Phase 1 completes, update your nameservers at your registrar (see [Step 4](#4-update-domain-nameservers)) and wait for propagation. Then deploy the remaining stacks:
 
 ```bash
 # Phase 2: Deploy remaining stacks (after nameservers are updated)
@@ -330,17 +202,17 @@ npx cdk deploy --all
 
 > **Why two phases?** The `MySiteCert` stack creates an ACM certificate that uses DNS validation — ACM adds a CNAME record to your Route 53 hosted zone, then queries DNS to verify you own the domain. If your registrar's nameservers are still active, those DNS queries never reach Route 53, and `cdk deploy` will hang indefinitely waiting for certificate validation.
 
-This creates 4 CloudFormation stacks (6 if staging is enabled):
+This creates 4 CloudFormation stacks:
 - **MySiteDns** — Route 53 hosted zone
 - **MySiteCert** — ACM wildcard certificate (us-east-1, DNS-validated)
-- **MySiteData** — RDS PostgreSQL, Cognito user pool, VPC endpoint, bastion host
+- **MySiteData** — RDS PostgreSQL, Cognito user pool, VPC endpoints, bastion host
 - **MySiteApp** — S3 + CloudFront, Lambda, API Gateway, Route 53 records, budget alarm
-- **MySiteStageData** — *(staging only)* RDS PostgreSQL, migration Lambda
-- **MySiteStageApp** — *(staging only)* S3 + CloudFront, Lambda, API Gateway, Route 53 records
+
+Staging deploys the same 4 stacks to a separate AWS account (see [Staging Environment](#staging-environment-optional) below).
 
 Takes ~10–15 minutes (RDS is the slow part). Note the outputs — you'll need them for the next steps.
 
-### 9. Update Domain Nameservers
+### 4. Update Domain Nameservers
 
 > **Skip this step** if you registered your domain through Route 53 — nameservers are already correct.
 
@@ -382,7 +254,7 @@ Expected output should show your Route 53 nameservers (e.g., `ns-123.awsdns-45.c
 
 **Troubleshooting:** If `cdk deploy` is stuck on `MySiteCert`, it's waiting for ACM certificate DNS validation. Press `Ctrl+C` to cancel safely — no resources are left in a broken state. Update your nameservers, wait for propagation (verify with `dig`), then re-run `npx cdk deploy --all`.
 
-### 10. Push Initial Backend Image
+### 5. Push Initial Backend Image
 
 The Lambda function needs a container image in ECR:
 
@@ -407,7 +279,7 @@ aws lambda update-function-code \
   --image-uri $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/mysite-backend:latest
 ```
 
-### 11. Database Initialization
+### 6. Database Initialization
 
 The database is initialized automatically. The `MySiteData` stack includes a migration Lambda that runs in two phases on every deploy:
 
@@ -416,7 +288,7 @@ The database is initialized automatically. The `MySiteData` stack includes a mig
 
 No manual SQL setup is needed. To add a new migration, create a file in `database/migrations/` with a numeric prefix (e.g., `004_add_new_column.sql`). It will execute automatically on the next deploy. Seed data is not loaded in production.
 
-### 12. Connecting to the Database (Bastion Host)
+### 7. Connecting to the Database (Bastion Host)
 
 The `MySiteData` stack deploys a bastion host (t4g.nano) that you can reach via **SSM Session Manager** — no SSH keys or open inbound ports required. The bastion instance ID is in the CDK stack outputs.
 
@@ -454,7 +326,7 @@ Then in another terminal:
 psql -h localhost -U mysite -d mysite
 ```
 
-### 13. Create Cognito Admin User
+### 8. Create Cognito Admin User
 
 **Find your User Pool ID** from CDK outputs, or look it up:
 
@@ -492,7 +364,7 @@ After completing these steps, future logins require your permanent password + a 
 
 **GUI alternative:** You can also create users in the AWS Console under **Cognito → User Pools → mysite-users → Users → Create user**.
 
-### 14. Deploy Frontend
+### 9. Deploy Frontend
 
 ```bash
 cd frontend
@@ -509,7 +381,7 @@ aws cloudfront create-invalidation \
   --distribution-id <DISTRIBUTION_ID> --paths "/*"
 ```
 
-### 15. Verify
+### 10. Verify
 
 - `https://yourdomain.com` — resume loads
 - `https://api.yourdomain.com/api/health` — returns 200
@@ -608,6 +480,8 @@ Deployment uses two separate workflows:
 
 ### Staging Environment (Optional)
 
+Staging deploys to a **separate AWS account** with full environment isolation. It uses the same 4 CDK stacks as production, configured via environment-specific variables.
+
 When `DEPLOY_STAGING=true` is set as a GitHub Actions variable, the **Deploy Stage** workflow (`deploy-stage.yml`) runs automatically after CI succeeds on `main`:
 
 ```
@@ -618,14 +492,40 @@ Staging validation extracts commands from the PR's `## Stage Test Plan` section 
 
 Deploy staging manually via **Actions → Deploy Stage → Run workflow**.
 
-**What staging deploys:** A full infrastructure replica with its own RDS, S3 buckets, CloudFront distribution, Lambda function, and API Gateway. Staging shares the production Cognito user pool (same login), DNS hosted zone, and wildcard certificate.
+**What staging deploys:** A fully self-contained infrastructure in its own AWS account — Route 53 hosted zone, ACM certificate, RDS, Cognito user pool, VPC endpoints, bastion host, S3 buckets, CloudFront, Lambda, API Gateway, and budget alarm. Staging has no dependencies on the production account.
 
 **Staging domains:**
 - Frontend: `stage.<domain>` (e.g., `stage.example.com`)
-- API: `stage-api.<domain>` (e.g., `stage-api.example.com`)
+- API: `api.stage.<domain>` (e.g., `api.stage.example.com`)
+
+**Operational differences from production:**
+- RDS: 1-day backup retention (vs 30 days), no deletion protection
+- All resources: DESTROY removal policy (easy teardown)
+- Cognito: separate user pool (staging admin created independently)
 
 **Setup:**
-1. Go to **Settings → Variables → Actions → New variable** → `DEPLOY_STAGING` = `true`
+
+1. Create or identify a staging AWS account
+2. Create GitHub OIDC identity provider in the staging account:
+   ```bash
+   aws iam create-open-id-connect-provider \
+     --url https://token.actions.githubusercontent.com \
+     --client-id-list sts.amazonaws.com \
+     --thumbprint-list 6938fd4d98bab03faadb97b34396831e3780aea1
+   ```
+3. Create IAM deploy role (same trust policy and permissions as production — see [Step 6](#6-create-iam-role-for-github-actions))
+4. Bootstrap CDK in the staging account:
+   ```bash
+   npx cdk bootstrap aws://<STAGING_ACCOUNT_ID>/us-east-1
+   ```
+5. Add GitHub secrets and variables (see [Step 7](#7-set-github-repository-secrets-and-variables)):
+   - Secrets: `AWS_STAGE_DEPLOY_ROLE_ARN`, `AWS_STAGE_ACCOUNT_ID`, `CDK_STAGE_BUDGET_EMAIL`
+   - Variables: `CDK_STAGE_DOMAIN_NAME` (e.g., `stage.example.com`), `DEPLOY_STAGING` = `true`
+6. Trigger **Deploy Stage** manually — this creates the Route 53 hosted zone for `stage.example.com`
+7. Set up DNS delegation in the **production** account's Route 53 zone:
+   - Create an NS record: Name=`stage`, Values=4 nameservers from the staging hosted zone
+8. Re-trigger **Deploy Stage** — ACM certificate DNS validation will now succeed
+9. Create a staging admin user in the new Cognito user pool (see [Step 13](#13-create-cognito-admin-user))
 
 **Without staging:** When `DEPLOY_STAGING` is not set (or not `true`), Deploy Stage does not run automatically. Deploy Prod can still be triggered manually.
 
@@ -640,10 +540,6 @@ Deploy Prod (manual) → deploy-infra → deploy-frontend → post-deploy-valida
 Production validation extracts commands from the PR's `## Prod-Post-deploy validation` section (with `${API_URL}` pointing to the production API). Results are commented on the PR.
 
 Deploy production via **Actions → Deploy Prod → Run workflow**.
-
-**Database access:** The staging RDS instance is accessible from the production bastion host via a cross-stack security group rule. Use the same SSM Session Manager bastion workflow, but connect to the staging DB endpoint. Staging DB credentials are stored in Secrets Manager under `/mysite/stage/db-credentials`.
-
-**Cost:** Staging adds ~$12.50/month post-free-tier (RDS t4g.micro). All other staging resources (S3, CloudFront, Lambda, API Gateway) are pay-per-use and negligible.
 
 ## Project Structure
 
@@ -669,6 +565,7 @@ Deploy production via **Actions → Deploy Prod → Run workflow**.
 │   ├── migrations/        # Versioned migrations (run once, tracked in schema_migrations)
 │   └── seed/              # Optional sample seed data (loaded via ./dev.sh --seed)
 ├── dev.sh                 # Local dev startup script (supports --seed flag)
+├── docs/                  # Extended documentation (AWS setup guide, etc.)
 ├── docker/                # Dockerfiles (dev, production, Lambda)
 ├── infrastructure/cdk/    # AWS CDK stacks (TypeScript)
 │   ├── lib/               # Stack definitions (DNS, Cert, Data, App)
