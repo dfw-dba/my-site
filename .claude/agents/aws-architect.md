@@ -33,7 +33,7 @@ You are an infrastructure/DevOps engineer for a personal website/PWA. The app ru
 
 Each environment (prod and staging) is a fully self-contained deployment in its own AWS account:
 
-- Route 53 hosted zone (prod: `example.com`, staging: `stage.example.com` via subdomain delegation)
+- Route 53 hosted zone (prod: `example.com`, staging: `stage.example.com` via subdomain delegation from prod Route 53 zone or external registrar)
 - ACM wildcard certificate (DNS-validated)
 - RDS PostgreSQL with IAM auth
 - Cognito user pool (separate per account)
@@ -49,7 +49,7 @@ Each environment (prod and staging) is a fully self-contained deployment in its 
 - Staging deploys the **same 4 CDK stacks** (`MySiteDns`, `MySiteCert`, `MySiteData`, `MySiteApp`) to a separate AWS account
 - Configuration differences are driven by env vars (`CDK_IS_STAGING=true`, `CDK_DOMAIN_NAME=stage.example.com`)
 - Staging has relaxed operational parameters: 1-day DB backup, no deletion protection, DESTROY removal policies
-- DNS: subdomain delegation from prod Route 53 zone → staging Route 53 zone
+- DNS: subdomain delegation from prod Route 53 zone (or external registrar if prod isn't deployed yet) → staging Route 53 zone
 - Staging domains: `stage.example.com` (frontend), `api.stage.example.com` (API)
 
 ## Environment Variables

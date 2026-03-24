@@ -434,7 +434,13 @@ ns-111.awsdns-22.org
 ns-333.awsdns-44.co.uk
 ```
 
-**Create NS delegation in the production account:**
+**Create NS delegation:**
+
+Choose the option that matches your current setup:
+
+#### Option A: Production is already deployed (Route 53 manages your domain)
+
+If the production account already has a Route 53 hosted zone for `yourdomain.com`:
 
 ```bash
 export AWS_PROFILE=prod
@@ -462,6 +468,26 @@ aws route53 change-resource-record-sets --hosted-zone-id $PROD_ZONE_ID --change-
   }]
 }'
 ```
+
+#### Option B: Production is NOT deployed yet (external registrar manages DNS)
+
+If you're deploying staging before production, there's no prod Route 53 zone yet. Add NS records directly at your domain registrar instead.
+
+**Namecheap:** Domain List → `yourdomain.com` → Advanced DNS → Add 4 NS records:
+
+| Type | Host | Value |
+|------|------|-------|
+| NS | `stage` | `ns-123.awsdns-45.com` |
+| NS | `stage` | `ns-678.awsdns-90.net` |
+| NS | `stage` | `ns-111.awsdns-22.org` |
+| NS | `stage` | `ns-333.awsdns-44.co.uk` |
+
+**Other registrars:** Add 4 NS records for the subdomain `stage` pointing to each of the staging nameservers.
+
+> **Note:** When you later deploy production and move DNS to Route 53, you'll need to:
+> 1. Add the NS delegation for `stage.yourdomain.com` in the prod Route 53 zone (Option A above)
+> 2. Remove the `stage` NS records from your registrar
+
 
 **Verify delegation:**
 
