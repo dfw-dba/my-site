@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.0.0](https://github.com/dfw-dba/my-site/compare/v0.4.1...v1.0.0) (2026-03-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* Staging now requires a separate AWS account. Old same-account staging stacks must be torn down before deploying. API URL changes from stage-api.example.com to api.stage.example.com.
+* Staging now requires a separate AWS account. Old same-account staging stacks must be torn down before deploying. API URL changes from stage-api.example.com to api.stage.example.com.
+
+### Features
+
+* **admin:** default threat range to 7 days, add top threats by IP panel ([#101](https://github.com/dfw-dba/my-site/issues/101)) ([7b1e4d6](https://github.com/dfw-dba/my-site/commit/7b1e4d69e252c847ede994bb51ee2556e1e23eea))
+* deploy staging to separate AWS account ([#103](https://github.com/dfw-dba/my-site/issues/103)) ([42e801e](https://github.com/dfw-dba/my-site/commit/42e801e79f0019404249b4e9fe1fe1be898cf073))
+
+
+### Documentation
+
+* fix staging-first deployment instructions ([#104](https://github.com/dfw-dba/my-site/issues/104)) ([85b1633](https://github.com/dfw-dba/my-site/commit/85b16334f19032e8588b91e09b31c21d8d2acf3c))
+
 ## [0.4.1](https://github.com/dfw-dba/my-site/compare/v0.4.0...v0.4.1) (2026-03-21)
 
 
