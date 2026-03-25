@@ -22,6 +22,11 @@ const ENTRY_TYPE_COLORS: Record<string, { dot: string; badge: string }> = {
     dot: "bg-orange-500",
     badge: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300",
   },
+  hobby: {
+    dot: "bg-gradient-to-r from-red-500 via-yellow-500 to-blue-500",
+    badge:
+      "bg-gradient-to-r from-red-100 via-yellow-100 to-blue-100 text-fuchsia-800 dark:from-red-900/40 dark:via-yellow-900/40 dark:to-blue-900/40 dark:text-fuchsia-300",
+  },
 };
 
 function getColors(entryType: string) {
@@ -53,9 +58,7 @@ function flattenAndSort(
       all.push({ ...entry, entry_type: entry.entry_type || entryType });
     }
   }
-  return all.sort(
-    (a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
-  );
+  return all.sort((a, b) => a.sort_order - b.sort_order);
 }
 
 function TimelineCard({ entry }: { entry: ProfessionalEntry }) {

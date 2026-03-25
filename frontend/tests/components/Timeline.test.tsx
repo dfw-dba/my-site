@@ -22,11 +22,11 @@ function makeEntry(overrides: Partial<ProfessionalEntry> = {}): ProfessionalEntr
 }
 
 describe("Timeline", () => {
-  it("renders entries sorted by date", () => {
+  it("renders entries sorted by sort_order ascending", () => {
     const entries = {
       work: [
-        makeEntry({ id: "1", title: "Older Job", start_date: "2020-01-01" }),
-        makeEntry({ id: "2", title: "Newer Job", start_date: "2024-01-01" }),
+        makeEntry({ id: "1", title: "Second Job", sort_order: 2, start_date: "2024-01-01" }),
+        makeEntry({ id: "2", title: "First Job", sort_order: 1, start_date: "2020-01-01" }),
       ],
     };
 
@@ -34,9 +34,9 @@ describe("Timeline", () => {
 
     // Each card renders twice (mobile + desktop), so get all h3s and check order
     const titles = screen.getAllByRole("heading", { level: 3 });
-    // First pair should be Newer Job (mobile then desktop), second pair Older Job
-    expect(titles[0]).toHaveTextContent("Newer Job");
-    expect(titles[2]).toHaveTextContent("Older Job");
+    // First pair should be First Job (lower sort_order), second pair Second Job
+    expect(titles[0]).toHaveTextContent("First Job");
+    expect(titles[2]).toHaveTextContent("Second Job");
   });
 
   it("shows correct color-coded badges per entry type", () => {

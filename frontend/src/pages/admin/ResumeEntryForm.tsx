@@ -12,6 +12,7 @@ const ENTRY_TYPE_OPTIONS = [
   { value: "education", label: "Education" },
   { value: "certification", label: "Certification" },
   { value: "award", label: "Award" },
+  { value: "hobby", label: "Hobby" },
 ];
 
 interface ResumeEntryFormProps {
