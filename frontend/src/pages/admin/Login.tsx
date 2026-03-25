@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { useAuthContext } from "../../contexts/AuthContext";
 
 type LoginStep = "credentials" | "new-password" | "mfa" | "mfa-setup";
@@ -124,7 +125,17 @@ export default function Login() {
             </p>
             {mfaSecret && (
               <div>
-                <label className="block text-sm font-medium text-gray-300">Secret Key</label>
+                <p className="text-sm text-gray-400 mb-2">Scan with your authenticator app:</p>
+                <div className="flex justify-center my-4">
+                  <QRCodeSVG
+                    value={`otpauth://totp/MySite:${email}?secret=${mfaSecret}&issuer=MySite`}
+                    size={200}
+                    bgColor="#1f2937"
+                    fgColor="#ffffff"
+                    level="M"
+                  />
+                </div>
+                <label className="block text-sm font-medium text-gray-300">Or enter manually:</label>
                 <code className="mt-1 block w-full select-all break-all rounded bg-gray-700 px-3 py-2 text-sm text-green-300">
                   {mfaSecret}
                 </code>
