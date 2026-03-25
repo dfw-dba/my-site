@@ -8,7 +8,7 @@ class ResumeEntryCreate(BaseModel):
     """Schema for creating/updating a professional entry via admin API."""
 
     id: int | None = None
-    entry_type: Literal["work", "education", "certification", "award"]
+    entry_type: Literal["work", "education", "certification", "award", "hobby"]
     title: str = Field(max_length=200)
     organization: str = Field(max_length=200)
     location: str | None = Field(default=None, max_length=200)

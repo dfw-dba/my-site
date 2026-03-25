@@ -175,7 +175,7 @@ begin
                 'highlights',   pe.highlights,
                 'technologies', pe.technologies,
                 'sort_order',   pe.sort_order
-            ) order by pe.start_date desc
+            ) order by pe.sort_order asc
         )
         from internal.professional_entries as pe
     ), '[]'::jsonb);

@@ -7,7 +7,7 @@
 create table if not exists internal.professional_entries
 (
   id           int4 generated always as identity primary key,
-  entry_type   text not null check (entry_type in ('work', 'education', 'certification', 'award')),
+  entry_type   text not null check (entry_type in ('work', 'education', 'certification', 'award', 'hobby')),
   title        text not null,
   organization text not null,
   location     text,
@@ -22,7 +22,7 @@ create table if not exists internal.professional_entries
 );
 
 comment on table internal.professional_entries is 'Work history, education, certifications, and awards';
-comment on column internal.professional_entries.entry_type is 'One of: work, education, certification, award';
+comment on column internal.professional_entries.entry_type is 'One of: work, education, certification, award, hobby';
 comment on column internal.professional_entries.highlights is 'JSON array of bullet-point strings';
 comment on column internal.professional_entries.technologies is 'JSON array of technology name strings';
 
