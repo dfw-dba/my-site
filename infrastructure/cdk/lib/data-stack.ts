@@ -200,7 +200,7 @@ export class DataStack extends cdk.Stack {
         preventUserExistenceErrors: true,
         accessTokenValidity: cdk.Duration.hours(1),
         idTokenValidity: cdk.Duration.hours(1),
-        refreshTokenValidity: cdk.Duration.days(30),
+        refreshTokenValidity: cdk.Duration.days(5),
       });
 
       this.userPoolId = userPool.userPoolId;

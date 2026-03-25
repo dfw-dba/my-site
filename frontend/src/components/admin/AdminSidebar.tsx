@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { NavLink, Link, useLocation } from "react-router";
+import { useAuthContext } from "../../contexts/AuthContext";
 
 const NAV_ITEMS = [
   { to: "/admin", label: "Dashboard", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4", end: true },
@@ -13,6 +14,7 @@ interface AdminSidebarProps {
 
 export default function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
   const location = useLocation();
+  const { logout } = useAuthContext();
   const [collapsed, setCollapsed] = useState(() => {
     return localStorage.getItem("admin-sidebar-collapsed") === "true";
   });
@@ -76,7 +78,7 @@ export default function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebar
         ))}
       </nav>
 
-      <div className="border-t border-gray-700 p-3">
+      <div className="border-t border-gray-700 p-3 space-y-2">
         <Link
           to="/"
           className="flex items-center gap-3 text-gray-400 hover:text-white text-sm transition-colors"
@@ -86,6 +88,15 @@ export default function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebar
           </svg>
           {!collapsed && <span>Back to Site</span>}
         </Link>
+        <button
+          onClick={() => logout()}
+          className="flex items-center gap-3 w-full text-red-400 hover:text-red-300 text-sm transition-colors"
+        >
+          <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          {!collapsed && <span>Logout</span>}
+        </button>
       </div>
     </aside>
   );
