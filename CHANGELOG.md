@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/dfw-dba/my-site/compare/v1.0.0...v1.1.0) (2026-03-25)
+
+
+### Features
+
+* **admin:** add MFA QR code, logout button, and 5-day session timeout ([#105](https://github.com/dfw-dba/my-site/issues/105)) ([35728c5](https://github.com/dfw-dba/my-site/commit/35728c5fbf881674e84d298ac79259f851032957))
+
 ## [1.0.0](https://github.com/dfw-dba/my-site/compare/v0.4.1...v1.0.0) (2026-03-24)
 
 
