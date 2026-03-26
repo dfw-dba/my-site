@@ -130,6 +130,10 @@ Deployment uses **two separate workflows**:
 
 Results are commented on the PR and table items are automatically marked as passed/failed.
 
+## Staging Environment
+
+Staging deploys to a **separate AWS account** using `AWS_STAGE_DEPLOY_ROLE_ARN`, `AWS_STAGE_ACCOUNT_ID`, and `CDK_STAGE_DOMAIN_NAME`. Staging stacks are the same 4 as prod (`MySiteDns`, `MySiteCert`, `MySiteData`, `MySiteApp`). The `CDK_IS_STAGING` env var controls operational differences (backup retention, deletion protection).
+
 ## Prod Deploy Gate (MANDATORY)
 
 > **Claude MUST follow this process after every PR merge. No exceptions.**
@@ -152,3 +156,5 @@ After merging a PR:
 3. **Once all Pre Deploy Checklist items are marked as passed**: immediately squash-merge the PR (`gh pr merge --squash`). Do **not** prompt the user or wait for approval.
 4. After merge, begin the Prod Deploy Gate process above.
 5. If a new commit is pushed to the head branch, this invalidates the checklist items and the CI outcome. The CI must be run again, checklist items must be unmarked, re-executed, and marked as complete upon success.
+
+> **All test plan items must be executable and verifiable before merge.** Do not write aspirational items that require post-merge validation. Each item must have a concrete command or manual step that can be run immediately after CI passes.
