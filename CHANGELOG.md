@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.0](https://github.com/dfw-dba/my-site/compare/v1.3.0...v1.4.0) (2026-03-26)
+
+
+### Features
+
+* security hardening for public repo readiness ([#115](https://github.com/dfw-dba/my-site/issues/115)) ([5a15660](https://github.com/dfw-dba/my-site/commit/5a15660b433b2ccceb5465f28f74fb0474917ab7))
+
+
+### Bug Fixes
+
+* add dependency so migration waits for Secrets Manager VPC endpoint ([#117](https://github.com/dfw-dba/my-site/issues/117)) ([d6049ef](https://github.com/dfw-dba/my-site/commit/d6049ef102dca2af74ae233992dad4f850ce4b80))
+* increase migration Lambda timeout and add Secrets Manager retry ([#118](https://github.com/dfw-dba/my-site/issues/118)) ([782bcc8](https://github.com/dfw-dba/my-site/commit/782bcc8665043b4630403f351d5ca40523cc4e8e))
+
 ## [1.3.0](https://github.com/dfw-dba/my-site/compare/v1.2.1...v1.3.0) (2026-03-26)
 
 
