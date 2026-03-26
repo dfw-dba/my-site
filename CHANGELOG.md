@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/dfw-dba/my-site/compare/v1.1.0...v1.2.0) (2026-03-25)
+
+
+### Features
+
+* add hobby entry type and sort timeline by sort_order ([#107](https://github.com/dfw-dba/my-site/issues/107)) ([53990ef](https://github.com/dfw-dba/my-site/commit/53990ef0dafd6a3b79f0177126a8ee61a1d18a80))
+
 ## [1.1.0](https://github.com/dfw-dba/my-site/compare/v1.0.0...v1.1.0) (2026-03-25)
 
 
