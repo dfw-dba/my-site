@@ -49,8 +49,30 @@ jobs:
         run: npm ci
         working-directory: infrastructure/cdk
 
-      - name: CDK deploy staging
-        run: npx cdk deploy MySiteDns MySiteCert MySiteData MySiteApp --require-approval never --outputs-file cdk-outputs-stage.json
+      - name: Pre-flight validation
+        run: bash .github/scripts/preflight-check.sh
+
+      - name: Clean up failed stacks
+        run: |
+          for stack in MySiteDns MySiteCert MySiteData MySiteApp; do
+            status=$(aws cloudformation describe-stacks --stack-name "$stack" \
+              --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "DOES_NOT_EXIST")
+            case "$status" in
+              ROLLBACK_COMPLETE)
+                echo "Deleting ROLLBACK_COMPLETE stack: $stack"
+                aws cloudformation delete-stack --stack-name "$stack"
+                aws cloudformation wait stack-delete-complete --stack-name "$stack"
+                ;;
+              ROLLBACK_FAILED|DELETE_FAILED)
+                echo "Force deleting $status stack: $stack"
+                aws cloudformation delete-stack --stack-name "$stack" --deletion-mode FORCE_DELETE_STACK
+                aws cloudformation wait stack-delete-complete --stack-name "$stack"
+                ;;
+            esac
+          done
+
+      - name: "CDK deploy staging: Phase 1 (DNS)"
+        run: npx cdk deploy MySiteDns --require-approval never --outputs-file cdk-outputs-dns.json
         working-directory: infrastructure/cdk
         env:
           CDK_DOMAIN_NAME: ${{ vars.CDK_STAGE_DOMAIN_NAME }}
@@ -58,6 +80,56 @@ jobs:
           CDK_REGION: ${{ env.AWS_REGION }}
           CDK_BUDGET_EMAIL: ${{ secrets.CDK_STAGE_BUDGET_EMAIL || secrets.CDK_BUDGET_EMAIL }}
           CDK_IS_STAGING: "true"
+          CDK_AUTO_BUCKET_NAMES: ${{ vars.CDK_AUTO_BUCKET_NAMES || 'true' }}
+
+      # DNS delegation gate: ensures nameservers are delegated before deploying
+      # stacks that require DNS validation (MySiteCert). On repeat deploys this
+      # passes immediately. On first deploy it will fail with instructions.
+      # Requires: dig (available on GitHub Actions ubuntu-latest)
+      - name: DNS delegation gate
+        env:
+          DOMAIN: ${{ vars.CDK_STAGE_DOMAIN_NAME }}
+        run: |
+          # Use get-hosted-zone (delegation set), NOT list-resource-record-sets (in-zone NS).
+          # The delegation set is what DNS resolvers actually query. In-zone NS records may differ.
+          ZONE_ID=$(aws route53 list-hosted-zones-by-name \
+            --dns-name "$DOMAIN" --query 'HostedZones[0].Id' --output text)
+          NAMESERVERS=$(aws route53 get-hosted-zone --id "$ZONE_ID" \
+            --query 'DelegationSet.NameServers' --output text)
+
+          DELEGATED=false
+          for i in 1 2 3 4 5; do
+            if dig "$DOMAIN" NS +short @8.8.8.8 | grep -q "awsdns"; then
+              DELEGATED=true
+              break
+            fi
+            echo "DNS delegation not detected yet (attempt $i/5). Waiting 30s..."
+            sleep 30
+          done
+
+          if [ "$DELEGATED" = false ]; then
+            echo "::error::DNS delegation not set up for $DOMAIN."
+            echo "Required nameservers (from Route 53 delegation set):"
+            echo "$NAMESERVERS"
+            echo ""
+            echo "Add these as Custom DNS nameservers in your domain registrar,"
+            echo "or as NS records in the parent Route 53 hosted zone."
+            echo "Then re-run this workflow."
+            exit 1
+          fi
+
+          echo "DNS delegation verified for $DOMAIN"
+
+      - name: "CDK deploy staging: Phase 2 (Cert, Data, App)"
+        run: npx cdk deploy MySiteCert MySiteData MySiteApp --require-approval never --outputs-file cdk-outputs-stage.json
+        working-directory: infrastructure/cdk
+        env:
+          CDK_DOMAIN_NAME: ${{ vars.CDK_STAGE_DOMAIN_NAME }}
+          CDK_ACCOUNT_ID: ${{ secrets.AWS_STAGE_ACCOUNT_ID }}
+          CDK_REGION: ${{ env.AWS_REGION }}
+          CDK_BUDGET_EMAIL: ${{ secrets.CDK_STAGE_BUDGET_EMAIL || secrets.CDK_BUDGET_EMAIL }}
+          CDK_IS_STAGING: "true"
+          CDK_AUTO_BUCKET_NAMES: ${{ vars.CDK_AUTO_BUCKET_NAMES || 'true' }}
 
       - name: Extract staging CDK outputs
         id: cdk-outputs

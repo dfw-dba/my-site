@@ -553,6 +553,29 @@
 
 ---
 
+## Sprint 37: Resilient CDK Deployment
+
+### Phase A — Safe, additive changes
+- [x] 37.1 Create pre-flight validation script — `.github/scripts/preflight-check.sh`
+- [x] 37.2 Add pre-flight, cleanup, and two-phase deploy to staging workflow — `.github/workflows/deploy-stage.yml`
+- [x] 37.3 Add pre-flight, cleanup, and two-phase deploy to prod workflow — `.github/workflows/deploy-prod.yml`
+- [x] 37.4 Add delegation set vs in-zone NS callout to docs — `docs/aws-setup.md`
+
+### Phase B — Conditional bucket naming
+- [x] 37.5 Add `autoGenerateBucketNames` config property — `infrastructure/cdk/config/index.ts`
+- [x] 37.6 Conditional bucket names + Purpose/Environment tags — `infrastructure/cdk/lib/app-stack.ts`
+- [x] 37.7 Pass `CDK_AUTO_BUCKET_NAMES` env var in both workflows — `.github/workflows/deploy-stage.yml`, `.github/workflows/deploy-prod.yml`
+- [x] 37.8 Document `CDK_AUTO_BUCKET_NAMES` in setup docs — `docs/aws-setup.md`
+
+### Documentation & Verification
+- [x] 37.9 Update README with pre-flight check, two-phase deploy, bucket naming — `README.md`
+- [x] 37.10 Add delegation set lesson — `.claude/tasks/lessons.md`
+- [x] 37.11 CDK synth verification (both `CDK_AUTO_BUCKET_NAMES=true` and `false`)
+- [ ] 37.12 Push branch, create PR, monitor CI
+- [ ] 37.13 Merge PR after CI passes
+
+---
+
 ## Notes
 - DB port mapped to 5433 on host (5432 in use by local PostgreSQL)
 - `uv` installed at ~/.local/bin/uv
