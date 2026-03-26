@@ -90,7 +90,7 @@ async def get_admin_auth(request: Request) -> dict | str:
 
     # Fallback: API key auth for local dev
     api_key = request.headers.get("X-Admin-Key", "")
-    if api_key != settings.ADMIN_API_KEY:
+    if not settings.ADMIN_API_KEY or api_key != settings.ADMIN_API_KEY:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid admin API key",

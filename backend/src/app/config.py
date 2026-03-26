@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     DATABASE_URL: str = resolve_database_url()
-    ADMIN_API_KEY: str = "local-dev-admin-key"
+    ADMIN_API_KEY: str = ""
     CORS_ORIGINS: str = "http://localhost:5173"
 
     # Cognito settings (leave empty to use API key fallback)
