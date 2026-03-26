@@ -34,6 +34,8 @@ When the user initiates any task:
 - **Explain Changes**: High-level summary at each step.
 - **Document Results**: Add review section to `.claude/tasks/todo.md`.
 - **Capture Lessons**: Update `.claude/tasks/lessons.md` after corrections.
+- **Todo items track implementation work only**: Do NOT add process steps (push, create PR, monitor CI, merge, post-deploy verification) as todo items. These are governed by `git-workflow.md` and happen as part of the standard shipping flow.
+- **Archive completed sprints**: Keep only the last 3 completed sprints in `todo.md`. When adding a new completed sprint would exceed 3, move the oldest to `todo-archive.md`.
 
 ### 7. Core Principles
 - **Simplicity First**: Make every change as simple as possible. Impact minimal code.
