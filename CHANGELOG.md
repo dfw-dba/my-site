@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/dfw-dba/my-site/compare/v1.2.1...v1.3.0) (2026-03-26)
+
+
+### Features
+
+* add resilient CDK deployment with pre-flight checks and DNS gate ([#112](https://github.com/dfw-dba/my-site/issues/112)) ([ff022b0](https://github.com/dfw-dba/my-site/commit/ff022b01058defacdfe9d237e55092efa9f47d54))
+
 ## [1.2.1](https://github.com/dfw-dba/my-site/compare/v1.2.0...v1.2.1) (2026-03-26)
 
 
