@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/dfw-dba/my-site/compare/v1.2.0...v1.2.1) (2026-03-26)
+
+
+### Bug Fixes
+
+* bump DB migration version to deploy hobby entry type constraint ([#109](https://github.com/dfw-dba/my-site/issues/109)) ([0e928d2](https://github.com/dfw-dba/my-site/commit/0e928d2ae4b131f840d40f23c4a8b53c2cc8ba8b))
+
 ## [1.2.0](https://github.com/dfw-dba/my-site/compare/v1.1.0...v1.2.0) (2026-03-25)
 
 
