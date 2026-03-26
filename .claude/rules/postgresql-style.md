@@ -23,6 +23,7 @@ globs:
 - Explicit column names in GROUP BY (except complex expressions — use ordinals)
 - Functions treated as identifiers: `date_trunc()` not `DATE_TRUNC()`
 - One argument per line for multi-argument clauses
+- When splitting SQL on semicolons, account for `--` line comments, `/* */` block comments, single-quoted strings, and `$$` dollar-quoting — semicolons inside these are not statement separators
 
 ## Style
 

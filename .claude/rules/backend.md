@@ -11,7 +11,7 @@ globs:
 
 - Thin routers — no business logic in route handlers
 - All DB access through `DatabaseAPI` class in `backend/src/app/services/db_functions.py`
-- Use `CAST(:param AS jsonb)` not `::jsonb` for parameter casting
+- Use `CAST(:param AS jsonb)` not `::jsonb` for parameter casting — SQLAlchemy `text()` interprets `::jsonb` as a bind parameter named `:jsonb`
 - Pydantic schemas for request validation only — responses are raw JSONB from stored functions
 - Admin routes require `Depends(get_admin_auth)` from `backend/src/app/dependencies.py`
 - New routers must be registered in `backend/src/app/main.py`
