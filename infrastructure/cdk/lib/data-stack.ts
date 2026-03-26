@@ -139,13 +139,16 @@ export class DataStack extends cdk.Stack {
       onEventHandler: migrationFn,
     });
 
-    new cdk.CustomResource(this, "DbMigration", {
+    const dbMigration = new cdk.CustomResource(this, "DbMigration", {
       serviceToken: migrationProvider.serviceToken,
       properties: {
         // Change this value to trigger the migration again on next deploy
         version: "11",
       },
     });
+
+    // Migration Lambda must wait for Secrets Manager VPC endpoint
+    // (defined later in this file — dependency added after endpoint creation)
 
     // Store database URL in SSM (uses the generated secret)
     new ssm.StringParameter(this, "DbEndpointParam", {
@@ -235,7 +238,7 @@ export class DataStack extends cdk.Stack {
 
     // --- VPC Endpoint for Secrets Manager (migration Lambda fetches DB password) ---
 
-    new ec2.InterfaceVpcEndpoint(this, "SecretsManagerEndpoint", {
+    const secretsManagerEndpoint = new ec2.InterfaceVpcEndpoint(this, "SecretsManagerEndpoint", {
       vpc: this.vpc,
       service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
       privateDnsEnabled: true,
@@ -246,6 +249,9 @@ export class DataStack extends cdk.Stack {
         ],
       },
     });
+
+    // Ensure migration runs only after Secrets Manager endpoint is available
+    dbMigration.node.addDependency(secretsManagerEndpoint);
 
     // --- VPC Endpoint for Cognito (Lambda in VPC needs this for JWKS) ---
 
