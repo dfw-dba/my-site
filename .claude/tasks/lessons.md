@@ -12,6 +12,12 @@ _Updated after each correction or insight. Review at session start._
 - **Sync todo.md and GitHub Project at every state change (2026-03-01)**: Every time a todo item is created, updated, or completed in `todo.md`, immediately mirror the change in the GitHub Project. Never batch or defer syncing.
 - **Follow the numbered planning checklist strictly (2026-03-02)**: Section 1 in CLAUDE.md is a strict procedure. Execute steps in order: branch, plan mode, write plan file, finalize, add todos, sync GitHub Project, prompt user to clear context. Skipping or reordering steps leads to missed steps downstream.
 
+## AWS / CDK
+
+- **Route 53 delegation set vs in-zone NS records (2026-03-26)**: When setting up DNS delegation, always use nameservers from `aws route53 get-hosted-zone` (the delegation set), NOT the NS records visible in the Route 53 console Records tab (in-zone NS). They can differ, and only the delegation set nameservers actually serve the zone.
+- **S3 bucket names are globally unique (2026-03-26)**: Removing `bucketName` from an existing CDK bucket causes CloudFormation to replace it (create new, delete old). Use a config flag (`CDK_AUTO_BUCKET_NAMES`) to conditionally set bucket names — auto-generate for new forks, preserve explicit names for existing deployments.
+- **ACM cert DNS validation requires delegation first (2026-03-26)**: Deploying `MySiteCert` before DNS delegation is set up causes the deploy to hang indefinitely. Always deploy `MySiteDns` first, verify delegation, then deploy the rest.
+
 ## Universal Principles
 
 - **Fork-friendly**: No hardcoded domains, AWS account IDs, or personal info. Everything parameterized via config/site.json.

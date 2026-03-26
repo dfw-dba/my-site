@@ -41,11 +41,18 @@ export class AppStack extends cdk.Stack {
     // --- Frontend: S3 + CloudFront ---
 
     const frontendBucket = new s3.Bucket(this, "FrontendBucket", {
-      bucketName: `${config.domainName}-frontend`,
+      bucketName: config.autoGenerateBucketNames
+        ? undefined
+        : `${config.domainName}-frontend`,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
     });
+    cdk.Tags.of(frontendBucket).add("Purpose", "frontend-hosting");
+    cdk.Tags.of(frontendBucket).add(
+      "Environment",
+      isStaging ? "staging" : "production",
+    );
 
     const distribution = new cloudfront.Distribution(this, "Distribution", {
       defaultBehavior: {
@@ -76,9 +83,13 @@ export class AppStack extends cdk.Stack {
     // --- Media S3 Bucket ---
 
     const mediaBucket = new s3.Bucket(this, "MediaBucket", {
-      bucketName: `${config.domainName}-media`,
+      bucketName: config.autoGenerateBucketNames
+        ? undefined
+        : `${config.domainName}-media`,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      removalPolicy: isStaging ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN,
+      removalPolicy: isStaging
+        ? cdk.RemovalPolicy.DESTROY
+        : cdk.RemovalPolicy.RETAIN,
       autoDeleteObjects: isStaging,
       cors: [
         {
@@ -89,6 +100,11 @@ export class AppStack extends cdk.Stack {
         },
       ],
     });
+    cdk.Tags.of(mediaBucket).add("Purpose", "media-storage");
+    cdk.Tags.of(mediaBucket).add(
+      "Environment",
+      isStaging ? "staging" : "production",
+    );
 
     // Cache policy for media: includes query strings in cache key so that
     // ?v={timestamp} busts the CDN cache after re-uploads (avoids needing

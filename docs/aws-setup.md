@@ -252,6 +252,7 @@ Go to **GitHub → your repo → Settings → Secrets and variables → Actions*
 |------|-------|
 | `AWS_REGION` | `us-east-1` |
 | `CDK_DOMAIN_NAME` | Your domain (e.g., `example.com`) |
+| `CDK_AUTO_BUCKET_NAMES` | Omit for new deployments (defaults to `true`, CDK auto-generates collision-safe names). Set to `false` only if you already have deployed stacks with explicit bucket names (e.g., `yourdomain.com-frontend`). |
 
 ### Staging secrets and variables (optional)
 
@@ -425,6 +426,15 @@ ZONE_ID=$(aws route53 list-hosted-zones-by-name \
 aws route53 get-hosted-zone --id $ZONE_ID \
   --query 'DelegationSet.NameServers' --output table
 ```
+
+> **Important -- delegation set vs in-zone NS records**: Route 53 shows two sets of NS records
+> that look similar but are different:
+> - **Delegation set** (from `aws route53 get-hosted-zone --id <ZONE_ID>`): The nameservers
+>   that actually serve the zone. **Always use these for DNS delegation.**
+> - **In-zone NS records** (visible in the Route 53 console Records tab): Records inside
+>   the zone itself. These may differ from the delegation set. Do NOT use these.
+>
+> The `get-hosted-zone` command above returns the correct delegation set nameservers.
 
 You'll get 4 nameservers like:
 ```

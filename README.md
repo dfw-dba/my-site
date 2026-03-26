@@ -459,18 +459,23 @@ aws rds start-db-instance --db-instance-identifier $RDS_ID
 
 ## Continuous Deployment
 
-Deployment uses two separate workflows:
+Deployment uses two separate workflows with built-in resilience:
 
 1. Push to `main` (or merge a PR)
 2. CI runs (lint, type check, tests)
 3. On CI success, **Deploy Stage** runs automatically (when staging is enabled):
    ```
-   Merge to main → CI → Deploy Stage (stage-infra → stage-frontend → stage-validation)
+   Merge to main → CI → Deploy Stage (pre-flight → cleanup → DNS → gate → infra → frontend → validation)
    ```
 4. After staging succeeds, **Deploy Prod** is triggered manually:
    ```
-   Deploy Prod (prod-infra → prod-frontend → prod-validation)
+   Deploy Prod (pre-flight → cleanup → DNS → gate → infra → frontend → validation)
    ```
+
+Each deploy workflow includes:
+- **Pre-flight validation**: checks OIDC provider and CDK bootstrap status before deploying
+- **Failed stack cleanup**: automatically deletes stacks stuck in ROLLBACK_COMPLETE/ROLLBACK_FAILED/DELETE_FAILED
+- **Two-phase deploy with DNS gate**: deploys the DNS stack first, verifies nameserver delegation is working, then deploys the remaining stacks (Cert, Data, App). On first deploy, the gate fails with instructions to set up DNS delegation. On subsequent deploys it passes immediately.
 
 > **Path filtering:** CI and deploy are automatically skipped for changes that only touch
 > non-application files (`.claude/`, `*.md`, `docs/`, `.github/scripts/`, `LICENSE`,
@@ -521,6 +526,8 @@ Deploy staging manually via **Actions → Deploy Stage → Run workflow**.
 5. Add GitHub secrets and variables (see [Step 7](#7-set-github-repository-secrets-and-variables)):
    - Secrets: `AWS_STAGE_DEPLOY_ROLE_ARN`, `AWS_STAGE_ACCOUNT_ID`, `CDK_STAGE_BUDGET_EMAIL`
    - Variables: `CDK_STAGE_DOMAIN_NAME` (e.g., `stage.example.com`), `DEPLOY_STAGING` = `true`
+
+> **S3 bucket naming:** By default, CDK auto-generates globally unique bucket names (recommended for new deployments). If you already have deployed stacks with explicit bucket names (e.g., `yourdomain.com-frontend`), set the GitHub Actions variable `CDK_AUTO_BUCKET_NAMES` = `false` to preserve them. See [aws-setup.md](docs/aws-setup.md#set-github-repository-secrets-and-variables) for details.
 6. Trigger **Deploy Stage** manually — this creates the Route 53 hosted zone for `stage.example.com`
 7. Set up DNS delegation so ACM can validate the staging certificate:
    - **If prod is deployed:** create an NS record in the prod Route 53 zone (Name=`stage`, Values=4 staging nameservers)

@@ -44,4 +44,5 @@ export const config = {
   budgetLimitUsd: Number(optional("CDK_BUDGET_LIMIT_USD", "10")),
   budgetAlertEmail: required("CDK_BUDGET_EMAIL"),
   isStaging: process.env.CDK_IS_STAGING === "true",
+  autoGenerateBucketNames: optional("CDK_AUTO_BUCKET_NAMES", "true") === "true",
 };
