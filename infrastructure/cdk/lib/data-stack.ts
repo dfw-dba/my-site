@@ -127,12 +127,13 @@ export class DataStack extends cdk.Stack {
         DB_HOST: dbInstance.dbInstanceEndpointAddress,
         DB_PORT: dbInstance.dbInstanceEndpointPort,
         DB_USER: dbCredentials.username,
-        DB_PASSWORD: dbInstance.secret!
-          .secretValueFromJson("password")
-          .unsafeUnwrap(),
+        DB_SECRET_ARN: dbInstance.secret!.secretArn,
         DB_NAME: "mysite",
       },
     });
+
+    // Grant migration Lambda read access to the database secret
+    dbInstance.secret!.grantRead(migrationFn);
 
     const migrationProvider = new cr.Provider(this, "DbMigrationProvider", {
       onEventHandler: migrationFn,
@@ -142,7 +143,7 @@ export class DataStack extends cdk.Stack {
       serviceToken: migrationProvider.serviceToken,
       properties: {
         // Change this value to trigger the migration again on next deploy
-        version: "10",
+        version: "11",
       },
     });
 
@@ -183,6 +184,7 @@ export class DataStack extends cdk.Stack {
         requireSymbols: true,
       },
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
+      deletionProtection: true,
       removalPolicy: isStaging ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN,
     });
 
@@ -190,6 +192,17 @@ export class DataStack extends cdk.Stack {
       userPoolClientName: "mysite-spa",
       authFlows: {
         userSrp: true,
+      },
+      oAuth: {
+        flows: {
+          authorizationCodeGrant: true,
+          implicitCodeGrant: false,
+        },
+        scopes: [
+          cognito.OAuthScope.OPENID,
+          cognito.OAuthScope.EMAIL,
+          cognito.OAuthScope.PROFILE,
+        ],
       },
       generateSecret: false,
       preventUserExistenceErrors: true,
@@ -218,6 +231,20 @@ export class DataStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, "UserPoolClientId", {
       value: userPoolClient.userPoolClientId,
+    });
+
+    // --- VPC Endpoint for Secrets Manager (migration Lambda fetches DB password) ---
+
+    new ec2.InterfaceVpcEndpoint(this, "SecretsManagerEndpoint", {
+      vpc: this.vpc,
+      service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
+      privateDnsEnabled: true,
+      subnets: {
+        availabilityZones: [
+          `${config.awsRegion}b`,
+          `${config.awsRegion}c`,
+        ],
+      },
     });
 
     // --- VPC Endpoint for Cognito (Lambda in VPC needs this for JWKS) ---

@@ -1,16 +1,27 @@
 """
 CDK Custom Resource handler for RDS database migration.
-Phase 1: Executes idempotent init scripts (00–04) to set up schemas, tables,
+Phase 1: Executes idempotent init scripts (00-04) to set up schemas, tables,
 functions, and permissions.
 Phase 2: Runs migration files exactly once, tracked in internal.schema_migrations.
-Connects using master credentials passed via environment variables.
+Connects using master credentials fetched from AWS Secrets Manager at runtime.
 """
 
 import glob
+import json
 import os
 import ssl
 
+import boto3
 import pg8000.native
+
+
+def _get_db_password():
+    """Fetch database password from Secrets Manager at runtime."""
+    secret_arn = os.environ["DB_SECRET_ARN"]
+    client = boto3.client("secretsmanager")
+    resp = client.get_secret_value(SecretId=secret_arn)
+    secret = json.loads(resp["SecretString"])
+    return secret["password"]
 
 
 def split_sql_statements(sql_text):
@@ -130,7 +141,7 @@ def handler(event, context):
     host = os.environ["DB_HOST"]
     port = int(os.environ["DB_PORT"])
     user = os.environ["DB_USER"]
-    password = os.environ["DB_PASSWORD"]
+    password = _get_db_password()
     database = os.environ["DB_NAME"]
 
     ssl_context = ssl.create_default_context()

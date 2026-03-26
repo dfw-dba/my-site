@@ -15,6 +15,7 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import * as events from "aws-cdk-lib/aws-events";
 import * as eventsTargets from "aws-cdk-lib/aws-events-targets";
 import * as budgets from "aws-cdk-lib/aws-budgets";
+import * as logs from "aws-cdk-lib/aws-logs";
 import * as path from "path";
 import { Construct } from "constructs";
 import { config } from "../config";
@@ -54,12 +55,39 @@ export class AppStack extends cdk.Stack {
       isStaging ? "staging" : "production",
     );
 
+    const securityHeaders = new cloudfront.ResponseHeadersPolicy(
+      this,
+      "SecurityHeadersPolicy",
+      {
+        responseHeadersPolicyName: `${config.domainName.replace(/\./g, "-")}-security-headers`,
+        securityHeadersBehavior: {
+          strictTransportSecurity: {
+            accessControlMaxAge: cdk.Duration.seconds(63072000),
+            includeSubdomains: true,
+            preload: true,
+            override: true,
+          },
+          contentTypeOptions: { override: true },
+          frameOptions: {
+            frameOption: cloudfront.HeadersFrameOption.DENY,
+            override: true,
+          },
+          referrerPolicy: {
+            referrerPolicy:
+              cloudfront.HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
+            override: true,
+          },
+        },
+      },
+    );
+
     const distribution = new cloudfront.Distribution(this, "Distribution", {
       defaultBehavior: {
         origin: origins.S3BucketOrigin.withOriginAccessControl(frontendBucket),
         viewerProtocolPolicy:
           cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+        responseHeadersPolicy: securityHeaders,
       },
       domainNames: [frontendDomain],
       certificate: props.certificate,
@@ -87,6 +115,7 @@ export class AppStack extends cdk.Stack {
         ? undefined
         : `${config.domainName}-media`,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      versioned: !isStaging,
       removalPolicy: isStaging
         ? cdk.RemovalPolicy.DESTROY
         : cdk.RemovalPolicy.RETAIN,
@@ -95,10 +124,24 @@ export class AppStack extends cdk.Stack {
         {
           allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT],
           allowedOrigins: [`https://${frontendDomain}`],
-          allowedHeaders: ["*"],
+          allowedHeaders: [
+            "Authorization",
+            "Content-Type",
+            "x-amz-content-sha256",
+            "x-amz-date",
+            "x-amz-security-token",
+          ],
           maxAge: 3600,
         },
       ],
+      lifecycleRules: isStaging
+        ? undefined
+        : [
+            {
+              noncurrentVersionExpiration: cdk.Duration.days(30),
+              enabled: true,
+            },
+          ],
     });
     cdk.Tags.of(mediaBucket).add("Purpose", "media-storage");
     cdk.Tags.of(mediaBucket).add(
@@ -229,6 +272,7 @@ export class AppStack extends cdk.Stack {
 
     const httpApi = new apigatewayv2.HttpApi(this, "HttpApi", {
       apiName: isStaging ? "mysite-stage-api" : "mysite-api",
+      disableExecuteApiEndpoint: true,
       corsPreflight: {
         allowOrigins: [`https://${frontendDomain}`],
         allowMethods: [
@@ -253,12 +297,34 @@ export class AppStack extends cdk.Stack {
       ),
     });
 
-    // Throttling via stage
+    // API Gateway access logging
+    const apiAccessLog = new logs.LogGroup(this, "ApiAccessLog", {
+      logGroupName: `/mysite/${namePrefix}api-access`,
+      retention: logs.RetentionDays.ONE_MONTH,
+      removalPolicy: isStaging
+        ? cdk.RemovalPolicy.DESTROY
+        : cdk.RemovalPolicy.RETAIN,
+    });
+
+    // Throttling and access logging via stage
     const stage = httpApi.defaultStage?.node
       .defaultChild as apigatewayv2.CfnStage;
     stage.defaultRouteSettings = {
       throttlingRateLimit: config.apiThrottleRatePerSec,
       throttlingBurstLimit: config.apiThrottleBurst,
+    };
+    stage.accessLogSettings = {
+      destinationArn: apiAccessLog.logGroupArn,
+      format: JSON.stringify({
+        requestId: "$context.requestId",
+        ip: "$context.identity.sourceIp",
+        httpMethod: "$context.httpMethod",
+        path: "$context.path",
+        status: "$context.status",
+        responseLength: "$context.responseLength",
+        requestTime: "$context.requestTime",
+        latency: "$context.integrationLatency",
+      }),
     };
 
     // Custom domain for API

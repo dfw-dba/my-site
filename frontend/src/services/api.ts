@@ -32,7 +32,7 @@ async function adminHeaders(): Promise<HeadersInit> {
   // Fallback: API key for local dev without Cognito
   return {
     "Content-Type": "application/json",
-    "X-Admin-Key": import.meta.env.VITE_ADMIN_API_KEY ?? "local-dev-admin-key",
+    "X-Admin-Key": import.meta.env.VITE_ADMIN_API_KEY ?? "",
   };
 }
 
@@ -43,7 +43,7 @@ async function adminAuthHeaders(): Promise<HeadersInit> {
       return { Authorization: `Bearer ${token}` };
     }
   }
-  return { "X-Admin-Key": import.meta.env.VITE_ADMIN_API_KEY ?? "local-dev-admin-key" };
+  return { "X-Admin-Key": import.meta.env.VITE_ADMIN_API_KEY ?? "" };
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {

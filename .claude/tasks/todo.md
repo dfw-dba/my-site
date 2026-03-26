@@ -48,6 +48,39 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 
 ---
 
+## Sprint 38: Security Hardening for Public Repo
+
+### CRITICAL fixes
+- [x] 38.1 Remove hardcoded `"local-dev-admin-key"` default from `backend/src/app/config.py`
+- [x] 38.2 Remove hardcoded `"local-dev-admin-key"` fallback from `frontend/src/services/api.ts`
+- [x] 38.3 Replace `unsafeUnwrap()` with Secrets Manager runtime fetch in migration Lambda
+  - [x] 38.3a Update CDK `data-stack.ts`: pass `DB_SECRET_ARN` env var, grant secret read, add Secrets Manager VPC endpoint
+  - [x] 38.3b Update migration handler `index.py`: fetch password from Secrets Manager at runtime
+  - [x] 38.3c Bump migration version in `data-stack.ts` (10 → 11)
+
+### HIGH fixes
+- [x] 38.4 Disable execute-api default endpoint in `app-stack.ts`
+- [x] 38.5 Add CloudFront security response headers policy in `app-stack.ts`
+- [x] 38.6 Enable API Gateway access logging in `app-stack.ts`
+
+### MEDIUM fixes
+- [x] 38.7 Remove Cognito implicit OAuth flow in `data-stack.ts`
+- [x] 38.8 Remove `aws.cognito.signin.user.admin` scope from Cognito client
+- [x] 38.9 Enable Cognito deletion protection in `data-stack.ts`
+- [x] 38.10 Enable S3 media bucket versioning in `app-stack.ts`
+
+### LOW fixes
+- [x] 38.11 Restrict S3 CORS `allowedHeaders` in `app-stack.ts`
+- [x] 38.12 Run `npm audit fix` in frontend (remaining vulns are build-time transitive deps in vite-plugin-pwa)
+
+### Verification
+- [x] 38.13 CDK TypeScript compiles, no `DB_PASSWORD` in source (cdk.out is gitignored)
+- [x] 38.14 Backend lint + tests pass (41/41)
+- [x] 38.15 Frontend type check + tests pass (25/25)
+- [x] 38.16 Grep confirms no `"local-dev-admin-key"` outside test fixtures and `.env.example`
+
+---
+
 ## Notes
 - DB port mapped to 5433 on host (5432 in use by local PostgreSQL)
 - `uv` installed at ~/.local/bin/uv

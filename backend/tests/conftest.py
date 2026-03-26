@@ -1,6 +1,10 @@
 """Shared pytest fixtures for the backend test suite."""
 
 import os
+
+# Set test admin API key before settings module is imported
+os.environ.setdefault("ADMIN_API_KEY", "local-dev-admin-key")
+
 from collections.abc import AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock
 
