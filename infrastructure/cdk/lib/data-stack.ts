@@ -122,7 +122,7 @@ export class DataStack extends cdk.Stack {
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
       allowPublicSubnet: true,
       securityGroups: [migrationSg],
-      timeout: cdk.Duration.minutes(2),
+      timeout: cdk.Duration.minutes(5),
       environment: {
         DB_HOST: dbInstance.dbInstanceEndpointAddress,
         DB_PORT: dbInstance.dbInstanceEndpointPort,
