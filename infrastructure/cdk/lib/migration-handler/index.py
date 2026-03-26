@@ -10,18 +10,31 @@ import glob
 import json
 import os
 import ssl
+import time
 
 import boto3
 import pg8000.native
 
 
 def _get_db_password():
-    """Fetch database password from Secrets Manager at runtime."""
+    """Fetch database password from Secrets Manager at runtime.
+
+    Retries with backoff in case the VPC endpoint DNS is still propagating.
+    """
     secret_arn = os.environ["DB_SECRET_ARN"]
     client = boto3.client("secretsmanager")
-    resp = client.get_secret_value(SecretId=secret_arn)
-    secret = json.loads(resp["SecretString"])
-    return secret["password"]
+    last_err = None
+    for attempt in range(5):
+        try:
+            resp = client.get_secret_value(SecretId=secret_arn)
+            secret = json.loads(resp["SecretString"])
+            return secret["password"]
+        except Exception as e:
+            last_err = e
+            wait = 2 ** attempt
+            print(f"Secrets Manager attempt {attempt + 1} failed: {e}, retrying in {wait}s")
+            time.sleep(wait)
+    raise last_err
 
 
 def split_sql_statements(sql_text):
