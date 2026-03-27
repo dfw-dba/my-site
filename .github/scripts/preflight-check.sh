@@ -23,17 +23,26 @@ OIDC_OUTPUT=$(aws iam list-open-id-connect-providers --query 'OpenIDConnectProvi
   fi
 }
 
-# Check CDK is bootstrapped
-CDK_STATUS=$(aws cloudformation describe-stacks --stack-name CDKToolkit \
-  --query 'Stacks[0].StackStatus' --output text 2>&1) || CDK_STATUS="DOES_NOT_EXIST"
-if echo "$CDK_STATUS" | grep -q "COMPLETE"; then
-  echo "PASS: CDK bootstrapped ($CDK_STATUS)"
-elif echo "$CDK_STATUS" | grep -q "AccessDenied"; then
-  echo "SKIP: CDK bootstrap check (deploy role lacks cloudformation:DescribeStacks for CDKToolkit)"
-else
-  echo "FAIL: CDK not bootstrapped (status: $CDK_STATUS)"
-  ERRORS=$((ERRORS+1))
-fi
+# Check CDK is bootstrapped (skip if deploy role lacks permissions)
+CDK_OUTPUT=$(aws cloudformation describe-stacks --stack-name CDKToolkit \
+  --query 'Stacks[0].StackStatus' --output text 2>&1) && {
+  if echo "$CDK_OUTPUT" | grep -q "COMPLETE"; then
+    echo "PASS: CDK bootstrapped ($CDK_OUTPUT)"
+  else
+    echo "FAIL: CDK not bootstrapped (status: $CDK_OUTPUT)"
+    ERRORS=$((ERRORS+1))
+  fi
+} || {
+  if echo "$CDK_OUTPUT" | grep -q "AccessDenied"; then
+    echo "SKIP: CDK bootstrap check (deploy role lacks cloudformation:DescribeStacks for CDKToolkit)"
+  elif echo "$CDK_OUTPUT" | grep -q "does not exist"; then
+    echo "FAIL: CDK not bootstrapped (stack does not exist)"
+    ERRORS=$((ERRORS+1))
+  else
+    echo "FAIL: CDK bootstrap check error: $CDK_OUTPUT"
+    ERRORS=$((ERRORS+1))
+  fi
+}
 
 # Check for broken stacks (informational — cleanup step handles this)
 for stack in MySiteDns MySiteCert MySiteData MySiteApp; do
