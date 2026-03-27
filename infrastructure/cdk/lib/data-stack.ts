@@ -119,6 +119,9 @@ export class DataStack extends cdk.Stack {
         },
       ),
       vpc: this.vpc,
+      // Public subnet avoids NAT Gateway cost (~$32/mo per AZ). Migration
+      // Lambda needs outbound access only for Secrets Manager (via VPC
+      // endpoint) and does not accept inbound connections from the internet.
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
       allowPublicSubnet: true,
       securityGroups: [migrationSg],

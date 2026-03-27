@@ -77,6 +77,19 @@ export class AppStack extends cdk.Stack {
               cloudfront.HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
             override: true,
           },
+          contentSecurityPolicy: {
+            contentSecurityPolicy: [
+              "default-src 'self'",
+              "script-src 'self'",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: https:",
+              `connect-src 'self' https://cognito-idp.${config.awsRegion}.amazonaws.com`,
+              "frame-ancestors 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+            ].join("; "),
+            override: true,
+          },
         },
       },
     );
@@ -222,6 +235,11 @@ export class AppStack extends cdk.Stack {
       memorySize: config.lambdaMemoryMb,
       timeout: cdk.Duration.seconds(30),
       vpc: props.vpc,
+      // Public subnets provide outbound internet access (for Cognito JWKS
+      // validation, etc.) without a NAT Gateway (~$32/mo per AZ). Lambda
+      // ENIs do NOT accept inbound connections from the internet -- all
+      // invocations route through API Gateway. The security group has no
+      // 0.0.0.0/0 inbound rules.
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
       allowPublicSubnet: true,
       securityGroups: [lambdaSecurityGroup],
@@ -240,7 +258,11 @@ export class AppStack extends cdk.Stack {
       },
     });
 
-    // Grant Lambda permission to generate RDS IAM auth tokens
+    // Grant Lambda permission to generate RDS IAM auth tokens.
+    // The resource ARN uses a wildcard for the DB resource ID because CDK
+    // exposes dbInstanceIdentifier (user-facing name), not DbiResourceId
+    // (the internal ID required in rds-db:connect ARNs). With a single RDS
+    // instance in the account, this is functionally equivalent to a scoped ARN.
     backendFn.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ["rds-db:connect"],
@@ -250,8 +272,10 @@ export class AppStack extends cdk.Stack {
       }),
     );
 
-    // Grant Lambda access to media bucket
-    mediaBucket.grantReadWrite(backendFn);
+    // Grant Lambda least-privilege access to media bucket (read + put).
+    // Delete is not granted -- profile image uploads overwrite in place.
+    mediaBucket.grantRead(backendFn);
+    mediaBucket.grantPut(backendFn);
 
     // --- Scheduled Log Maintenance (daily at 03:00 UTC) ---
 
