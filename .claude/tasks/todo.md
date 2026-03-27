@@ -4,18 +4,6 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 
 ---
 
-## Sprint 35: Dashboard IP Filter & Log Detail Heading
-- [x] 35.1 SQL: Add `client_ip` filter to `get_app_logs` and `get_threat_detections` functions
-- [x] 35.2 Migration: Create `004_add_client_ip_filter.sql`
-- [x] 35.3 CDK: Bump migration version to "9"
-- [x] 35.4 Backend: Add `client_ip` query param to `/logs` and `/logs/threats` endpoints
-- [x] 35.5 Frontend API: Pass `client_ip` in API calls
-- [x] 35.6 Frontend hooks: Accept `client_ip` in filter types
-- [x] 35.7 Dashboard: IP filter state, clickable IPs, clear button, "Log Detail" heading
-- [x] 35.8 Verification: lint, type check, all tests pass
-
----
-
 ## Sprint 36: Fix GitHub Actions Node.js 20 Deprecation
 
 - [x] 36.1 Upgrade `actions/checkout` v4 → v5 across ci, deploy-stage, deploy-prod
@@ -78,6 +66,19 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 - [x] 38.14 Backend lint + tests pass (41/41)
 - [x] 38.15 Frontend type check + tests pass (25/25)
 - [x] 38.16 Grep confirms no `"local-dev-admin-key"` outside test fixtures and `.env.example`
+
+---
+
+## Sprint 39: Pre-Public Security Audit & Hardening
+
+- [x] 39.1 Delete all 38 old plan files from `.claude/tasks/plans/`
+- [x] 39.2 Add Content-Security-Policy header to CloudFront response headers policy in `app-stack.ts`
+- [x] 39.3 Add architecture decision comments for Lambda public subnets in `app-stack.ts` and `data-stack.ts`
+- [x] 39.4 Scope S3 media bucket permissions: `grantReadWrite` → `grantRead` + `grantPut` in `app-stack.ts`
+- [x] 39.5 Document RDS IAM wildcard trade-off with comment in `app-stack.ts`
+- [x] 39.6 Verification: TypeScript compiles, backend tests pass (41/41), frontend tests pass (25/25)
+- [ ] 39.7 Post-public: Enable branch protection on `main`
+- [ ] 39.8 Post-public: Add production environment protection rules
 
 ---
 
