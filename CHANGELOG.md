@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.4.1](https://github.com/dfw-dba/my-site/compare/v1.4.0...v1.4.1) (2026-03-27)
+
+
+### Bug Fixes
+
+* add CSP header, scope S3 permissions, document architectural decisions ([#125](https://github.com/dfw-dba/my-site/issues/125)) ([d3c68d1](https://github.com/dfw-dba/my-site/commit/d3c68d19dd550e86482b24d2d1584175759193b2))
+* handle AccessDenied gracefully in preflight check ([#122](https://github.com/dfw-dba/my-site/issues/122)) ([bcd1703](https://github.com/dfw-dba/my-site/commit/bcd1703a079c82becd765640c822f4bdf0b00609))
+* handle AccessDenied in CDK bootstrap preflight check ([#124](https://github.com/dfw-dba/my-site/issues/124)) ([00387c8](https://github.com/dfw-dba/my-site/commit/00387c8dca79edd12724ebffb6b7f61be6388dc4))
+
 ## [1.4.0](https://github.com/dfw-dba/my-site/compare/v1.3.0...v1.4.0) (2026-03-26)
 
 
