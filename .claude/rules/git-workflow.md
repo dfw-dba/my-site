@@ -158,3 +158,14 @@ After merging a PR:
 5. If a new commit is pushed to the head branch, this invalidates the checklist items and the CI outcome. The CI must be run again, checklist items must be unmarked, re-executed, and marked as complete upon success.
 
 > **All test plan items must be executable and verifiable before merge.** Do not write aspirational items that require post-merge validation. Each item must have a concrete command or manual step that can be run immediately after CI passes.
+
+## Dependabot PRs (GitHub Actions)
+
+Dependabot creates PRs to update GitHub Actions SHAs (configured in `.github/dependabot.yml`). These PRs update pinned commit SHAs in workflow files and are low-risk.
+
+**When Claude sees a Dependabot PR** (author `dependabot[bot]`, title starts with `ci(deps):`):
+1. Verify the PR only changes `.github/workflows/*.yml` files (SHA pins and version comments).
+2. Verify CI passes on the PR.
+3. If both conditions are met: approve and squash-merge the PR (`gh pr merge --squash`).
+4. **Do NOT trigger Deploy Stage or Deploy Prod** — workflow file changes don't affect deployed infrastructure. Skip the Prod Deploy Gate process entirely.
+5. If the PR modifies anything beyond workflow SHA pins (e.g., adds new steps, changes env vars, modifies scripts), treat it as a normal PR and flag it for user review.
