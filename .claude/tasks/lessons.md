@@ -18,6 +18,7 @@ _Updated after each correction or insight. Review at session start._
 
 - **Always use `curl -sfL` in validation commands (2026-03-27)**: FastAPI redirects routes without trailing slashes (e.g., `/api/resume` → `/api/resume/` via 307). Without `-L` (follow redirects), `curl -sf` silently returns empty output and `grep` fails. Always include `-L` in validation curl commands.
 - **Verify field names against actual API responses before writing validation (2026-03-27)**: Don't guess JSON field names — `curl` the endpoint first and check the real response structure. Example: searched for `profile_image_url` but the actual field was `image_url` inside a `profile_image` object. Always test the exact grep pattern against the real response.
+- **Use `DOMAIN_NAME` not `API_URL` for CloudFront-served resources (2026-03-28)**: `${API_URL}` points to the API Gateway (e.g., `api.example.com`), not the CloudFront distribution. CSP headers, frontend assets, and response headers policies are on the CloudFront distribution (`${DOMAIN_NAME}`). Using `${API_URL}` to check CSP headers will always fail because API Gateway doesn't serve those headers.
 
 ## AWS / CDK
 
