@@ -14,6 +14,11 @@ _Updated after each correction or insight. Review at session start._
 - **Sync todo.md and GitHub Project at every state change (2026-03-01)**: Every time a todo item is created, updated, or completed in `todo.md`, immediately mirror the change in the GitHub Project. Never batch or defer syncing.
 - **Follow the numbered planning checklist strictly (2026-03-02)**: Section 1 in CLAUDE.md is a strict procedure. Execute steps in order: branch, plan mode, write plan file, finalize, add todos, sync GitHub Project, prompt user to clear context. Skipping or reordering steps leads to missed steps downstream.
 
+## Post-deploy Validation
+
+- **Always use `curl -sfL` in validation commands (2026-03-27)**: FastAPI redirects routes without trailing slashes (e.g., `/api/resume` → `/api/resume/` via 307). Without `-L` (follow redirects), `curl -sf` silently returns empty output and `grep` fails. Always include `-L` in validation curl commands.
+- **Verify field names against actual API responses before writing validation (2026-03-27)**: Don't guess JSON field names — `curl` the endpoint first and check the real response structure. Example: searched for `profile_image_url` but the actual field was `image_url` inside a `profile_image` object. Always test the exact grep pattern against the real response.
+
 ## AWS / CDK
 
 - **Route 53 delegation set vs in-zone NS records (2026-03-26)**: When setting up DNS delegation, always use nameservers from `aws route53 get-hosted-zone` (the delegation set), NOT the NS records visible in the Route 53 console Records tab (in-zone NS). They can differ, and only the delegation set nameservers actually serve the zone.
