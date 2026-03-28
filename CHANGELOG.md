@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.3](https://github.com/dfw-dba/my-site/compare/v1.4.2...v1.4.3) (2026-03-28)
+
+
+### Bug Fixes
+
+* add CSP hash for theme-detection inline script ([#131](https://github.com/dfw-dba/my-site/issues/131)) ([6f7c712](https://github.com/dfw-dba/my-site/commit/6f7c71255ce608cdb4766fd331609b2267d81e2b))
+
 ## [1.4.2](https://github.com/dfw-dba/my-site/compare/v1.4.1...v1.4.2) (2026-03-28)
 
 
