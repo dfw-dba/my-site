@@ -1,0 +1,104 @@
+{
+  "vpc-provider:account=588395605824:filter.isDefault=true:region=us-east-1:returnAsymmetricSubnets=true": {
+    "vpcId": "vpc-0a750672598ee86b5",
+    "vpcCidrBlock": "172.31.0.0/16",
+    "ownerAccountId": "588395605824",
+    "availabilityZones": [],
+    "subnetGroups": [
+      {
+        "name": "Public",
+        "type": "Public",
+        "subnets": [
+          {
+            "subnetId": "subnet-0425ba6e44be44a41",
+            "cidr": "172.31.0.0/20",
+            "availabilityZone": "us-east-1a",
+            "routeTableId": "rtb-089fd25fe698dc4b7"
+          },
+          {
+            "subnetId": "subnet-06bdcb86149d911bf",
+            "cidr": "172.31.80.0/20",
+            "availabilityZone": "us-east-1b",
+            "routeTableId": "rtb-089fd25fe698dc4b7"
+          },
+          {
+            "subnetId": "subnet-0a6cc1841075cb1a3",
+            "cidr": "172.31.16.0/20",
+            "availabilityZone": "us-east-1c",
+            "routeTableId": "rtb-089fd25fe698dc4b7"
+          },
+          {
+            "subnetId": "subnet-084324c30dd4ad685",
+            "cidr": "172.31.32.0/20",
+            "availabilityZone": "us-east-1d",
+            "routeTableId": "rtb-089fd25fe698dc4b7"
+          },
+          {
+            "subnetId": "subnet-07ef0a2e8fc537ba6",
+            "cidr": "172.31.48.0/20",
+            "availabilityZone": "us-east-1e",
+            "routeTableId": "rtb-089fd25fe698dc4b7"
+          },
+          {
+            "subnetId": "subnet-0c53dcdd33c7917ec",
+            "cidr": "172.31.64.0/20",
+            "availabilityZone": "us-east-1f",
+            "routeTableId": "rtb-089fd25fe698dc4b7"
+          }
+        ]
+      }
+    ]
+  },
+  "ssm:account=588395605824:parameterName=/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-arm64:region=us-east-1": "ami-08b64331b44a4d621",
+  "vpc-provider:account=823754475787:filter.isDefault=true:region=us-east-1:returnAsymmetricSubnets=true": {
+    "vpcId": "vpc-060f475e4711d1389",
+    "vpcCidrBlock": "172.31.0.0/16",
+    "ownerAccountId": "823754475787",
+    "availabilityZones": [],
+    "subnetGroups": [
+      {
+        "name": "Public",
+        "type": "Public",
+        "subnets": [
+          {
+            "subnetId": "subnet-030e7dd434588f1e5",
+            "cidr": "172.31.0.0/20",
+            "availabilityZone": "us-east-1a",
+            "routeTableId": "rtb-0877970d26ab817d5"
+          },
+          {
+            "subnetId": "subnet-0abbc3e577c0ff495",
+            "cidr": "172.31.80.0/20",
+            "availabilityZone": "us-east-1b",
+            "routeTableId": "rtb-0877970d26ab817d5"
+          },
+          {
+            "subnetId": "subnet-0b30bf1f7aa91947b",
+            "cidr": "172.31.16.0/20",
+            "availabilityZone": "us-east-1c",
+            "routeTableId": "rtb-0877970d26ab817d5"
+          },
+          {
+            "subnetId": "subnet-0a49552b0d9153a15",
+            "cidr": "172.31.32.0/20",
+            "availabilityZone": "us-east-1d",
+            "routeTableId": "rtb-0877970d26ab817d5"
+          },
+          {
+            "subnetId": "subnet-098990e6edf56e66a",
+            "cidr": "172.31.48.0/20",
+            "availabilityZone": "us-east-1e",
+            "routeTableId": "rtb-0877970d26ab817d5"
+          },
+          {
+            "subnetId": "subnet-0a799ecd078fdb312",
+            "cidr": "172.31.64.0/20",
+            "availabilityZone": "us-east-1f",
+            "routeTableId": "rtb-0877970d26ab817d5"
+          }
+        ]
+      }
+    ]
+  },
+  "ssm:account=823754475787:parameterName=/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-arm64:region=us-east-1": "ami-08b64331b44a4d621"
+}

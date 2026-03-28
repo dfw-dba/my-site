@@ -37,7 +37,6 @@ htmlcov/
 
 # AWS CDK
 infrastructure/cdk/cdk.out/
-infrastructure/cdk/cdk.context.json
 infrastructure/cdk/node_modules/
 
 # MinIO data
