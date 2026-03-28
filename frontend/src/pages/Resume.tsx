@@ -50,7 +50,7 @@ export default function Resume() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <header className="mb-10 flex items-start justify-center gap-8">
+      <header className="mb-10 flex flex-col-reverse items-center gap-6 sm:flex-row sm:items-start sm:justify-center sm:gap-8">
         <ProfileImage
           src={
             typeof (sections.profile_image as Record<string, unknown>)?.image_url === "string"
@@ -59,7 +59,7 @@ export default function Resume() {
           }
         />
         {sections.summary && (
-          <div className="max-w-md text-left">
+          <div className="text-left sm:max-w-md">
             {typeof sections.summary.headline === "string" && (
               <h2 className="mb-2 text-xl font-semibold text-gray-900 dark:text-gray-100">
                 {sections.summary.headline}
