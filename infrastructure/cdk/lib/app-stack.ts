@@ -80,7 +80,7 @@ export class AppStack extends cdk.Stack {
           contentSecurityPolicy: {
             contentSecurityPolicy: [
               "default-src 'self'",
-              "script-src 'self'",
+              "script-src 'self' 'sha256-5VlZwYLCiP15nj7r14eR3kRiZdB8XV5vD0eUGGQK/9o='",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
               `connect-src 'self' https://${apiDomainName} https://cognito-idp.${config.awsRegion}.amazonaws.com`,
