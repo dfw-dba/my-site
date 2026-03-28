@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.2](https://github.com/dfw-dba/my-site/compare/v1.4.1...v1.4.2) (2026-03-28)
+
+
+### Bug Fixes
+
+* add API domain to CSP connect-src directive ([#128](https://github.com/dfw-dba/my-site/issues/128)) ([13dd9fb](https://github.com/dfw-dba/my-site/commit/13dd9fbf395de77f1d70c6c9efc4c63adf27fa9c))
+* pin bastion AZ and cache AMI to prevent deploy failures ([#130](https://github.com/dfw-dba/my-site/issues/130)) ([7bd874a](https://github.com/dfw-dba/my-site/commit/7bd874a77b6d668e0f20d6347644cb40dda56f5e))
+
 ## [1.4.1](https://github.com/dfw-dba/my-site/compare/v1.4.0...v1.4.1) (2026-03-27)
 
 
