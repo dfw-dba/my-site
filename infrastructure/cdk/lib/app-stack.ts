@@ -83,7 +83,7 @@ export class AppStack extends cdk.Stack {
               "script-src 'self'",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
-              `connect-src 'self' https://cognito-idp.${config.awsRegion}.amazonaws.com`,
+              `connect-src 'self' https://${apiDomainName} https://cognito-idp.${config.awsRegion}.amazonaws.com`,
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",
