@@ -77,8 +77,8 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 - [x] 39.4 Scope S3 media bucket permissions: `grantReadWrite` → `grantRead` + `grantPut` in `app-stack.ts`
 - [x] 39.5 Document RDS IAM wildcard trade-off with comment in `app-stack.ts`
 - [x] 39.6 Verification: TypeScript compiles, backend tests pass (41/41), frontend tests pass (25/25)
-- [ ] 39.7 Post-public: Enable branch protection on `main`
-- [ ] 39.8 Post-public: Add production environment protection rules
+- [x] 39.7 Post-public: Enable branch protection on `main`
+- [x] 39.8 Post-public: Add production environment protection rules
 
 ---
 
