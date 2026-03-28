@@ -299,15 +299,24 @@ export class DataStack extends cdk.Stack {
       ],
     });
 
+    // Pin to AZs b/c to avoid us-east-1a intermittent t4g.nano capacity issues.
+    // Aligned with VPC endpoint AZs for consistency.
     const bastion = new ec2.Instance(this, "Bastion", {
       vpc: this.vpc,
-      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+      vpcSubnets: {
+        subnetType: ec2.SubnetType.PUBLIC,
+        availabilityZones: [
+          `${config.awsRegion}b`,
+          `${config.awsRegion}c`,
+        ],
+      },
       instanceType: ec2.InstanceType.of(
         ec2.InstanceClass.T4G,
         ec2.InstanceSize.NANO,
       ),
       machineImage: ec2.MachineImage.latestAmazonLinux2023({
         cpuType: ec2.AmazonLinuxCpuType.ARM_64,
+        cachedInContext: true,
       }),
       securityGroup: bastionSg,
       role: bastionRole,
