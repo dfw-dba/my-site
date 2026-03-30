@@ -142,7 +142,7 @@ Staging deploys to a **separate AWS account** using `AWS_STAGE_DEPLOY_ROLE_ARN`,
 
 ## Prod Deploy Gate (MANDATORY)
 
-> **Claude MUST follow this process after every PR merge. No exceptions.**
+> **Claude MUST follow this process after every PR merge. No exceptions. The entire flow runs autonomously without user confirmation.**
 
 After merging a PR:
 1. Monitor the **Deploy** workflow run to completion (staging and production run as a single workflow).
@@ -152,7 +152,8 @@ After merging a PR:
 5. Verify all production jobs completed successfully and all **Prod-Post-deploy validation** items pass.
 6. **If production fails**: notify the user with specific details.
 7. To re-trigger the full pipeline manually: `gh workflow run deploy.yml`.
-8. After the Deploy workflow completes successfully (both stages), check for an open release-please PR (title matches `chore(main): release my-site *`). If one exists, merge it via `gh pr merge --squash`. This triggers the `release-please.yml` workflow which creates the GitHub Release and version tag. Do not trigger Deploy again — the release-please merge only updates version metadata files which are excluded from CI via `paths-ignore`.
+8. After the Deploy workflow completes successfully (both stages), check for an open release-please PR (title matches `chore(main): release my-site *`). If one exists, merge it via `gh pr merge --squash --admin`. This triggers the `release-please.yml` workflow which creates the GitHub Release and version tag. Do not trigger Deploy again — the release-please merge only updates version metadata files which are excluded from CI via `paths-ignore`.
+9. **End-of-cycle cleanup**: Check for open Dependabot PRs and handle them per the Dependabot section below. Then switch to main and pull: `git checkout main && git pull`.
 
 ## Pre-merge Workflow (MANDATORY)
 
@@ -173,6 +174,16 @@ Dependabot creates PRs to update GitHub Actions SHAs (configured in `.github/dep
 **When Claude sees a Dependabot PR** (author `dependabot[bot]`, title starts with `ci(deps):`):
 1. Verify the PR only changes `.github/workflows/*.yml` files (SHA pins and version comments).
 2. Verify CI passes on the PR.
-3. If both conditions are met: approve and squash-merge the PR (`gh pr merge --squash`).
-4. **Do NOT trigger Deploy** — workflow file changes don't affect deployed infrastructure. Skip the Prod Deploy Gate process entirely.
-5. If the PR modifies anything beyond workflow SHA pins (e.g., adds new steps, changes env vars, modifies scripts), treat it as a normal PR and flag it for user review.
+3. If both conditions are met: approve and squash-merge the PR (`gh pr merge --squash --admin`).
+4. **Monitor after merge**: CI will run on main for the merged commit. Verify it completes successfully. A Deploy workflow will auto-trigger after CI succeeds — since only workflow files changed, it will succeed as a no-op. Verify the Deploy completes without errors.
+5. Skip the full Prod Deploy Gate process (no release-please PR will be created for workflow-only changes).
+6. If the PR modifies anything beyond workflow SHA pins (e.g., adds new steps, changes env vars, modifies scripts), treat it as a normal PR and flag it for user review.
+
+## Session Start Checks (MANDATORY)
+
+> **Claude MUST run these checks at the start of every new session before beginning any new work.**
+
+1. **Stale branch detection**: If the current branch is not `main`, check if it has already been merged (`gh pr list --head <branch> --state merged`). If merged, switch to main and pull: `git checkout main && git pull`.
+2. **Open release-please PR**: Check for an open PR with title matching `chore(main): release *`. If the most recent Deploy workflow on main succeeded, merge it: `gh pr merge --squash --admin`.
+3. **Open Dependabot PRs**: Check for open PRs authored by `dependabot[bot]`. Handle each per the Dependabot section above.
+4. After handling all pending PRs, ensure you are on `main` with latest: `git checkout main && git pull`.

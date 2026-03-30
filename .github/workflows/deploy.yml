@@ -242,15 +242,34 @@ jobs:
             "${{ steps.find-pr.outputs.pr-number }}" \
             "Pre Deploy Checklist"
 
+      - name: Run regression tests
+        id: regression
+        env:
+          API_URL: ${{ needs.deploy-stage-frontend.outputs.api-url }}
+          DOMAIN_NAME: ${{ vars.CDK_STAGE_DOMAIN_NAME }}
+        run: |
+          chmod +x .github/scripts/regression-test.sh
+          .github/scripts/regression-test.sh "Stage"
+
+      - name: Comment regression results on PR
+        if: always() && steps.find-pr.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ -f /tmp/regression-results.md ]]; then
+            gh pr comment "${{ steps.find-pr.outputs.pr-number }}" \
+              --body-file /tmp/regression-results.md
+          fi
+
       - name: Fetch PR body
-        if: steps.find-pr.outputs.skip != 'true'
+        if: always() && steps.find-pr.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh pr view "${{ steps.find-pr.outputs.pr-number }}" --json body -q '.body' > /tmp/pr-body.md
 
       - name: Run post-deploy validation
-        if: steps.find-pr.outputs.skip != 'true'
+        if: always() && steps.find-pr.outputs.skip != 'true'
         id: validate
         env:
           API_URL: ${{ needs.deploy-stage-frontend.outputs.api-url }}
@@ -261,7 +280,7 @@ jobs:
           .github/scripts/post-deploy-validate.sh /tmp/pr-body.md "Stage Test Plan"
 
       - name: Comment results on PR
-        if: steps.find-pr.outputs.skip != 'true'
+        if: always() && steps.find-pr.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -271,7 +290,7 @@ jobs:
           fi
 
       - name: Update PR checkboxes
-        if: steps.find-pr.outputs.skip != 'true'
+        if: always() && steps.find-pr.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -280,6 +299,15 @@ jobs:
             .github/scripts/post-deploy-update-checkboxes.sh \
               "${{ steps.find-pr.outputs.pr-number }}" \
               /tmp/validation-outcomes.json
+          fi
+
+      - name: Fail if any validation failed
+        if: always()
+        run: |
+          if [[ "${{ steps.regression.outcome }}" == "failure" ]] || \
+             [[ "${{ steps.validate.outcome }}" == "failure" ]]; then
+            echo "One or more validation steps failed."
+            exit 1
           fi
 
   # ===== PRODUCTION =====
@@ -510,15 +538,34 @@ jobs:
           echo "skip=false" >> "$GITHUB_OUTPUT"
           echo "Found PR #${PR_NUMBER}"
 
+      - name: Run regression tests
+        id: regression
+        env:
+          API_URL: ${{ needs.deploy-frontend.outputs.api-url }}
+          DOMAIN_NAME: ${{ vars.CDK_DOMAIN_NAME }}
+        run: |
+          chmod +x .github/scripts/regression-test.sh
+          .github/scripts/regression-test.sh "Production"
+
+      - name: Comment regression results on PR
+        if: always() && steps.find-pr.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ -f /tmp/regression-results.md ]]; then
+            gh pr comment "${{ steps.find-pr.outputs.pr-number }}" \
+              --body-file /tmp/regression-results.md
+          fi
+
       - name: Fetch PR body
-        if: steps.find-pr.outputs.skip != 'true'
+        if: always() && steps.find-pr.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh pr view "${{ steps.find-pr.outputs.pr-number }}" --json body -q '.body' > /tmp/pr-body.md
 
       - name: Run post-deploy validation
-        if: steps.find-pr.outputs.skip != 'true'
+        if: always() && steps.find-pr.outputs.skip != 'true'
         id: validate
         env:
           API_URL: ${{ needs.deploy-frontend.outputs.api-url }}
@@ -529,7 +576,7 @@ jobs:
           .github/scripts/post-deploy-validate.sh /tmp/pr-body.md "Prod-Post-deploy validation"
 
       - name: Comment results on PR
-        if: steps.find-pr.outputs.skip != 'true'
+        if: always() && steps.find-pr.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -539,7 +586,7 @@ jobs:
           fi
 
       - name: Update PR checkboxes
-        if: steps.find-pr.outputs.skip != 'true'
+        if: always() && steps.find-pr.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -548,4 +595,13 @@ jobs:
             .github/scripts/post-deploy-update-checkboxes.sh \
               "${{ steps.find-pr.outputs.pr-number }}" \
               /tmp/validation-outcomes.json
+          fi
+
+      - name: Fail if any validation failed
+        if: always()
+        run: |
+          if [[ "${{ steps.regression.outcome }}" == "failure" ]] || \
+             [[ "${{ steps.validate.outcome }}" == "failure" ]]; then
+            echo "One or more validation steps failed."
+            exit 1
           fi
