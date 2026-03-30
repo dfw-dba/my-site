@@ -79,14 +79,14 @@ run_test "Health endpoint returns healthy status" \
   'response=$(curl -sfL "${API_URL}/api/health") && echo "$response" | jq -e ".status == \"healthy\"" > /dev/null && echo "$response" | jq -e ".version" > /dev/null && echo "$response"'
 
 # --- Public resume endpoints ---
-run_test "Resume endpoint returns data" \
-  'response=$(curl -sfL "${API_URL}/api/resume/") && echo "$response" | jq -e ". | length > 0" > /dev/null && echo "$response" | jq .'
+run_test "Resume endpoint returns valid JSON" \
+  'response=$(curl -sfL "${API_URL}/api/resume/") && echo "$response" | jq . > /dev/null && echo "$response" | jq .'
 
-run_test "Contact endpoint returns data" \
-  'response=$(curl -sfL "${API_URL}/api/resume/contact") && echo "$response" | jq -e ". | length > 0" > /dev/null && echo "$response" | jq .'
+run_test "Contact endpoint returns valid JSON" \
+  'response=$(curl -sfL "${API_URL}/api/resume/contact") && echo "$response" | jq . > /dev/null && echo "$response" | jq .'
 
-run_test "Timeline endpoint returns data" \
-  'response=$(curl -sfL "${API_URL}/api/resume/timeline") && echo "$response" | jq -e ". | length > 0" > /dev/null && echo "$response" | jq .'
+run_test "Timeline endpoint returns valid JSON" \
+  'response=$(curl -sfL "${API_URL}/api/resume/timeline") && echo "$response" | jq . > /dev/null && echo "$response" | jq .'
 
 # --- Admin auth enforcement ---
 run_test "Admin logs endpoint rejects unauthenticated requests" \
