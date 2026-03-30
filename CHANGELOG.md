@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.5](https://github.com/dfw-dba/my-site/compare/v1.4.4...v1.4.5) (2026-03-30)
+
+
+### Bug Fixes
+
+* relax regression test assertions for empty data endpoints ([#139](https://github.com/dfw-dba/my-site/issues/139)) ([4533dd0](https://github.com/dfw-dba/my-site/commit/4533dd0da2c7110595de8c07c2fcd04a42e8b577))
+
 ## [1.4.4](https://github.com/dfw-dba/my-site/compare/v1.4.3...v1.4.4) (2026-03-30)
 
 
