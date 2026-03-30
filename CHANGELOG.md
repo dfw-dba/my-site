@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.4](https://github.com/dfw-dba/my-site/compare/v1.4.3...v1.4.4) (2026-03-30)
+
+
+### Bug Fixes
+
+* stack profile image below text on mobile for better readability ([#134](https://github.com/dfw-dba/my-site/issues/134)) ([b57577f](https://github.com/dfw-dba/my-site/commit/b57577f2c4370ccaf94d48a6305d14013a8b001b))
+
 ## [1.4.3](https://github.com/dfw-dba/my-site/compare/v1.4.2...v1.4.3) (2026-03-28)
 
 
