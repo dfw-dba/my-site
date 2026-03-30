@@ -1,4 +1,4 @@
-name: Deploy Stage
+name: Deploy
 
 on:
   workflow_run:
@@ -16,6 +16,8 @@ env:
   AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
 
 jobs:
+  # ===== STAGING =====
+
   # --- Staging infrastructure (auto on CI success when DEPLOY_STAGING=true, or manual) ---
   deploy-stage-infra:
     runs-on: ubuntu-latest
@@ -257,6 +259,274 @@ jobs:
         run: |
           chmod +x .github/scripts/post-deploy-validate.sh
           .github/scripts/post-deploy-validate.sh /tmp/pr-body.md "Stage Test Plan"
+
+      - name: Comment results on PR
+        if: steps.find-pr.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ -f /tmp/validation-results.md ]]; then
+            gh pr comment "${{ steps.find-pr.outputs.pr-number }}" \
+              --body-file /tmp/validation-results.md
+          fi
+
+      - name: Update PR checkboxes
+        if: steps.find-pr.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ -f /tmp/validation-outcomes.json ]]; then
+            chmod +x .github/scripts/post-deploy-update-checkboxes.sh
+            .github/scripts/post-deploy-update-checkboxes.sh \
+              "${{ steps.find-pr.outputs.pr-number }}" \
+              /tmp/validation-outcomes.json
+          fi
+
+  # ===== PRODUCTION =====
+
+  # --- Production infrastructure ---
+  deploy-infra:
+    runs-on: ubuntu-latest
+    needs: stage-post-deploy-validation
+    if: |-
+      always() &&
+      !cancelled() &&
+      (needs.stage-post-deploy-validation.result == 'success' || needs.stage-post-deploy-validation.result == 'skipped') &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'))
+    outputs:
+      frontend-bucket: ${{ steps.cdk-outputs.outputs.frontend-bucket }}
+      distribution-id: ${{ steps.cdk-outputs.outputs.distribution-id }}
+      user-pool-id: ${{ steps.cdk-outputs.outputs.user-pool-id }}
+      user-pool-client-id: ${{ steps.cdk-outputs.outputs.user-pool-client-id }}
+      api-url: ${{ steps.cdk-outputs.outputs.api-url }}
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6.0.0
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: infrastructure/cdk/package-lock.json
+
+      - name: Install CDK dependencies
+        run: npm ci
+        working-directory: infrastructure/cdk
+
+      - name: Pre-flight validation
+        run: bash .github/scripts/preflight-check.sh
+
+      - name: Clean up failed stacks
+        run: |
+          for stack in MySiteDns MySiteCert MySiteData MySiteApp; do
+            status=$(aws cloudformation describe-stacks --stack-name "$stack" \
+              --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "DOES_NOT_EXIST")
+            case "$status" in
+              ROLLBACK_COMPLETE)
+                echo "Deleting ROLLBACK_COMPLETE stack: $stack"
+                aws cloudformation delete-stack --stack-name "$stack"
+                aws cloudformation wait stack-delete-complete --stack-name "$stack"
+                ;;
+              ROLLBACK_FAILED|DELETE_FAILED)
+                echo "Force deleting $status stack: $stack"
+                aws cloudformation delete-stack --stack-name "$stack" --deletion-mode FORCE_DELETE_STACK
+                aws cloudformation wait stack-delete-complete --stack-name "$stack"
+                ;;
+            esac
+          done
+
+      - name: CDK diff
+        run: |
+          npx cdk diff MySiteDns 2>&1 || true
+          npx cdk diff MySiteCert MySiteData MySiteApp 2>&1 || true
+        working-directory: infrastructure/cdk
+        env:
+          CDK_DOMAIN_NAME: ${{ vars.CDK_DOMAIN_NAME }}
+          CDK_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          CDK_REGION: ${{ env.AWS_REGION }}
+          CDK_BUDGET_EMAIL: ${{ secrets.CDK_BUDGET_EMAIL }}
+
+      - name: "CDK deploy: Phase 1 (DNS)"
+        run: npx cdk deploy MySiteDns --require-approval never --outputs-file cdk-outputs-dns.json
+        working-directory: infrastructure/cdk
+        env:
+          CDK_DOMAIN_NAME: ${{ vars.CDK_DOMAIN_NAME }}
+          CDK_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          CDK_REGION: ${{ env.AWS_REGION }}
+          CDK_BUDGET_EMAIL: ${{ secrets.CDK_BUDGET_EMAIL }}
+          CDK_AUTO_BUCKET_NAMES: ${{ vars.CDK_AUTO_BUCKET_NAMES || 'true' }}
+
+      # DNS delegation gate: ensures nameservers are delegated before deploying
+      # stacks that require DNS validation (MySiteCert). On repeat deploys this
+      # passes immediately. On first deploy it will fail with instructions.
+      # Requires: dig (available on GitHub Actions ubuntu-latest)
+      - name: DNS delegation gate
+        env:
+          DOMAIN: ${{ vars.CDK_DOMAIN_NAME }}
+        run: |
+          # Use get-hosted-zone (delegation set), NOT list-resource-record-sets (in-zone NS).
+          # The delegation set is what DNS resolvers actually query. In-zone NS records may differ.
+          ZONE_ID=$(aws route53 list-hosted-zones-by-name \
+            --dns-name "$DOMAIN" --query 'HostedZones[0].Id' --output text)
+          NAMESERVERS=$(aws route53 get-hosted-zone --id "$ZONE_ID" \
+            --query 'DelegationSet.NameServers' --output text)
+
+          DELEGATED=false
+          for i in 1 2 3 4 5; do
+            if dig "$DOMAIN" NS +short @8.8.8.8 | grep -q "awsdns"; then
+              DELEGATED=true
+              break
+            fi
+            echo "DNS delegation not detected yet (attempt $i/5). Waiting 30s..."
+            sleep 30
+          done
+
+          if [ "$DELEGATED" = false ]; then
+            echo "::error::DNS delegation not set up for $DOMAIN."
+            echo "Required nameservers (from Route 53 delegation set):"
+            echo "$NAMESERVERS"
+            echo ""
+            echo "Add these as Custom DNS nameservers in your domain registrar,"
+            echo "or as NS records in the parent Route 53 hosted zone."
+            echo "Then re-run this workflow."
+            exit 1
+          fi
+
+          echo "DNS delegation verified for $DOMAIN"
+
+      - name: "CDK deploy: Phase 2 (Cert, Data, App)"
+        run: npx cdk deploy MySiteCert MySiteData MySiteApp --require-approval never --outputs-file cdk-outputs.json
+        working-directory: infrastructure/cdk
+        env:
+          CDK_DOMAIN_NAME: ${{ vars.CDK_DOMAIN_NAME }}
+          CDK_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          CDK_REGION: ${{ env.AWS_REGION }}
+          CDK_BUDGET_EMAIL: ${{ secrets.CDK_BUDGET_EMAIL }}
+          CDK_AUTO_BUCKET_NAMES: ${{ vars.CDK_AUTO_BUCKET_NAMES || 'true' }}
+
+      - name: Extract CDK outputs
+        id: cdk-outputs
+        working-directory: infrastructure/cdk
+        run: |
+          echo "frontend-bucket=$(jq -r '.MySiteApp.FrontendBucketName' cdk-outputs.json)" >> "$GITHUB_OUTPUT"
+          echo "distribution-id=$(jq -r '.MySiteApp.DistributionId' cdk-outputs.json)" >> "$GITHUB_OUTPUT"
+          echo "user-pool-id=$(jq -r '.MySiteData.UserPoolId' cdk-outputs.json)" >> "$GITHUB_OUTPUT"
+          echo "user-pool-client-id=$(jq -r '.MySiteData.UserPoolClientId' cdk-outputs.json)" >> "$GITHUB_OUTPUT"
+          echo "api-url=$(jq -r '.MySiteApp.ApiUrl' cdk-outputs.json)" >> "$GITHUB_OUTPUT"
+
+  # --- Production frontend deploy ---
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    needs: deploy-infra
+    outputs:
+      api-url: ${{ needs.deploy-infra.outputs.api-url }}
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6.0.0
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          VITE_API_URL: ${{ needs.deploy-infra.outputs.api-url }}
+          VITE_COGNITO_USER_POOL_ID: ${{ needs.deploy-infra.outputs.user-pool-id }}
+          VITE_COGNITO_APP_CLIENT_ID: ${{ needs.deploy-infra.outputs.user-pool-client-id }}
+          VITE_COGNITO_REGION: ${{ env.AWS_REGION }}
+        run: npm run build
+
+      - name: Deploy to S3
+        run: |
+          aws s3 sync frontend/dist/ "s3://${{ needs.deploy-infra.outputs.frontend-bucket }}" \
+            --delete \
+            --cache-control "public,max-age=31536000,immutable" \
+            --exclude "index.html" \
+            --exclude "sw.js" \
+            --exclude "manifest.webmanifest"
+
+          aws s3 cp frontend/dist/index.html "s3://${{ needs.deploy-infra.outputs.frontend-bucket }}/index.html" \
+            --cache-control "public,max-age=0,must-revalidate"
+
+          aws s3 cp frontend/dist/sw.js "s3://${{ needs.deploy-infra.outputs.frontend-bucket }}/sw.js" \
+            --cache-control "public,max-age=0,must-revalidate" 2>/dev/null || true
+
+          aws s3 cp frontend/dist/manifest.webmanifest "s3://${{ needs.deploy-infra.outputs.frontend-bucket }}/manifest.webmanifest" \
+            --cache-control "public,max-age=0,must-revalidate" 2>/dev/null || true
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ needs.deploy-infra.outputs.distribution-id }}" \
+            --paths "/index.html" "/sw.js" "/manifest.webmanifest"
+
+  # --- Production post-deploy validation ---
+  post-deploy-validation:
+    runs-on: ubuntu-latest
+    needs: deploy-frontend
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Find merged PR for this commit
+        id: find-pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          COMMIT_SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
+          PR_JSON=$(gh api "repos/${{ github.repository }}/commits/${COMMIT_SHA}/pulls" \
+            --jq '.[0] // empty')
+
+          if [[ -z "$PR_JSON" ]]; then
+            echo "No PR found for commit ${COMMIT_SHA}. Skipping validation."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          PR_NUMBER=$(echo "$PR_JSON" | jq -r '.number')
+          echo "pr-number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+          echo "Found PR #${PR_NUMBER}"
+
+      - name: Fetch PR body
+        if: steps.find-pr.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr view "${{ steps.find-pr.outputs.pr-number }}" --json body -q '.body' > /tmp/pr-body.md
+
+      - name: Run post-deploy validation
+        if: steps.find-pr.outputs.skip != 'true'
+        id: validate
+        env:
+          API_URL: ${{ needs.deploy-frontend.outputs.api-url }}
+          DOMAIN_NAME: ${{ vars.CDK_DOMAIN_NAME }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          chmod +x .github/scripts/post-deploy-validate.sh
+          .github/scripts/post-deploy-validate.sh /tmp/pr-body.md "Prod-Post-deploy validation"
 
       - name: Comment results on PR
         if: steps.find-pr.outputs.skip != 'true'

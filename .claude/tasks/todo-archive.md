@@ -227,3 +227,14 @@ _Superseded by the separate staging account work (PR #103). Design changed from 
 - [x] 35.6 Frontend hooks: Accept `client_ip` in filter types
 - [x] 35.7 Dashboard: IP filter state, clickable IPs, clear button, "Log Detail" heading
 - [x] 35.8 Verification: lint, type check, all tests pass
+
+---
+
+## Sprint 36: Fix GitHub Actions Node.js 20 Deprecation
+
+- [x] 36.1 Upgrade `actions/checkout` v4 → v5 across ci, deploy-stage, deploy-prod
+- [x] 36.2 Upgrade `actions/setup-node` v4 → v5 across ci, deploy-stage, deploy-prod
+- [x] 36.3 Upgrade `aws-actions/configure-aws-credentials` v4 → v5 in deploy-stage, deploy-prod
+- [x] 36.4 Upgrade `actions/setup-python` v5 → v6 in ci
+- [x] 36.5 Upgrade `astral-sh/setup-uv` v4 → v5 in ci
+- [x] 36.6 Upgrade `amannn/action-semantic-pull-request` v5 → v6 in lint-pr
