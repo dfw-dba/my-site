@@ -4,17 +4,6 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 
 ---
 
-## Sprint 36: Fix GitHub Actions Node.js 20 Deprecation
-
-- [x] 36.1 Upgrade `actions/checkout` v4 → v5 across ci, deploy-stage, deploy-prod
-- [x] 36.2 Upgrade `actions/setup-node` v4 → v5 across ci, deploy-stage, deploy-prod
-- [x] 36.3 Upgrade `aws-actions/configure-aws-credentials` v4 → v5 in deploy-stage, deploy-prod
-- [x] 36.4 Upgrade `actions/setup-python` v5 → v6 in ci
-- [x] 36.5 Upgrade `astral-sh/setup-uv` v4 → v5 in ci
-- [x] 36.6 Upgrade `amannn/action-semantic-pull-request` v5 → v6 in lint-pr
-
----
-
 ## Sprint 37: Resilient CDK Deployment
 
 ### Phase A — Safe, additive changes
@@ -79,6 +68,17 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 - [x] 39.6 Verification: TypeScript compiles, backend tests pass (41/41), frontend tests pass (25/25)
 - [x] 39.7 Post-public: Enable branch protection on `main`
 - [x] 39.8 Post-public: Add production environment protection rules
+
+---
+
+## Sprint 40: Combine Deploy Workflows
+
+- [x] 40.1 Create combined `deploy.yml` workflow with 6-job chain
+- [x] 40.2 Delete `deploy-stage.yml` and `deploy-prod.yml`
+- [x] 40.3 Update `.claude/rules/git-workflow.md` (Deploy Workflows, Prod Deploy Gate, Dependabot)
+- [x] 40.4 Update `.claude/agents/aws-architect.md` (2 workflow references)
+- [x] 40.5 Update `README.md` (Continuous Deployment, Staging, Production sections)
+- [x] 40.6 Verification: YAML syntax, job chain, secrets, no stale references
 
 ---
 

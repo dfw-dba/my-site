@@ -120,13 +120,19 @@ curl -sf "${API_URL}/api/new-feature"
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
 
-## Deploy Workflows
+## Deploy Workflow
 
-Deployment uses **two separate workflows**:
+Deployment uses a **single combined workflow** (`deploy.yml`) with a 6-job chain:
 
-1. **Deploy Stage** (`deploy-stage.yml`): Triggers automatically on CI success (when `DEPLOY_STAGING=true`) or via manual dispatch. Runs: `deploy-stage-infra` → `deploy-stage-frontend` → `stage-post-deploy-validation`. The validation job auto-marks Pre Deploy Checklist items and extracts/runs commands from the `## Stage Test Plan` section.
+```
+deploy-stage-infra → deploy-stage-frontend → stage-post-deploy-validation → deploy-infra → deploy-frontend → post-deploy-validation
+```
 
-2. **Deploy Prod** (`deploy-prod.yml`): Manual trigger only (`workflow_dispatch`). Runs: `deploy-infra` → `deploy-frontend` → `post-deploy-validation`. The validation job extracts/runs commands from the `## Prod-Post-deploy validation` section.
+- **Triggers**: Automatically on CI success (main branch) or via `workflow_dispatch`.
+- **Staging jobs** (1-3): Run when `DEPLOY_STAGING=true`. When not set, staging is skipped and production jobs run directly.
+- **Production jobs** (4-6): Run after staging succeeds or is skipped. The `deploy-infra` job uses `always() && !cancelled()` so it evaluates even when staging is skipped.
+- **Stage validation**: Auto-marks Pre Deploy Checklist items and runs commands from `## Stage Test Plan`.
+- **Prod validation**: Runs commands from `## Prod-Post-deploy validation`.
 
 Results are commented on the PR and table items are automatically marked as passed/failed.
 
@@ -139,13 +145,14 @@ Staging deploys to a **separate AWS account** using `AWS_STAGE_DEPLOY_ROLE_ARN`,
 > **Claude MUST follow this process after every PR merge. No exceptions.**
 
 After merging a PR:
-1. Monitor the **Deploy Stage** workflow run to completion.
-2. Verify Deploy Stage completed **without errors** (all jobs succeeded).
+1. Monitor the **Deploy** workflow run to completion (staging and production run as a single workflow).
+2. Verify all staging jobs completed **without errors** (if staging is enabled).
 3. Verify **all Stage Test Plan items** in the PR table are marked as passed (`:white_check_mark:` in the Passed column).
-4. **If both conditions are met**: trigger Deploy Prod via `gh workflow run deploy-prod.yml`.
-5. **If either condition fails**: notify the user with specific details of what failed. Do **NOT** trigger Deploy Prod.
-6. After triggering Deploy Prod, monitor it to completion and verify Prod-Post-deploy validation results.
-7. After Deploy Prod completes successfully and all Prod-Post-deploy validation items pass, check for an open release-please PR (title matches `chore(main): release my-site *`). If one exists, merge it via `gh pr merge --squash`. This triggers the `release-please.yml` workflow which creates the GitHub Release and version tag. Do not trigger Deploy Prod again — the release-please merge only updates version metadata files which are excluded from CI via `paths-ignore`.
+4. **If staging fails**: notify the user with specific details. Production jobs will not run because staging failed (the `deploy-infra` job requires staging success or skip).
+5. Verify all production jobs completed successfully and all **Prod-Post-deploy validation** items pass.
+6. **If production fails**: notify the user with specific details.
+7. To re-trigger the full pipeline manually: `gh workflow run deploy.yml`.
+8. After the Deploy workflow completes successfully (both stages), check for an open release-please PR (title matches `chore(main): release my-site *`). If one exists, merge it via `gh pr merge --squash`. This triggers the `release-please.yml` workflow which creates the GitHub Release and version tag. Do not trigger Deploy again — the release-please merge only updates version metadata files which are excluded from CI via `paths-ignore`.
 
 ## Pre-merge Workflow (MANDATORY)
 
@@ -167,5 +174,5 @@ Dependabot creates PRs to update GitHub Actions SHAs (configured in `.github/dep
 1. Verify the PR only changes `.github/workflows/*.yml` files (SHA pins and version comments).
 2. Verify CI passes on the PR.
 3. If both conditions are met: approve and squash-merge the PR (`gh pr merge --squash`).
-4. **Do NOT trigger Deploy Stage or Deploy Prod** — workflow file changes don't affect deployed infrastructure. Skip the Prod Deploy Gate process entirely.
+4. **Do NOT trigger Deploy** — workflow file changes don't affect deployed infrastructure. Skip the Prod Deploy Gate process entirely.
 5. If the PR modifies anything beyond workflow SHA pins (e.g., adds new steps, changes env vars, modifies scripts), treat it as a normal PR and flag it for user review.

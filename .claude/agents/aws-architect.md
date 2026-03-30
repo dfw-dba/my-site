@@ -26,8 +26,7 @@ You are an infrastructure/DevOps engineer for a personal website/PWA. The app ru
 ## CI/CD
 
 - `.github/workflows/ci.yml` — two jobs: `backend` (uv install + ruff + pytest) and `frontend` (npm ci + vitest)
-- `.github/workflows/deploy-stage.yml` — staging deployment to **staging AWS account** (auto on CI success)
-- `.github/workflows/deploy-prod.yml` — production deployment to **prod AWS account** (manual trigger only)
+- `.github/workflows/deploy.yml` — combined deploy pipeline (stage → prod)
 
 ### Deploy workflow structure
 
@@ -81,6 +80,5 @@ Controlled by `CDK_AUTO_BUCKET_NAMES` env var (default: `true`):
 - `docker/backend/Dockerfile` — backend container
 - `docker/frontend/Dockerfile` — frontend container
 - `.github/workflows/ci.yml` — CI pipeline
-- `.github/workflows/deploy-stage.yml` — staging deployment
-- `.github/workflows/deploy-prod.yml` — production deployment
+- `.github/workflows/deploy.yml` — combined deploy pipeline (stage → prod)
 - `.env.example` — environment variable template

@@ -459,20 +459,18 @@ aws rds start-db-instance --db-instance-identifier $RDS_ID
 
 ## Continuous Deployment
 
-Deployment uses two separate workflows with built-in resilience:
+Deployment uses a **single combined workflow** (`deploy.yml`) with a 6-job chain:
+
+```
+Merge to main → CI → deploy-stage-infra → deploy-stage-frontend → stage-post-deploy-validation → deploy-infra → deploy-frontend → post-deploy-validation
+```
 
 1. Push to `main` (or merge a PR)
 2. CI runs (lint, type check, tests)
-3. On CI success, **Deploy Stage** runs automatically (when staging is enabled):
-   ```
-   Merge to main → CI → Deploy Stage (pre-flight → cleanup → DNS → gate → infra → frontend → validation)
-   ```
-4. After staging succeeds, **Deploy Prod** is triggered manually:
-   ```
-   Deploy Prod (pre-flight → cleanup → DNS → gate → infra → frontend → validation)
-   ```
+3. On CI success, the **Deploy** workflow runs automatically — staging first, then production
+4. When staging is not enabled (`DEPLOY_STAGING` not set), staging jobs are skipped and production runs directly
 
-Each deploy workflow includes:
+Each deploy phase includes:
 - **Pre-flight validation**: checks OIDC provider and CDK bootstrap status before deploying
 - **Failed stack cleanup**: automatically deletes stacks stuck in ROLLBACK_COMPLETE/ROLLBACK_FAILED/DELETE_FAILED
 - **Two-phase deploy with DNS gate**: deploys the DNS stack first, verifies nameserver delegation is working, then deploys the remaining stacks (Cert, Data, App). On first deploy, the gate fails with instructions to set up DNS delegation. On subsequent deploys it passes immediately.
@@ -487,15 +485,9 @@ Each deploy workflow includes:
 
 Staging deploys to a **separate AWS account** with full environment isolation. It uses the same 4 CDK stacks as production, configured via environment-specific variables.
 
-When `DEPLOY_STAGING=true` is set as a GitHub Actions variable, the **Deploy Stage** workflow (`deploy-stage.yml`) runs automatically after CI succeeds on `main`:
+When `DEPLOY_STAGING=true` is set as a GitHub Actions variable, the staging jobs in the **Deploy** workflow (`deploy.yml`) run automatically after CI succeeds on `main`. Staging validation extracts commands from the PR's `## Stage Test Plan` section (with `${API_URL}` pointing to the staging API). Results are commented on the PR, and table items are automatically marked as passed/failed.
 
-```
-Merge to main → CI → deploy-stage-infra → deploy-stage-frontend → stage-post-deploy-validation
-```
-
-Staging validation extracts commands from the PR's `## Stage Test Plan` section (with `${API_URL}` pointing to the staging API). Results are commented on the PR, and table items are automatically marked as passed/failed.
-
-Deploy staging manually via **Actions → Deploy Stage → Run workflow**.
+Trigger manually via **Actions → Deploy → Run workflow**.
 
 **What staging deploys:** A fully self-contained infrastructure in its own AWS account — Route 53 hosted zone, ACM certificate, RDS, Cognito user pool, VPC endpoints, bastion host, S3 buckets, CloudFront, Lambda, API Gateway, and budget alarm. Staging has no dependencies on the production account.
 
@@ -528,26 +520,22 @@ Deploy staging manually via **Actions → Deploy Stage → Run workflow**.
    - Variables: `CDK_STAGE_DOMAIN_NAME` (e.g., `stage.example.com`), `DEPLOY_STAGING` = `true`
 
 > **S3 bucket naming:** By default, CDK auto-generates globally unique bucket names (recommended for new deployments). If you already have deployed stacks with explicit bucket names (e.g., `yourdomain.com-frontend`), set the GitHub Actions variable `CDK_AUTO_BUCKET_NAMES` = `false` to preserve them. See [aws-setup.md](docs/aws-setup.md#set-github-repository-secrets-and-variables) for details.
-6. Trigger **Deploy Stage** manually — this creates the Route 53 hosted zone for `stage.example.com`
+6. Trigger **Deploy** manually — this creates the Route 53 hosted zone for `stage.example.com`
 7. Set up DNS delegation so ACM can validate the staging certificate:
    - **If prod is deployed:** create an NS record in the prod Route 53 zone (Name=`stage`, Values=4 staging nameservers)
    - **If prod is NOT deployed yet:** add 4 NS records at your domain registrar (e.g., Namecheap) for Host=`stage` pointing to the staging nameservers — see [aws-setup.md Step 5](docs/aws-setup.md#5-first-staging-deploy-and-dns-delegation) for details
-8. Re-trigger **Deploy Stage** — ACM certificate DNS validation will now succeed
+8. Re-trigger **Deploy** — ACM certificate DNS validation will now succeed
 9. Create a staging admin user in the new Cognito user pool (see [Step 13](#13-create-cognito-admin-user))
 
-**Without staging:** When `DEPLOY_STAGING` is not set (or not `true`), Deploy Stage does not run automatically. Deploy Prod can still be triggered manually.
+**Without staging:** When `DEPLOY_STAGING` is not set (or not `true`), staging jobs are skipped and production jobs run directly within the same workflow.
 
 ### Production Deployment
 
-Production deployment uses a separate workflow (`deploy-prod.yml`) that is **manual-only**:
-
-```
-Deploy Prod (manual) → deploy-infra → deploy-frontend → post-deploy-validation
-```
+Production runs automatically after staging succeeds (or immediately if staging is skipped) within the same **Deploy** workflow. The production jobs deploy infrastructure, build and sync the frontend, and run post-deploy validation.
 
 Production validation extracts commands from the PR's `## Prod-Post-deploy validation` section (with `${API_URL}` pointing to the production API). Results are commented on the PR.
 
-Deploy production via **Actions → Deploy Prod → Run workflow**.
+To manually trigger the full pipeline: **Actions → Deploy → Run workflow**.
 
 ## Project Structure
 
