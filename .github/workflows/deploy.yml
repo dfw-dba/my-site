@@ -132,6 +132,7 @@ jobs:
           CDK_BUDGET_EMAIL: ${{ secrets.CDK_STAGE_BUDGET_EMAIL || secrets.CDK_BUDGET_EMAIL }}
           CDK_IS_STAGING: "true"
           CDK_AUTO_BUCKET_NAMES: ${{ vars.CDK_AUTO_BUCKET_NAMES || 'true' }}
+          REGRESSION_TEST_API_KEY: ${{ secrets.REGRESSION_TEST_API_KEY }}
 
       - name: Extract staging CDK outputs
         id: cdk-outputs
@@ -261,6 +262,26 @@ jobs:
               --body-file /tmp/regression-results.md
           fi
 
+      - name: Run admin regression tests
+        id: admin-regression
+        env:
+          API_URL: ${{ needs.deploy-stage-frontend.outputs.api-url }}
+          DOMAIN_NAME: ${{ vars.CDK_STAGE_DOMAIN_NAME }}
+          REGRESSION_TEST_API_KEY: ${{ secrets.REGRESSION_TEST_API_KEY }}
+        run: |
+          chmod +x .github/scripts/regression-test-admin.sh
+          .github/scripts/regression-test-admin.sh "Stage"
+
+      - name: Comment admin regression results on PR
+        if: always() && steps.find-pr.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ -f /tmp/admin-regression-results.md ]]; then
+            gh pr comment "${{ steps.find-pr.outputs.pr-number }}" \
+              --body-file /tmp/admin-regression-results.md
+          fi
+
       - name: Fetch PR body
         if: always() && steps.find-pr.outputs.skip != 'true'
         env:
@@ -305,6 +326,7 @@ jobs:
         if: always()
         run: |
           if [[ "${{ steps.regression.outcome }}" == "failure" ]] || \
+             [[ "${{ steps.admin-regression.outcome }}" == "failure" ]] || \
              [[ "${{ steps.validate.outcome }}" == "failure" ]]; then
             echo "One or more validation steps failed."
             exit 1

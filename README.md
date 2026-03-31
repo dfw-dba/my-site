@@ -485,7 +485,12 @@ Each deploy phase includes:
 
 Staging deploys to a **separate AWS account** with full environment isolation. It uses the same 4 CDK stacks as production, configured via environment-specific variables.
 
-When `DEPLOY_STAGING=true` is set as a GitHub Actions variable, the staging jobs in the **Deploy** workflow (`deploy.yml`) run automatically after CI succeeds on `main`. Staging validation extracts commands from the PR's `## Stage Test Plan` section (with `${API_URL}` pointing to the staging API). Results are commented on the PR, and table items are automatically marked as passed/failed.
+When `DEPLOY_STAGING=true` is set as a GitHub Actions variable, the staging jobs in the **Deploy** workflow (`deploy.yml`) run automatically after CI succeeds on `main`. Staging validation includes:
+- **Regression tests**: public endpoint checks (health, resume, auth enforcement, frontend)
+- **Admin regression tests**: full CRUD against all admin endpoints (resume entries, reviews, recommendations, sections, profile image, logs) — requires `REGRESSION_TEST_API_KEY` secret. Tests create data, verify via public API, then clean up.
+- **PR-specific validation**: extracts commands from the PR's `## Stage Test Plan` section
+
+Results are commented on the PR, and table items are automatically marked as passed/failed.
 
 Trigger manually via **Actions → Deploy → Run workflow**.
 
@@ -516,7 +521,7 @@ Trigger manually via **Actions → Deploy → Run workflow**.
    npx cdk bootstrap aws://<STAGING_ACCOUNT_ID>/us-east-1
    ```
 5. Add GitHub secrets and variables (see [Step 7](#7-set-github-repository-secrets-and-variables)):
-   - Secrets: `AWS_STAGE_DEPLOY_ROLE_ARN`, `AWS_STAGE_ACCOUNT_ID`, `CDK_STAGE_BUDGET_EMAIL`
+   - Secrets: `AWS_STAGE_DEPLOY_ROLE_ARN`, `AWS_STAGE_ACCOUNT_ID`, `CDK_STAGE_BUDGET_EMAIL`, `REGRESSION_TEST_API_KEY` (64-char random hex for admin regression tests)
    - Variables: `CDK_STAGE_DOMAIN_NAME` (e.g., `stage.example.com`), `DEPLOY_STAGING` = `true`
 
 > **S3 bucket naming:** By default, CDK auto-generates globally unique bucket names (recommended for new deployments). If you already have deployed stacks with explicit bucket names (e.g., `yourdomain.com-frontend`), set the GitHub Actions variable `CDK_AUTO_BUCKET_NAMES` = `false` to preserve them. See [aws-setup.md](docs/aws-setup.md#set-github-repository-secrets-and-variables) for details.

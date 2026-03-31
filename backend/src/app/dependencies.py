@@ -1,3 +1,4 @@
+import hmac
 import logging
 import os
 from collections.abc import AsyncGenerator
@@ -62,6 +63,19 @@ async def get_admin_auth(request: Request) -> dict | str:
     When Cognito is not configured, falls back to X-Admin-Key header
     and returns the API key string.
     """
+    # Regression test key — staging only, checked before Cognito
+    if settings.REGRESSION_TEST_API_KEY:
+        regression_key = request.headers.get("X-Regression-Key", "")
+        if regression_key:
+            if not hmac.compare_digest(regression_key, settings.REGRESSION_TEST_API_KEY):
+                logger.warning("Invalid regression test key from %s", request.client.host)
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid regression test key",
+                )
+            logger.warning("Regression test key used from %s", request.client.host)
+            return "regression-test"
+
     if settings.COGNITO_USER_POOL_ID:
         auth_header = request.headers.get("Authorization", "")
         if not auth_header.startswith("Bearer "):
