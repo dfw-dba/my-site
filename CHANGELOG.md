@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/dfw-dba/my-site/compare/v1.5.0...v1.5.1) (2026-03-31)
+
+
+### Bug Fixes
+
+* keep test data on staging after regression tests run ([#144](https://github.com/dfw-dba/my-site/issues/144)) ([14aee40](https://github.com/dfw-dba/my-site/commit/14aee404f8caa65c082d6f1de7d2e4a95fd7e302))
+
 ## [1.5.0](https://github.com/dfw-dba/my-site/compare/v1.4.5...v1.5.0) (2026-03-31)
 
 
