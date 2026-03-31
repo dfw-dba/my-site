@@ -255,6 +255,9 @@ export class AppStack extends cdk.Stack {
         DB_USER: dbUser,
         DB_NAME: "mysite",
         AWS_LWA_INVOKE_MODE: "BUFFERED",
+        ...(isStaging && process.env.REGRESSION_TEST_API_KEY
+          ? { REGRESSION_TEST_API_KEY: process.env.REGRESSION_TEST_API_KEY }
+          : {}),
       },
     });
 
@@ -306,7 +309,12 @@ export class AppStack extends cdk.Stack {
           apigatewayv2.CorsHttpMethod.DELETE,
           apigatewayv2.CorsHttpMethod.OPTIONS,
         ],
-        allowHeaders: ["Content-Type", "Authorization", "X-Admin-Key"],
+        allowHeaders: [
+          "Content-Type",
+          "Authorization",
+          "X-Admin-Key",
+          "X-Regression-Key",
+        ],
         maxAge: cdk.Duration.hours(1),
       },
     });
