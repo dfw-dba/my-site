@@ -2,7 +2,8 @@
 set -euo pipefail
 
 # Runs a comprehensive regression test suite against all admin portal endpoints.
-# Tests every CRUD operation, verifies via public API, and cleans up after itself.
+# Tests every CRUD operation, verifies via public API, and leaves test data in place
+# for visual verification between deploys. Data is wiped at the start of each run.
 # Designed to run on staging deploys only (requires REGRESSION_TEST_API_KEY).
 #
 # Usage: regression-test-admin.sh [environment-label]
@@ -99,37 +100,6 @@ Skipped due to dependency failure.
 "
 }
 
-# ---------------------------------------------------------------------------
-# Cleanup function (runs on exit to ensure test data is removed)
-# ---------------------------------------------------------------------------
-
-cleanup() {
-  echo ""
-  echo "Running cleanup..."
-
-  # Delete any entries we created (ignore failures during cleanup)
-  for entry_id in $WORK_ENTRY_ID $EDUCATION_ENTRY_ID $CERT_ENTRY_ID $AWARD_ENTRY_ID $HOBBY_ENTRY_ID; do
-    if [[ -n "$entry_id" ]]; then
-      curl -sf -X DELETE -H "${AUTH_HEADER}" "${BASE}/admin/resume/entry/${entry_id}" > /dev/null 2>&1 || true
-    fi
-  done
-
-  # Clear recommendations
-  curl -sf -X POST -H "${AUTH_HEADER}" -H "Content-Type: application/json" \
-    -d '{"items": []}' "${BASE}/admin/resume/recommendations" > /dev/null 2>&1 || true
-
-  # Reset single-row sections to empty state
-  curl -sf -X POST -H "${AUTH_HEADER}" -H "Content-Type: application/json" \
-    -d '{"title": ""}' "${BASE}/admin/resume/title" > /dev/null 2>&1 || true
-  curl -sf -X POST -H "${AUTH_HEADER}" -H "Content-Type: application/json" \
-    -d '{"headline": null, "text": "empty"}' "${BASE}/admin/resume/summary" > /dev/null 2>&1 || true
-  curl -sf -X POST -H "${AUTH_HEADER}" -H "Content-Type: application/json" \
-    -d '{"linkedin": null, "github": null, "email": null}' "${BASE}/admin/resume/contact" > /dev/null 2>&1 || true
-
-  echo "Cleanup complete."
-}
-
-trap cleanup EXIT
 
 # ---------------------------------------------------------------------------
 # Phase 0: Preflight
@@ -587,53 +557,21 @@ run_test "Purge old logs (365+ days)" \
   && echo "Purge OK: $(echo "$response" | jq .deleted) logs deleted"'
 
 # ---------------------------------------------------------------------------
-# Phase 7: Delete entries and cleanup
+# Phase 7: Public verification (data should persist for visual inspection)
 # ---------------------------------------------------------------------------
 
 echo ""
-echo "--- Phase 7: Delete entries ---"
+echo "--- Phase 7: Public verification ---"
 
-for var_name in WORK EDUCATION CERT AWARD HOBBY; do
-  entry_var="${var_name}_ENTRY_ID"
-  entry_id="${!entry_var}"
-  label=$(echo "$var_name" | tr '[:upper:]' '[:lower:]')
-
-  if [[ -n "$entry_id" ]]; then
-    run_test "Delete ${label} entry" \
-      'response=$(curl -sf -X DELETE -H "'"${AUTH_HEADER}"'" "${BASE}/admin/resume/entry/'"${entry_id}"'") \
-      && echo "$response" | jq -e ".success == true" > /dev/null \
-      && echo "Deleted entry '"${entry_id}"'"'
-  else
-    skip_test "Delete ${label} entry" "${label} entry was not created"
-  fi
-done
-
-run_test "Clear recommendations" \
-  'response=$(curl -sf -X POST -H "'"${AUTH_HEADER}"'" -H "Content-Type: application/json" \
-    -d '"'"'{"items": []}'"'"' "${BASE}/admin/resume/recommendations") \
-  && echo "$response" | jq -e ".success == true" > /dev/null \
-  && echo "Recommendations cleared"'
-
-# Clear IDs so the trap cleanup doesn't try to double-delete
-WORK_ENTRY_ID=""
-EDUCATION_ENTRY_ID=""
-CERT_ENTRY_ID=""
-AWARD_ENTRY_ID=""
-HOBBY_ENTRY_ID=""
-
-# ---------------------------------------------------------------------------
-# Phase 8: Public verification
-# ---------------------------------------------------------------------------
-
-echo ""
-echo "--- Phase 8: Public verification ---"
-
-run_test "Resume API returns clean state" \
+run_test "Resume API returns test data" \
   'response=$(curl -sf "${BASE}/resume/") \
   && work=$(echo "$response" | jq ".entries.work // [] | length") \
   && edu=$(echo "$response" | jq ".entries.education // [] | length") \
-  && [[ "$work" == "0" && "$edu" == "0" ]] \
-  && echo "Resume clean: no entries remaining"'
+  && cert=$(echo "$response" | jq ".entries.certification // [] | length") \
+  && award=$(echo "$response" | jq ".entries.award // [] | length") \
+  && hobby=$(echo "$response" | jq ".entries.hobby // [] | length") \
+  && [[ "$work" -ge 1 && "$edu" -ge 1 && "$cert" -ge 1 && "$award" -ge 1 && "$hobby" -ge 1 ]] \
+  && echo "All 5 entry types present: work=$work edu=$edu cert=$cert award=$award hobby=$hobby"'
 
 run_test "Frontend serves HTML" \
   'response=$(curl -sfL "https://${DOMAIN_NAME}/") \
@@ -646,11 +584,11 @@ run_test "Resume page serves HTML" \
   && echo "Resume page received ($(echo "$response" | wc -c) bytes)"'
 
 # ---------------------------------------------------------------------------
-# Phase 9: Auth enforcement (negative tests)
+# Phase 8: Auth enforcement (negative tests)
 # ---------------------------------------------------------------------------
 
 echo ""
-echo "--- Phase 9: Auth enforcement ---"
+echo "--- Phase 8: Auth enforcement ---"
 
 run_test "Admin endpoint rejects missing auth" \
   'status=$(curl -sL -o /dev/null -w "%{http_code}" "${BASE}/admin/logs") \
