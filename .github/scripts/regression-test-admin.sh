@@ -21,8 +21,8 @@ ENV_LABEL="${1:-Stage}"
 : "${DOMAIN_NAME:?DOMAIN_NAME must be set}"
 : "${REGRESSION_TEST_API_KEY:?REGRESSION_TEST_API_KEY must be set}"
 
-AUTH_HEADER="X-Regression-Key: ${REGRESSION_TEST_API_KEY}"
-BASE="${API_URL}/api"
+export AUTH_HEADER="X-Regression-Key: ${REGRESSION_TEST_API_KEY}"
+export BASE="${API_URL}/api"
 
 PASS=0
 FAIL=0
