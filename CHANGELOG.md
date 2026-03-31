@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.5.0](https://github.com/dfw-dba/my-site/compare/v1.4.5...v1.5.0) (2026-03-31)
+
+
+### Features
+
+* add comprehensive admin regression test suite for staging ([#141](https://github.com/dfw-dba/my-site/issues/141)) ([3984069](https://github.com/dfw-dba/my-site/commit/39840694be40b8dd319ed7a42d2bea87a2f7738f))
+
+
+### Bug Fixes
+
+* export BASE and AUTH_HEADER for bash -c subshells in admin regression tests ([#143](https://github.com/dfw-dba/my-site/issues/143)) ([2d9eb13](https://github.com/dfw-dba/my-site/commit/2d9eb13b116eb00fb2704073fb4c0f80261ebd08))
+
 ## [1.4.5](https://github.com/dfw-dba/my-site/compare/v1.4.4...v1.4.5) (2026-03-30)
 
 
