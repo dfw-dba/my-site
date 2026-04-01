@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/dfw-dba/my-site/compare/v1.5.1...v1.6.0) (2026-04-01)
+
+
+### Features
+
+* add default profile image and use stage-branded variant in regression tests ([#146](https://github.com/dfw-dba/my-site/issues/146)) ([3b607d8](https://github.com/dfw-dba/my-site/commit/3b607d8b6b15d582291ae4ee45cd3594151a46e6))
+
 ## [1.5.1](https://github.com/dfw-dba/my-site/compare/v1.5.0...v1.5.1) (2026-03-31)
 
 
