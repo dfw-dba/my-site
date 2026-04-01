@@ -71,6 +71,11 @@ Post-deploy items should test the actual production behavior introduced by the P
 infrastructure served by the deployed stack (e.g., CloudFront, Lambda, API Gateway) versus local-only configuration (e.g.,
 Docker, nginx.conf) and write validation items accordingly.
 
+**Validation command rules:**
+- **Always use `curl -sfL`** — FastAPI redirects routes without trailing slashes (e.g., `/api/resume` → `/api/resume/` via 307). Without `-L`, curl silently returns empty output and grep fails.
+- **Verify field names against actual API responses** — Don't guess JSON field names. Curl the endpoint first and check the real response structure before writing validation commands.
+- **Use `DOMAIN_NAME` for CloudFront resources, `API_URL` for API Gateway** — `${API_URL}` is the API Gateway domain (e.g., `api.example.com`). CSP headers, frontend assets, and response header policies are served by CloudFront (`${DOMAIN_NAME}`). Using the wrong variable will always fail.
+
 ## Example PR Format
 
 ```markdown

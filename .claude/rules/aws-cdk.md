@@ -15,6 +15,7 @@ globs:
 - **CloudFront cache policy names: no dots**: `cachePolicyName` only allows alphanumerics, hyphens, and underscores. Domain names with dots (e.g., `example.com`) must have dots replaced before using in policy names.
 - **S3 bucket names are conditional**: Bucket naming is controlled by `CDK_AUTO_BUCKET_NAMES` (default `true`). When `true`, no `bucketName` property is set (CDK auto-generates). When `false`, explicit `${domainName}-frontend/media` names are used. Never hardcode bucket names directly — always use the `config.autoGenerateBucketNames` conditional.
 - **Route 53 delegation set vs in-zone NS**: When referencing nameservers for delegation, always use `get-hosted-zone` (delegation set), NOT `list-resource-record-sets` (in-zone NS records). They can differ.
+- **ACM cert DNS validation requires delegation first**: Deploying `MySiteCert` before DNS delegation is set up causes the deploy to hang indefinitely waiting for validation. Always deploy `MySiteDns` first, verify delegation, then deploy the rest.
 
 ## Verification
 
