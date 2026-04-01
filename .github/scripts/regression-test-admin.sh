@@ -181,18 +181,15 @@ run_test "Set contact info" \
   && echo "$verify" | jq -e ".email == \"regtest@example.com\"" > /dev/null \
   && echo "Contact set and verified: $verify"'
 
-# Generate a minimal valid 1x1 white PNG (68 bytes)
-TMPIMG=$(mktemp /tmp/regtest-XXXXXX.png)
-printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82' > "$TMPIMG"
+# Use the pre-generated stage profile image (default avatar with "STAGE" overlay)
+STAGE_IMG=".github/assets/profile-stage.png"
 
 run_test "Upload profile image" \
   'response=$(curl -sf -X POST -H "'"${AUTH_HEADER}"'" \
-    -F "file=@'"${TMPIMG}"';type=image/png" "${BASE}/admin/resume/profile-image") \
+    -F "file=@'"${STAGE_IMG}"';type=image/png" "${BASE}/admin/resume/profile-image") \
   && echo "$response" | jq -e ".success == true" > /dev/null \
   && echo "$response" | jq -e ".image_url" > /dev/null \
   && echo "Profile image uploaded: $(echo "$response" | jq -r .image_url)"'
-
-rm -f "$TMPIMG"
 
 # ---------------------------------------------------------------------------
 # Phase 3: Professional entry CRUD
