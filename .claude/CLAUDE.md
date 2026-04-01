@@ -16,10 +16,11 @@ When the user initiates any task:
 - One task per subagent for focused execution
 
 ### 3. Self-Improvement Loop
-- After ANY correction from the user: update `.claude/tasks/lessons.md` with the pattern
+- After ANY correction from the user: save the lesson to the appropriate location:
+  - **Project rules** (conventions, deployment gotchas, validation rules) → add to the relevant `.claude/rules/*.md` file
+  - **Behavioral corrections** (Claude-specific workflow habits) → save to Claude Code memory files
 - Write rules for yourself that prevent the same mistake
-- Ruthlessly iterate on these lessons until mistake rate drops
-- Review lessons at session start for relevant project
+- Ruthlessly iterate on these rules until mistake rate drops
 
 ### 4. Quality Gates
 - Never mark a task complete without proving it works (run tests, check logs, demonstrate correctness)
@@ -43,6 +44,7 @@ When the user initiates any task:
 - **Minimal Impact**: Changes should only touch what's necessary. Avoid introducing bugs.
 - **Keep agent/rule files current**: When adding, moving, or removing files referenced in `.claude/agents/` or `.claude/rules/`, update those files to match.
 - **Cost vs Quality**: Cost and quality, sustainable architecture are equal. If there is a discrepancy where the lowest cost will impact the quality of the site, engage in conversation to arrive at a compromise.
+- **Optional behavior via flags, not comments**: Never make features optional by requiring users to uncomment code. Use env vars, CLI flags, or scripts with flags instead. Applies to docker-compose, CI workflows, and any config.
 
 ### 8. Security strategy
 - ***Always perform a security audit for each change***
