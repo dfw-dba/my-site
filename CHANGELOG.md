@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.1](https://github.com/dfw-dba/my-site/compare/v1.8.0...v1.8.1) (2026-04-02)
+
+
+### Bug Fixes
+
+* use Pydantic discriminated union so visitor events are written ([#153](https://github.com/dfw-dba/my-site/issues/153)) ([9560b66](https://github.com/dfw-dba/my-site/commit/9560b661e0cd20e598e1ec20cda133d2c8a739ad))
+
 ## [1.8.0](https://github.com/dfw-dba/my-site/compare/v1.7.0...v1.8.0) (2026-04-02)
 
 
