@@ -172,6 +172,87 @@ async def purge_logs(
     return await db.purge_app_logs(body.days)
 
 
+# ── Database Metrics ─────────────────────────────────────────────────────
+
+
+@router.get("/metrics/overview", dependencies=[Depends(get_admin_auth)])
+@limiter.limit("60/minute")
+async def get_metrics_overview(
+    request: Request,
+    db: DatabaseAPI = Depends(get_db_api),
+) -> Any:
+    """Fetch database-level overview stats from latest snapshot."""
+    return await db.get_db_overview()
+
+
+@router.get("/metrics/queries", dependencies=[Depends(get_admin_auth)])
+@limiter.limit("60/minute")
+async def get_slow_queries(
+    request: Request,
+    db: DatabaseAPI = Depends(get_db_api),
+    sort_by: str = Query(
+        default="total_exec_time",
+        pattern="^(total_exec_time|mean_exec_time|calls)$",
+    ),
+    limit: int = Query(default=20, ge=1, le=100),
+    min_calls: int = Query(default=1, ge=1),
+) -> Any:
+    """Fetch top queries by execution time from latest snapshot."""
+    return await db.get_slow_queries({"sort_by": sort_by, "limit": limit, "min_calls": min_calls})
+
+
+@router.get("/metrics/plan-instability", dependencies=[Depends(get_admin_auth)])
+@limiter.limit("60/minute")
+async def get_plan_instability(
+    request: Request,
+    db: DatabaseAPI = Depends(get_db_api),
+    limit: int = Query(default=20, ge=1, le=100),
+    min_calls: int = Query(default=5, ge=1),
+) -> Any:
+    """Fetch queries with high execution time variance (plan instability)."""
+    return await db.get_plan_instability({"limit": limit, "min_calls": min_calls})
+
+
+@router.get("/metrics/tables", dependencies=[Depends(get_admin_auth)])
+@limiter.limit("60/minute")
+async def get_table_stats(
+    request: Request,
+    db: DatabaseAPI = Depends(get_db_api),
+) -> Any:
+    """Fetch table access patterns from latest snapshot."""
+    return await db.get_table_stats()
+
+
+@router.get("/metrics/indexes", dependencies=[Depends(get_admin_auth)])
+@limiter.limit("60/minute")
+async def get_index_usage(
+    request: Request,
+    db: DatabaseAPI = Depends(get_db_api),
+) -> Any:
+    """Fetch index usage stats from latest snapshot."""
+    return await db.get_index_usage()
+
+
+@router.get("/metrics/functions", dependencies=[Depends(get_admin_auth)])
+@limiter.limit("60/minute")
+async def get_function_stats(
+    request: Request,
+    db: DatabaseAPI = Depends(get_db_api),
+) -> Any:
+    """Fetch function performance stats from latest snapshot."""
+    return await db.get_function_stats()
+
+
+@router.post("/metrics/capture", dependencies=[Depends(get_admin_auth)])
+@limiter.limit("5/minute")
+async def capture_metrics(
+    request: Request,
+    db: DatabaseAPI = Depends(get_db_api),
+) -> Any:
+    """Manually trigger a database metrics snapshot."""
+    return await db.capture_db_metrics("manual")
+
+
 _ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
 _MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5 MB
 _EXT_MAP = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}

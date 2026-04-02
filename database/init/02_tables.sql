@@ -161,3 +161,128 @@ create table if not exists internal.app_logs
 comment on table internal.app_logs is 'Application request and error logs for admin dashboard visibility';
 comment on column internal.app_logs.level is 'One of: DEBUG, INFO, WARNING, ERROR';
 comment on column internal.app_logs.error_detail is 'Full traceback for error-level logs';
+
+-- ============================================================
+-- metric_snapshots
+-- ============================================================
+create table if not exists internal.metric_snapshots
+(
+  id              int8 generated always as identity primary key,
+  captured_at     timestamptz default now(),
+  snapshot_type   text not null check (snapshot_type in ('scheduled', 'manual'))
+);
+
+comment on table internal.metric_snapshots is 'Metadata for periodic database performance metric captures';
+comment on column internal.metric_snapshots.snapshot_type is 'One of: scheduled, manual';
+
+-- ============================================================
+-- stat_statements_history
+-- ============================================================
+create table if not exists internal.stat_statements_history
+(
+  id                int8 generated always as identity primary key,
+  snapshot_id       int8 not null references internal.metric_snapshots(id) on delete cascade,
+  queryid           int8,
+  query             text,
+  calls             int8,
+  total_exec_time   float8,
+  mean_exec_time    float8,
+  min_exec_time     float8,
+  max_exec_time     float8,
+  stddev_exec_time  float8,
+  rows              int8,
+  shared_blks_hit   int8,
+  shared_blks_read  int8,
+  temp_blks_written int8,
+  wal_bytes         int8
+);
+
+comment on table internal.stat_statements_history is 'Historical snapshots of pg_stat_statements for query performance tracking';
+comment on column internal.stat_statements_history.queryid is 'pg_stat_statements query hash identifier';
+comment on column internal.stat_statements_history.stddev_exec_time is 'High stddev relative to mean indicates plan instability';
+
+-- ============================================================
+-- stat_tables_history
+-- ============================================================
+create table if not exists internal.stat_tables_history
+(
+  id                int8 generated always as identity primary key,
+  snapshot_id       int8 not null references internal.metric_snapshots(id) on delete cascade,
+  schemaname        text,
+  relname           text,
+  seq_scan          int8,
+  seq_tup_read      int8,
+  idx_scan          int8,
+  idx_tup_fetch     int8,
+  n_tup_ins         int8,
+  n_tup_upd         int8,
+  n_tup_del         int8,
+  n_dead_tup        int8,
+  last_vacuum       timestamptz,
+  last_autovacuum   timestamptz,
+  last_analyze      timestamptz,
+  last_autoanalyze  timestamptz
+);
+
+comment on table internal.stat_tables_history is 'Historical snapshots of pg_stat_user_tables for table access pattern tracking';
+comment on column internal.stat_tables_history.n_dead_tup is 'Dead tuples awaiting vacuum; high counts indicate vacuum lag';
+
+-- ============================================================
+-- stat_indexes_history
+-- ============================================================
+create table if not exists internal.stat_indexes_history
+(
+  id              int8 generated always as identity primary key,
+  snapshot_id     int8 not null references internal.metric_snapshots(id) on delete cascade,
+  schemaname      text,
+  relname         text,
+  indexrelname    text,
+  idx_scan        int8,
+  idx_tup_read    int8,
+  idx_tup_fetch   int8
+);
+
+comment on table internal.stat_indexes_history is 'Historical snapshots of pg_stat_user_indexes for index usage tracking';
+comment on column internal.stat_indexes_history.idx_scan is 'Number of index scans; zero across snapshots indicates an unused index';
+
+-- ============================================================
+-- stat_functions_history
+-- ============================================================
+create table if not exists internal.stat_functions_history
+(
+  id            int8 generated always as identity primary key,
+  snapshot_id   int8 not null references internal.metric_snapshots(id) on delete cascade,
+  schemaname    text,
+  funcname      text,
+  calls         int8,
+  total_time    float8,
+  self_time     float8
+);
+
+comment on table internal.stat_functions_history is 'Historical snapshots of pg_stat_user_functions for function performance tracking';
+comment on column internal.stat_functions_history.self_time is 'Time spent in the function itself, excluding called functions';
+
+-- ============================================================
+-- stat_database_history
+-- ============================================================
+create table if not exists internal.stat_database_history
+(
+  id              int8 generated always as identity primary key,
+  snapshot_id     int8 not null references internal.metric_snapshots(id) on delete cascade,
+  numbackends     int4,
+  xact_commit     int8,
+  xact_rollback   int8,
+  blks_read       int8,
+  blks_hit        int8,
+  tup_returned    int8,
+  tup_fetched     int8,
+  tup_inserted    int8,
+  tup_updated     int8,
+  tup_deleted     int8,
+  deadlocks       int8,
+  temp_files       int8,
+  temp_bytes      int8
+);
+
+comment on table internal.stat_database_history is 'Historical snapshots of pg_stat_database for database-level performance tracking';
+comment on column internal.stat_database_history.deadlocks is 'Number of deadlocks detected; non-zero warrants investigation';

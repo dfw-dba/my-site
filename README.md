@@ -2,7 +2,7 @@
 
 Personal website and portfolio built with FastAPI and React.
 
-A fork-friendly, full-stack personal site with a "database as API" architecture — all data access goes through PostgreSQL stored functions, keeping the application layer thin and the schema the single source of truth. Includes an admin dashboard with built-in application logging (request logs, error tracebacks, response time stats) stored in PostgreSQL — no external logging service required.
+A fork-friendly, full-stack personal site with a "database as API" architecture — all data access goes through PostgreSQL stored functions, keeping the application layer thin and the schema the single source of truth. Includes an admin dashboard with built-in application logging (request logs, error tracebacks, response time stats) and database performance monitoring (query stats, plan instability detection, table/index/function metrics via `pg_stat_statements` and `auto_explain`) — all stored in PostgreSQL, no external services required.
 
 ## Tech Stack
 
@@ -541,6 +541,51 @@ Production runs automatically after staging succeeds (or immediately if staging 
 Production validation extracts commands from the PR's `## Prod-Post-deploy validation` section (with `${API_URL}` pointing to the production API). Results are commented on the PR.
 
 To manually trigger the full pipeline: **Actions → Deploy → Run workflow**.
+
+## Database Performance Monitoring
+
+Built-in database observability using PostgreSQL's native statistics infrastructure. No external monitoring services required.
+
+### What It Captures
+
+| Data Source | Captured Via | Frequency |
+|-------------|-------------|-----------|
+| Query performance (calls, timing, rows, buffers) | `pg_stat_statements` | Hourly snapshot |
+| Slow query execution plans with parameters | `auto_explain` (500ms threshold) | On-demand (CloudWatch Logs) |
+| Table access patterns (seq vs index scans, dead tuples) | `pg_stat_user_tables` | Hourly snapshot |
+| Index usage and unused index detection | `pg_stat_user_indexes` | Hourly snapshot |
+| Function call counts and timing | `pg_stat_user_functions` | Hourly snapshot |
+| Database-level stats (cache hit ratio, transactions, deadlocks) | `pg_stat_database` | Hourly snapshot |
+
+### Plan Instability Detection
+
+Queries where `stddev_exec_time > mean_exec_time` or `max_exec_time > 10x mean` are flagged as potentially suffering from parameter-driven plan changes (the PostgreSQL equivalent of SQL Server's parameter sniffing). Investigation workflow:
+
+1. High stddev flags a query via `/api/admin/metrics/plan-instability`
+2. Check CloudWatch Logs for `auto_explain` output on that query
+3. See actual parameter values and execution plan that caused the slowdown
+
+### Admin API Endpoints
+
+All endpoints require admin authentication:
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/admin/metrics/overview` | Database-level stats with delta vs previous snapshot |
+| GET | `/api/admin/metrics/queries` | Top queries by execution time |
+| GET | `/api/admin/metrics/plan-instability` | Queries with high execution time variance |
+| GET | `/api/admin/metrics/tables` | Table access patterns and vacuum status |
+| GET | `/api/admin/metrics/indexes` | Index usage and unused index detection |
+| GET | `/api/admin/metrics/functions` | Function performance stats |
+| POST | `/api/admin/metrics/capture` | Manually trigger a metrics snapshot |
+
+### Retention
+
+Metric snapshots older than 30 days are automatically purged during daily maintenance. The `auto_explain` threshold (500ms) can be lowered per-session via bastion for targeted investigation.
+
+### RDS Parameter Group Changes
+
+Enabling `pg_stat_statements` requires adding it to `shared_preload_libraries`, which triggers an RDS reboot (~30-60 seconds for a micro instance) on first deploy.
 
 ## Project Structure
 
