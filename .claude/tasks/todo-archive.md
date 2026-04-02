@@ -263,3 +263,14 @@ _Superseded by the separate staging account work (PR #103). Design changed from 
 - [x] 39.6 Verification: TypeScript compiles, backend tests pass (41/41), frontend tests pass (25/25)
 - [x] 39.7 Post-public: Enable branch protection on `main`
 - [x] 39.8 Post-public: Add production environment protection rules
+
+---
+
+## Sprint 40: Combine Deploy Workflows
+
+- [x] 40.1 Create combined `deploy.yml` workflow with 6-job chain
+- [x] 40.2 Delete `deploy-stage.yml` and `deploy-prod.yml`
+- [x] 40.3 Update `.claude/rules/git-workflow.md` (Deploy Workflows, Prod Deploy Gate, Dependabot)
+- [x] 40.4 Update `.claude/agents/aws-architect.md` (2 workflow references)
+- [x] 40.5 Update `README.md` (Continuous Deployment, Staging, Production sections)
+- [x] 40.6 Verification: YAML syntax, job chain, secrets, no stale references

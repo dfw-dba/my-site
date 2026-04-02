@@ -216,3 +216,53 @@ class DatabaseAPI:
             {"id": entry_id},
         )
         return result.scalar_one()
+
+    # ── Analytics ────────────────────────────────────────────────────────────
+
+    async def insert_page_view(self, data: dict[str, Any]) -> Any:
+        """Insert a page view record with GeoIP enrichment."""
+        result = await self.session.execute(
+            text("SELECT api.insert_page_view(CAST(:data AS jsonb))"),
+            {"data": json.dumps(data, default=str)},
+        )
+        return result.scalar_one()
+
+    async def insert_visitor_event(self, data: dict[str, Any]) -> Any:
+        """Insert a visitor interaction event."""
+        result = await self.session.execute(
+            text("SELECT api.insert_visitor_event(CAST(:data AS jsonb))"),
+            {"data": json.dumps(data, default=str)},
+        )
+        return result.scalar_one()
+
+    async def get_analytics_summary(self, filters: dict[str, Any] | None = None) -> Any:
+        """Fetch visitor analytics summary dashboard data."""
+        result = await self.session.execute(
+            text("SELECT api.get_analytics_summary(CAST(:filters AS jsonb))"),
+            {"filters": json.dumps(filters or {}, default=str)},
+        )
+        return result.scalar_one()
+
+    async def get_analytics_visitors(self, filters: dict[str, Any] | None = None) -> Any:
+        """Fetch visitor-level analytics data."""
+        result = await self.session.execute(
+            text("SELECT api.get_analytics_visitors(CAST(:filters AS jsonb))"),
+            {"filters": json.dumps(filters or {}, default=str)},
+        )
+        return result.scalar_one()
+
+    async def get_analytics_geo(self, filters: dict[str, Any] | None = None) -> Any:
+        """Fetch geographic breakdown of visitors."""
+        result = await self.session.execute(
+            text("SELECT api.get_analytics_geo(CAST(:filters AS jsonb))"),
+            {"filters": json.dumps(filters or {}, default=str)},
+        )
+        return result.scalar_one()
+
+    async def purge_analytics(self, days: int = 90) -> Any:
+        """Delete page views and visitor events older than N days."""
+        result = await self.session.execute(
+            text("SELECT api.purge_analytics(:days)"),
+            {"days": days},
+        )
+        return result.scalar_one()

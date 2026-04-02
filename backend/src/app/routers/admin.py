@@ -253,6 +253,66 @@ async def capture_metrics(
     return await db.capture_db_metrics("manual")
 
 
+# ── Analytics ───────────────────────────────────────────────────────────────
+
+
+@router.get("/analytics/summary", dependencies=[Depends(get_admin_auth)])
+@limiter.limit("60/minute")
+async def get_analytics_summary(
+    request: Request,
+    db: DatabaseAPI = Depends(get_db_api),
+    start_date: str | None = None,
+    end_date: str | None = None,
+    page_path: str | None = None,
+    exclude_bots: bool = True,
+) -> Any:
+    """Fetch visitor analytics summary dashboard data."""
+    filters: dict[str, Any] = {"exclude_bots": exclude_bots}
+    if start_date:
+        filters["start_date"] = start_date
+    if end_date:
+        filters["end_date"] = end_date
+    if page_path:
+        filters["page_path"] = page_path
+    return await db.get_analytics_summary(filters)
+
+
+@router.get("/analytics/visitors", dependencies=[Depends(get_admin_auth)])
+@limiter.limit("60/minute")
+async def get_analytics_visitors(
+    request: Request,
+    db: DatabaseAPI = Depends(get_db_api),
+    start_date: str | None = None,
+    end_date: str | None = None,
+    exclude_bots: bool = True,
+) -> Any:
+    """Fetch visitor-level analytics: sessions, return visitors."""
+    filters: dict[str, Any] = {"exclude_bots": exclude_bots}
+    if start_date:
+        filters["start_date"] = start_date
+    if end_date:
+        filters["end_date"] = end_date
+    return await db.get_analytics_visitors(filters)
+
+
+@router.get("/analytics/geo", dependencies=[Depends(get_admin_auth)])
+@limiter.limit("60/minute")
+async def get_analytics_geo(
+    request: Request,
+    db: DatabaseAPI = Depends(get_db_api),
+    start_date: str | None = None,
+    end_date: str | None = None,
+    exclude_bots: bool = True,
+) -> Any:
+    """Fetch geographic breakdown of visitors."""
+    filters: dict[str, Any] = {"exclude_bots": exclude_bots}
+    if start_date:
+        filters["start_date"] = start_date
+    if end_date:
+        filters["end_date"] = end_date
+    return await db.get_analytics_geo(filters)
+
+
 _ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
 _MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5 MB
 _EXT_MAP = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}

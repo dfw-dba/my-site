@@ -587,6 +587,61 @@ Metric snapshots older than 30 days are automatically purged during daily mainte
 
 Enabling `pg_stat_statements` requires adding it to `shared_preload_libraries`, which triggers an RDS reboot (~30-60 seconds for a micro instance) on first deploy.
 
+## Visitor Analytics
+
+Self-hosted, privacy-respecting visitor analytics. No cookies, no external services, all data stays in PostgreSQL.
+
+### How It Works
+
+- **Visitor fingerprint**: SHA-256 hash of browser attributes (User-Agent, screen size, language, timezone, color depth). One-way hash, not reversible to identify individuals.
+- **Session tracking**: Random UUID in `sessionStorage` (new per tab, regenerated after 30 min inactivity). No cookies.
+- **Do Not Track**: Fully respected. When `navigator.doNotTrack === "1"`, no tracking occurs.
+- **Bot detection**: Server-side User-Agent classification flags known bots (Googlebot, Bingbot, etc.) and headless browsers.
+- **GeoIP enrichment**: Optional IP-to-location lookup via PostgreSQL table (loaded from MaxMind GeoLite2 data).
+
+### What It Tracks
+
+| Event Type | Trigger | Data Captured |
+|------------|---------|---------------|
+| Page view | React Router route change | Path, title, referrer, UTM params, device/browser/OS, screen size, language, timezone |
+| Outbound click | Click on external link | Link URL, link text, page path |
+| Scroll depth | Intersection Observer at 25/50/75/100% | Depth percentage, page path |
+| Print | `beforeprint` event | Page path |
+| Visibility change | Tab hidden/shown | Visibility state, page path |
+
+Events are batched and sent every 5 seconds or on tab hide/close via `navigator.sendBeacon()`.
+
+### Public API
+
+| Method | Endpoint | Auth | Rate Limit | Description |
+|--------|----------|------|------------|-------------|
+| POST | `/api/analytics/event` | None | 30/min per IP | Record a page view or visitor event |
+
+### Admin API Endpoints
+
+All endpoints require admin authentication:
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/admin/analytics/summary` | Page views, unique visitors, sessions, top pages/referrers, device/browser/OS breakdown |
+| GET | `/api/admin/analytics/visitors` | Session stats, return visitor detection, top sessions |
+| GET | `/api/admin/analytics/geo` | Geographic breakdown by country, region, city |
+
+All admin analytics endpoints accept optional query parameters: `start_date`, `end_date`, `exclude_bots` (default: true).
+
+### Retention
+
+Analytics data (page views and visitor events) older than 90 days is automatically purged during daily maintenance.
+
+### GeoIP Setup (Optional)
+
+GeoIP enrichment requires loading MaxMind GeoLite2 data into the `internal.geoip_ranges` table. Without it, analytics still works but geographic data will be empty. Load data via bastion host:
+
+```bash
+# Download GeoLite2 CSV from MaxMind (requires free account)
+# Import into geoip_ranges table via bastion psql session
+```
+
 ## Project Structure
 
 ```

@@ -15,7 +15,7 @@ _mangum = Mangum(app, lifespan="off")
 
 
 async def _run_maintenance() -> dict[str, Any]:
-    """Purge logs older than 14 days, purge metric snapshots older than 30 days, then VACUUM."""
+    """Purge logs (14d), metric snapshots (30d), analytics (90d), then VACUUM."""
     from sqlalchemy import text
 
     from src.app.database import engine
@@ -29,6 +29,10 @@ async def _run_maintenance() -> dict[str, Any]:
         metrics_result = await conn.execute(text("SELECT api.purge_metric_snapshots(30)"))
         metrics_purge = metrics_result.scalar_one()
         logger.info("Metrics purge result: %s", metrics_purge)
+
+        analytics_result = await conn.execute(text("SELECT api.purge_analytics(90)"))
+        analytics_purge = analytics_result.scalar_one()
+        logger.info("Analytics purge result: %s", analytics_purge)
 
     # VACUUM cannot run inside a transaction — use autocommit
     raw_conn = await engine.raw_connection()
@@ -47,6 +51,10 @@ async def _run_maintenance() -> dict[str, Any]:
         logger.info("VACUUM internal.stat_functions_history completed")
         await raw_conn.driver_connection.execute("VACUUM internal.stat_database_history")
         logger.info("VACUUM internal.stat_database_history completed")
+        await raw_conn.driver_connection.execute("VACUUM internal.page_views")
+        logger.info("VACUUM internal.page_views completed")
+        await raw_conn.driver_connection.execute("VACUUM internal.visitor_events")
+        logger.info("VACUUM internal.visitor_events completed")
     finally:
         await raw_conn.close()
 

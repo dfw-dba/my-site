@@ -13,7 +13,7 @@ from src.app.services.db_functions import DatabaseAPI
 
 logger = logging.getLogger(__name__)
 
-_SKIP_PATHS = {"/api/health", "/api/admin/logs", "/api/admin/logs/stats"}
+_SKIP_PATHS = {"/api/health", "/api/admin/logs", "/api/admin/logs/stats", "/api/analytics/event"}
 
 
 def _log_level_for_status(status_code: int) -> str:
