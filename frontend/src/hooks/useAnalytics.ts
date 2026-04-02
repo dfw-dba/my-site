@@ -13,21 +13,19 @@ export function useAnalytics(): void {
   const location = useLocation();
   const scrollObserverRef = useRef<IntersectionObserver | null>(null);
   const scrollFiredRef = useRef<Set<string>>(new Set());
-
-  // Respect Do Not Track
-  if (isDoNotTrack()) return;
+  const dnt = isDoNotTrack();
 
   // Track page views on route change
   useEffect(() => {
+    if (dnt) return;
     trackPageView(location.pathname, document.title);
-
-    // Reset scroll tracking for new page
     scrollFiredRef.current.clear();
-  }, [location.pathname]);
+  }, [location.pathname, dnt]);
 
   // Set up event listeners
   useEffect(() => {
-    // Flush timer
+    if (dnt) return;
+
     startFlushing();
 
     // Outbound link click tracking
@@ -49,12 +47,12 @@ export function useAnalytics(): void {
 
     // Scroll depth tracking via Intersection Observer
     function setupScrollObserver(): void {
-      const sentinels = document.querySelectorAll("[data-scroll-depth]");
-      if (sentinels.length === 0) {
-        // Create sentinels at 25/50/75/100% of main content
-        const main = document.querySelector("main");
-        if (!main) return;
-        for (const pct of [25, 50, 75, 100]) {
+      const main = document.querySelector("main");
+      if (!main) return;
+
+      // Create sentinels at 25/50/75/100% of main content
+      for (const pct of [25, 50, 75, 100]) {
+        if (!document.querySelector(`[data-scroll-depth="${pct}"]`)) {
           const el = document.createElement("div");
           el.setAttribute("data-scroll-depth", String(pct));
           el.style.position = "absolute";
@@ -114,10 +112,9 @@ export function useAnalytics(): void {
       document.removeEventListener("visibilitychange", handleVisibility);
       clearTimeout(scrollTimer);
       scrollObserverRef.current?.disconnect();
-      // Clean up sentinel elements
       document
         .querySelectorAll("[data-scroll-depth]")
         .forEach((el) => el.remove());
     };
-  }, [location.pathname]);
+  }, [location.pathname, dnt]);
 }

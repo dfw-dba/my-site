@@ -83,20 +83,16 @@ function flush(): void {
   if (queue.length === 0) return;
   const batch = queue.splice(0);
   for (const event of batch) {
-    const body = JSON.stringify(event);
-    if (navigator.sendBeacon) {
-      navigator.sendBeacon(
-        ANALYTICS_ENDPOINT,
-        new Blob([body], { type: "application/json" }),
-      );
-    } else {
-      fetch(ANALYTICS_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body,
-        keepalive: true,
-      }).catch(() => {});
-    }
+    // Use fetch with keepalive instead of sendBeacon — sendBeacon uses
+    // no-cors mode which silently drops application/json to cross-origin
+    // URLs (frontend domain != API subdomain). fetch+keepalive handles
+    // CORS preflight properly and survives page unload like sendBeacon.
+    fetch(ANALYTICS_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(event),
+      keepalive: true,
+    }).catch(() => {});
   }
 }
 
