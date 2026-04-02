@@ -1156,3 +1156,426 @@ begin
 end;
 $$ language plpgsql volatile
 security definer;
+
+
+-- ============================================================
+--  ANALYTICS FUNCTIONS
+-- ============================================================
+
+-- api.geoip_lookup(p_ip text)
+-- Look up country/region/city for an IP address from the geoip_ranges table.
+create or replace function api.geoip_lookup(p_ip text)
+returns jsonb as $$
+declare
+    v_result record;
+begin
+    select country_code, country_name, region, city
+      into v_result
+      from internal.geoip_ranges
+     where p_ip::inet >= ip_start
+       and p_ip::inet <= ip_end
+     limit 1;
+
+    if not found then
+        return null;
+    end if;
+
+    return jsonb_build_object(
+        'country_code', v_result.country_code,
+        'country_name', v_result.country_name,
+        'region', v_result.region,
+        'city', v_result.city
+    );
+end;
+$$ language plpgsql stable
+security definer;
+
+comment on function api.geoip_lookup(text) is
+    'Look up geographic location for an IP address using the geoip_ranges table.';
+
+
+-- api.insert_page_view(p_data jsonb)
+-- Insert a page view record, enriching with GeoIP data if available.
+create or replace function api.insert_page_view(p_data jsonb)
+returns jsonb as $$
+declare
+    v_id int8;
+    v_geo jsonb;
+    v_country_code text;
+    v_country_name text;
+    v_region text;
+    v_city text;
+begin
+    -- attempt GeoIP enrichment
+    if p_data->>'client_ip' is not null then
+        v_geo := api.geoip_lookup(p_data->>'client_ip');
+        if v_geo is not null then
+            v_country_code := v_geo->>'country_code';
+            v_country_name := v_geo->>'country_name';
+            v_region := v_geo->>'region';
+            v_city := v_geo->>'city';
+        end if;
+    end if;
+
+    insert into internal.page_views (
+        visitor_hash, session_id, page_path, page_title,
+        referrer, utm_source, utm_medium, utm_campaign,
+        device_type, browser, os, screen_width, screen_height,
+        language, timezone, client_ip,
+        country_code, country_name, region, city, is_bot
+    ) values (
+        p_data->>'visitor_hash',
+        p_data->>'session_id',
+        p_data->>'page_path',
+        p_data->>'page_title',
+        p_data->>'referrer',
+        p_data->>'utm_source',
+        p_data->>'utm_medium',
+        p_data->>'utm_campaign',
+        p_data->>'device_type',
+        p_data->>'browser',
+        p_data->>'os',
+        (p_data->>'screen_width')::int2,
+        (p_data->>'screen_height')::int2,
+        p_data->>'language',
+        p_data->>'timezone',
+        p_data->>'client_ip',
+        v_country_code,
+        v_country_name,
+        v_region,
+        v_city,
+        coalesce((p_data->>'is_bot')::boolean, false)
+    )
+    returning id into v_id;
+
+    return jsonb_build_object('id', v_id, 'success', true);
+end;
+$$ language plpgsql volatile
+security definer;
+
+comment on function api.insert_page_view(jsonb) is
+    'Insert a page view with automatic GeoIP enrichment when geoip_ranges data is available.';
+
+
+-- api.insert_visitor_event(p_data jsonb)
+-- Insert a visitor interaction event.
+create or replace function api.insert_visitor_event(p_data jsonb)
+returns jsonb as $$
+declare
+    v_id int8;
+begin
+    insert into internal.visitor_events (
+        visitor_hash, session_id, event_type, event_data, page_path
+    ) values (
+        p_data->>'visitor_hash',
+        p_data->>'session_id',
+        p_data->>'event_type',
+        coalesce(p_data->'event_data', '{}'),
+        p_data->>'page_path'
+    )
+    returning id into v_id;
+
+    return jsonb_build_object('id', v_id, 'success', true);
+end;
+$$ language plpgsql volatile
+security definer;
+
+comment on function api.insert_visitor_event(jsonb) is
+    'Insert a visitor interaction event (click, scroll, print, visibility_change).';
+
+
+-- api.get_analytics_summary(p_filters jsonb)
+-- Dashboard overview: page views, unique visitors, sessions, top pages, referrers, device/browser/OS breakdown.
+create or replace function api.get_analytics_summary(p_filters jsonb default '{}')
+returns jsonb as $$
+declare
+    v_start timestamptz;
+    v_end timestamptz;
+    v_page_path text;
+    v_exclude_bots boolean;
+    v_totals jsonb;
+    v_top_pages jsonb;
+    v_top_referrers jsonb;
+    v_devices jsonb;
+    v_browsers jsonb;
+    v_os_breakdown jsonb;
+begin
+    v_start := coalesce((p_filters->>'start_date')::timestamptz, now() - interval '30 days');
+    v_end := coalesce((p_filters->>'end_date')::timestamptz, now());
+    v_page_path := p_filters->>'page_path';
+    v_exclude_bots := coalesce((p_filters->>'exclude_bots')::boolean, true);
+
+    -- totals
+    select jsonb_build_object(
+        'total_page_views', count(*),
+        'unique_visitors', count(distinct visitor_hash),
+        'unique_sessions', count(distinct session_id)
+    ) into v_totals
+    from internal.page_views
+    where created_at between v_start and v_end
+      and (v_page_path is null or page_path = v_page_path)
+      and (not v_exclude_bots or is_bot = false);
+
+    -- top pages
+    select coalesce(jsonb_agg(row_to_json(t)::jsonb), '[]')
+      into v_top_pages
+      from (
+        select page_path, count(*) as views, count(distinct visitor_hash) as unique_visitors
+          from internal.page_views
+         where created_at between v_start and v_end
+           and (not v_exclude_bots or is_bot = false)
+         group by page_path
+         order by views desc
+         limit 20
+      ) as t;
+
+    -- top referrers
+    select coalesce(jsonb_agg(row_to_json(t)::jsonb), '[]')
+      into v_top_referrers
+      from (
+        select referrer, count(*) as views
+          from internal.page_views
+         where created_at between v_start and v_end
+           and referrer is not null and referrer != ''
+           and (not v_exclude_bots or is_bot = false)
+         group by referrer
+         order by views desc
+         limit 20
+      ) as t;
+
+    -- device breakdown
+    select coalesce(jsonb_agg(row_to_json(t)::jsonb), '[]')
+      into v_devices
+      from (
+        select device_type, count(*) as count
+          from internal.page_views
+         where created_at between v_start and v_end
+           and device_type is not null
+           and (not v_exclude_bots or is_bot = false)
+         group by device_type
+         order by count desc
+      ) as t;
+
+    -- browser breakdown
+    select coalesce(jsonb_agg(row_to_json(t)::jsonb), '[]')
+      into v_browsers
+      from (
+        select browser, count(*) as count
+          from internal.page_views
+         where created_at between v_start and v_end
+           and browser is not null
+           and (not v_exclude_bots or is_bot = false)
+         group by browser
+         order by count desc
+         limit 20
+      ) as t;
+
+    -- OS breakdown
+    select coalesce(jsonb_agg(row_to_json(t)::jsonb), '[]')
+      into v_os_breakdown
+      from (
+        select os, count(*) as count
+          from internal.page_views
+         where created_at between v_start and v_end
+           and os is not null
+           and (not v_exclude_bots or is_bot = false)
+         group by os
+         order by count desc
+         limit 20
+      ) as t;
+
+    return v_totals || jsonb_build_object(
+        'top_pages', v_top_pages,
+        'top_referrers', v_top_referrers,
+        'devices', v_devices,
+        'browsers', v_browsers,
+        'os_breakdown', v_os_breakdown,
+        'date_range', jsonb_build_object('start', v_start, 'end', v_end)
+    );
+end;
+$$ language plpgsql stable
+security definer;
+
+comment on function api.get_analytics_summary(jsonb) is
+    'Dashboard overview: page views, unique visitors, sessions, top pages/referrers, device/browser/OS breakdown.';
+
+
+-- api.get_analytics_visitors(p_filters jsonb)
+-- Visitor-level data: pages per session, session duration, return visitors.
+create or replace function api.get_analytics_visitors(p_filters jsonb default '{}')
+returns jsonb as $$
+declare
+    v_start timestamptz;
+    v_end timestamptz;
+    v_exclude_bots boolean;
+    v_top_sessions jsonb;
+    v_return_visitors jsonb;
+    v_session_stats jsonb;
+begin
+    v_start := coalesce((p_filters->>'start_date')::timestamptz, now() - interval '30 days');
+    v_end := coalesce((p_filters->>'end_date')::timestamptz, now());
+    v_exclude_bots := coalesce((p_filters->>'exclude_bots')::boolean, true);
+
+    -- session-level stats
+    select jsonb_build_object(
+        'avg_pages_per_session', coalesce(round(avg(page_count), 1), 0),
+        'total_sessions', count(*)
+    ) into v_session_stats
+    from (
+        select session_id, count(*) as page_count
+          from internal.page_views
+         where created_at between v_start and v_end
+           and (not v_exclude_bots or is_bot = false)
+         group by session_id
+    ) as s;
+
+    -- top sessions by page count
+    select coalesce(jsonb_agg(row_to_json(t)::jsonb), '[]')
+      into v_top_sessions
+      from (
+        select
+            pv.session_id,
+            pv.visitor_hash,
+            count(*) as page_count,
+            min(pv.created_at) as first_view,
+            max(pv.created_at) as last_view,
+            extract(epoch from max(pv.created_at) - min(pv.created_at))::int as duration_seconds
+          from internal.page_views as pv
+         where pv.created_at between v_start and v_end
+           and (not v_exclude_bots or pv.is_bot = false)
+         group by pv.session_id, pv.visitor_hash
+         order by page_count desc
+         limit 50
+      ) as t;
+
+    -- return visitors (seen on multiple days)
+    select coalesce(jsonb_agg(row_to_json(t)::jsonb), '[]')
+      into v_return_visitors
+      from (
+        select
+            visitor_hash,
+            count(distinct date(created_at)) as days_visited,
+            count(*) as total_views,
+            min(created_at) as first_seen,
+            max(created_at) as last_seen
+          from internal.page_views
+         where created_at between v_start and v_end
+           and (not v_exclude_bots or is_bot = false)
+         group by visitor_hash
+        having count(distinct date(created_at)) > 1
+         order by days_visited desc
+         limit 50
+      ) as t;
+
+    return v_session_stats || jsonb_build_object(
+        'top_sessions', v_top_sessions,
+        'return_visitors', v_return_visitors,
+        'date_range', jsonb_build_object('start', v_start, 'end', v_end)
+    );
+end;
+$$ language plpgsql stable
+security definer;
+
+comment on function api.get_analytics_visitors(jsonb) is
+    'Visitor-level analytics: session page counts, duration, return visitor detection.';
+
+
+-- api.get_analytics_geo(p_filters jsonb)
+-- Geographic breakdown of visitors by country, region, city.
+create or replace function api.get_analytics_geo(p_filters jsonb default '{}')
+returns jsonb as $$
+declare
+    v_start timestamptz;
+    v_end timestamptz;
+    v_exclude_bots boolean;
+    v_countries jsonb;
+    v_regions jsonb;
+    v_cities jsonb;
+begin
+    v_start := coalesce((p_filters->>'start_date')::timestamptz, now() - interval '30 days');
+    v_end := coalesce((p_filters->>'end_date')::timestamptz, now());
+    v_exclude_bots := coalesce((p_filters->>'exclude_bots')::boolean, true);
+
+    -- by country
+    select coalesce(jsonb_agg(row_to_json(t)::jsonb), '[]')
+      into v_countries
+      from (
+        select country_code, country_name, count(*) as views, count(distinct visitor_hash) as unique_visitors
+          from internal.page_views
+         where created_at between v_start and v_end
+           and country_code is not null
+           and (not v_exclude_bots or is_bot = false)
+         group by country_code, country_name
+         order by views desc
+         limit 50
+      ) as t;
+
+    -- by region
+    select coalesce(jsonb_agg(row_to_json(t)::jsonb), '[]')
+      into v_regions
+      from (
+        select country_code, region, count(*) as views, count(distinct visitor_hash) as unique_visitors
+          from internal.page_views
+         where created_at between v_start and v_end
+           and region is not null
+           and (not v_exclude_bots or is_bot = false)
+         group by country_code, region
+         order by views desc
+         limit 50
+      ) as t;
+
+    -- by city
+    select coalesce(jsonb_agg(row_to_json(t)::jsonb), '[]')
+      into v_cities
+      from (
+        select country_code, region, city, count(*) as views, count(distinct visitor_hash) as unique_visitors
+          from internal.page_views
+         where created_at between v_start and v_end
+           and city is not null
+           and (not v_exclude_bots or is_bot = false)
+         group by country_code, region, city
+         order by views desc
+         limit 50
+      ) as t;
+
+    return jsonb_build_object(
+        'countries', v_countries,
+        'regions', v_regions,
+        'cities', v_cities,
+        'date_range', jsonb_build_object('start', v_start, 'end', v_end)
+    );
+end;
+$$ language plpgsql stable
+security definer;
+
+comment on function api.get_analytics_geo(jsonb) is
+    'Geographic breakdown of visitors by country, region, and city.';
+
+
+-- api.purge_analytics(p_days int)
+-- Delete page_views and visitor_events older than N days.
+create or replace function api.purge_analytics(p_days int default 90)
+returns jsonb as $$
+declare
+    v_views_count int;
+    v_events_count int;
+begin
+    delete from internal.page_views
+     where created_at < now() - make_interval(days => p_days);
+    get diagnostics v_views_count = row_count;
+
+    delete from internal.visitor_events
+     where created_at < now() - make_interval(days => p_days);
+    get diagnostics v_events_count = row_count;
+
+    return jsonb_build_object(
+        'page_views_deleted', v_views_count,
+        'visitor_events_deleted', v_events_count,
+        'success', true
+    );
+end;
+$$ language plpgsql volatile
+security definer;
+
+comment on function api.purge_analytics(int) is
+    'Delete page views and visitor events older than N days.';

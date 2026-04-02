@@ -2,8 +2,11 @@ import { Outlet } from "react-router";
 import HamburgerMenu from "../components/HamburgerMenu";
 import SocialIcons from "../components/SocialIcons";
 import ThemeToggle from "../components/ThemeToggle";
+import { useAnalytics } from "../hooks/useAnalytics";
 
 export default function MainLayout() {
+  useAnalytics();
+
   return (
     <div className="flex h-screen flex-col bg-white dark:bg-gray-900">
       <header className="flex shrink-0 items-center justify-between px-4 py-4">

@@ -286,3 +286,83 @@ create table if not exists internal.stat_database_history
 
 comment on table internal.stat_database_history is 'Historical snapshots of pg_stat_database for database-level performance tracking';
 comment on column internal.stat_database_history.deadlocks is 'Number of deadlocks detected; non-zero warrants investigation';
+
+-- ============================================================
+-- page_views
+-- ============================================================
+create table if not exists internal.page_views
+(
+  id             int8 generated always as identity primary key,
+  visitor_hash   text not null,
+  session_id     text not null,
+  page_path      text not null,
+  page_title     text,
+  referrer       text,
+  utm_source     text,
+  utm_medium     text,
+  utm_campaign   text,
+  device_type    text check (device_type in ('desktop', 'mobile', 'tablet')),
+  browser        text,
+  os             text,
+  screen_width   int2,
+  screen_height  int2,
+  language       text,
+  timezone       text,
+  client_ip      text,
+  country_code   text,
+  country_name   text,
+  region         text,
+  city           text,
+  is_bot         boolean default false,
+  created_at     timestamptz default now()
+);
+
+create index if not exists idx_page_views_created_at on internal.page_views (created_at);
+create index if not exists idx_page_views_visitor_hash on internal.page_views (visitor_hash);
+create index if not exists idx_page_views_session_id on internal.page_views (session_id);
+
+comment on table internal.page_views is 'Privacy-respecting visitor page view tracking; visitor_hash is a one-way fingerprint';
+comment on column internal.page_views.visitor_hash is 'SHA-256 hash of browser attributes; not reversible to identify individuals';
+comment on column internal.page_views.session_id is 'Random UUID per browser tab via sessionStorage; cleared on tab close';
+comment on column internal.page_views.is_bot is 'True when User-Agent matches known bot patterns';
+
+-- ============================================================
+-- visitor_events
+-- ============================================================
+create table if not exists internal.visitor_events
+(
+  id           int8 generated always as identity primary key,
+  visitor_hash text not null,
+  session_id   text not null,
+  event_type   text not null check (event_type in ('click', 'scroll', 'print', 'visibility_change')),
+  event_data   jsonb default '{}',
+  page_path    text not null,
+  created_at   timestamptz default now()
+);
+
+create index if not exists idx_visitor_events_created_at on internal.visitor_events (created_at);
+create index if not exists idx_visitor_events_session_id on internal.visitor_events (session_id);
+
+comment on table internal.visitor_events is 'Visitor interaction events: clicks, scroll depth, print, tab visibility changes';
+comment on column internal.visitor_events.event_data is 'Event-specific payload as JSON; e.g. link URL for clicks, depth % for scroll';
+
+-- ============================================================
+-- geoip_ranges
+-- ============================================================
+create table if not exists internal.geoip_ranges
+(
+  id            int8 generated always as identity primary key,
+  ip_start      inet not null,
+  ip_end        inet not null,
+  country_code  text,
+  country_name  text,
+  region        text,
+  city          text,
+  updated_at    timestamptz default now()
+);
+
+create index if not exists idx_geoip_ranges_ip on internal.geoip_ranges (ip_start, ip_end);
+
+comment on table internal.geoip_ranges is 'GeoIP lookup table for IP-to-location enrichment; loaded from MaxMind GeoLite2 data';
+comment on column internal.geoip_ranges.ip_start is 'Start of IP range (inclusive)';
+comment on column internal.geoip_ranges.ip_end is 'End of IP range (inclusive)';
