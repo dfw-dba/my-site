@@ -1,7 +1,7 @@
 import json
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Discriminator, Field, Tag, field_validator
 
 
 class PageViewData(BaseModel):
@@ -42,8 +42,27 @@ class VisitorEventData(BaseModel):
         return v
 
 
-class AnalyticsEvent(BaseModel):
-    """Wrapper for analytics events from the frontend tracker."""
+class PageViewEvent(BaseModel):
+    """A page_view analytics event."""
 
-    type: Literal["page_view", "event"]
-    data: PageViewData | VisitorEventData
+    type: Literal["page_view"]
+    data: PageViewData
+
+
+class VisitorEvent(BaseModel):
+    """A visitor interaction analytics event."""
+
+    type: Literal["event"]
+    data: VisitorEventData
+
+
+def _event_discriminator(v: dict) -> str:
+    if isinstance(v, dict):
+        return v.get("type", "page_view")
+    return getattr(v, "type", "page_view")
+
+
+AnalyticsEvent = Annotated[
+    Annotated[PageViewEvent, Tag("page_view")] | Annotated[VisitorEvent, Tag("event")],
+    Discriminator(_event_discriminator),
+]
