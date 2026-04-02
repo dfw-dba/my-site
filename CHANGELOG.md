@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/dfw-dba/my-site/compare/v1.7.0...v1.8.0) (2026-04-02)
+
+
+### Features
+
+* add privacy-respecting visitor analytics with bot detection ([#151](https://github.com/dfw-dba/my-site/issues/151)) ([2ec6d1e](https://github.com/dfw-dba/my-site/commit/2ec6d1e8da7f830893ad9ea67574417fb8a81985))
+
 ## [1.7.0](https://github.com/dfw-dba/my-site/compare/v1.6.0...v1.7.0) (2026-04-02)
 
 
