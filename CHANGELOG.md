@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.2](https://github.com/dfw-dba/my-site/compare/v1.8.1...v1.8.2) (2026-04-02)
+
+
+### Bug Fixes
+
+* replace sendBeacon with fetch+keepalive for cross-origin analytics ([#156](https://github.com/dfw-dba/my-site/issues/156)) ([606e1f4](https://github.com/dfw-dba/my-site/commit/606e1f4b2063b6285cae86460329da47974ab9a2))
+
 ## [1.8.1](https://github.com/dfw-dba/my-site/compare/v1.8.0...v1.8.1) (2026-04-02)
 
 
