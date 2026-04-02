@@ -238,3 +238,28 @@ _Superseded by the separate staging account work (PR #103). Design changed from 
 - [x] 36.4 Upgrade `actions/setup-python` v5 → v6 in ci
 - [x] 36.5 Upgrade `astral-sh/setup-uv` v4 → v5 in ci
 - [x] 36.6 Upgrade `amannn/action-semantic-pull-request` v5 → v6 in lint-pr
+
+---
+
+## Sprint 37: Hobby Entry Type
+
+- [x] 37.1–37.5 All items complete
+
+---
+
+## Sprint 38: Scoped Rules & Memory Migration
+
+- [x] 38.1–38.6 All items complete
+
+---
+
+## Sprint 39: Pre-Public Security Audit & Hardening
+
+- [x] 39.1 Delete all 38 old plan files from `.claude/tasks/plans/`
+- [x] 39.2 Add Content-Security-Policy header to CloudFront response headers policy in `app-stack.ts`
+- [x] 39.3 Add architecture decision comments for Lambda public subnets in `app-stack.ts` and `data-stack.ts`
+- [x] 39.4 Scope S3 media bucket permissions: `grantReadWrite` → `grantRead` + `grantPut` in `app-stack.ts`
+- [x] 39.5 Document RDS IAM wildcard trade-off with comment in `app-stack.ts`
+- [x] 39.6 Verification: TypeScript compiles, backend tests pass (41/41), frontend tests pass (25/25)
+- [x] 39.7 Post-public: Enable branch protection on `main`
+- [x] 39.8 Post-public: Add production environment protection rules

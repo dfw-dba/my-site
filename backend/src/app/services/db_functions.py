@@ -143,6 +143,72 @@ class DatabaseAPI:
         result = await self.session.execute(text("SELECT api.maintenance_purge_logs()"))
         return result.scalar_one()
 
+    # ── Database Metrics ──────────────────────────────────────────────────
+
+    async def capture_db_metrics(self, snapshot_type: str = "scheduled") -> Any:
+        """Capture a database performance metrics snapshot."""
+        result = await self.session.execute(
+            text("SELECT api.capture_db_metrics(:type)"),
+            {"type": snapshot_type},
+        )
+        return result.scalar_one()
+
+    async def get_db_overview(self, filters: dict[str, Any] | None = None) -> Any:
+        """Fetch database-level overview stats from latest snapshot."""
+        result = await self.session.execute(
+            text("SELECT api.get_db_overview(CAST(:filters AS jsonb))"),
+            {"filters": json.dumps(filters or {}, default=str)},
+        )
+        return result.scalar_one()
+
+    async def get_slow_queries(self, filters: dict[str, Any] | None = None) -> Any:
+        """Fetch top queries by execution time from latest snapshot."""
+        result = await self.session.execute(
+            text("SELECT api.get_slow_queries(CAST(:filters AS jsonb))"),
+            {"filters": json.dumps(filters or {}, default=str)},
+        )
+        return result.scalar_one()
+
+    async def get_plan_instability(self, filters: dict[str, Any] | None = None) -> Any:
+        """Fetch queries with high execution time variance."""
+        result = await self.session.execute(
+            text("SELECT api.get_plan_instability(CAST(:filters AS jsonb))"),
+            {"filters": json.dumps(filters or {}, default=str)},
+        )
+        return result.scalar_one()
+
+    async def get_table_stats(self, filters: dict[str, Any] | None = None) -> Any:
+        """Fetch table access patterns from latest snapshot."""
+        result = await self.session.execute(
+            text("SELECT api.get_table_stats(CAST(:filters AS jsonb))"),
+            {"filters": json.dumps(filters or {}, default=str)},
+        )
+        return result.scalar_one()
+
+    async def get_index_usage(self, filters: dict[str, Any] | None = None) -> Any:
+        """Fetch index usage stats from latest snapshot."""
+        result = await self.session.execute(
+            text("SELECT api.get_index_usage(CAST(:filters AS jsonb))"),
+            {"filters": json.dumps(filters or {}, default=str)},
+        )
+        return result.scalar_one()
+
+    async def get_function_stats(self, filters: dict[str, Any] | None = None) -> Any:
+        """Fetch function performance stats from latest snapshot."""
+        result = await self.session.execute(
+            text("SELECT api.get_function_stats(CAST(:filters AS jsonb))"),
+            {"filters": json.dumps(filters or {}, default=str)},
+        )
+        return result.scalar_one()
+
+    async def purge_metric_snapshots(self, days: int = 30) -> Any:
+        """Delete metric snapshots older than N days."""
+        result = await self.session.execute(
+            text("SELECT api.purge_metric_snapshots(:days)"),
+            {"days": days},
+        )
+        return result.scalar_one()
+
     async def delete_professional_entry(self, entry_id: int) -> Any:
         """Delete a professional entry by ID."""
         result = await self.session.execute(

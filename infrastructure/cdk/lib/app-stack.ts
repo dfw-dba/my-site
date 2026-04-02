@@ -289,6 +289,20 @@ export class AppStack extends cdk.Stack {
       targets: [new eventsTargets.LambdaFunction(backendFn)],
     });
 
+    // --- Scheduled Metrics Capture (hourly) ---
+
+    new events.Rule(this, "MetricsCaptureSchedule", {
+      ruleName: `${namePrefix}mysite-metrics-capture`,
+      description: "Hourly database performance metrics snapshot",
+      schedule: events.Schedule.rate(cdk.Duration.hours(1)),
+      targets: [new eventsTargets.LambdaFunction(backendFn, {
+        event: events.RuleTargetInput.fromObject({
+          source: "mysite.scheduled",
+          action: "capture_metrics",
+        }),
+      })],
+    });
+
     // --- API Gateway v2 ---
 
     // ACM cert for API subdomain (in the deployment region)

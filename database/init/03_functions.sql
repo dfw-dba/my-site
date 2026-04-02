@@ -697,6 +697,443 @@ comment on function api.maintenance_purge_logs() is
     'Scheduled maintenance: purge app_logs rows older than 14 days.';
 
 
+-- ============================================================
+--  DATABASE METRICS FUNCTIONS
+-- ============================================================
+
+-- api.capture_db_metrics(p_type text)
+-- Snapshot all database performance stats into history tables.
+create or replace function api.capture_db_metrics(p_type text default 'scheduled')
+returns jsonb as $$
+declare
+    v_snapshot_id   int8;
+    v_statements    int;
+    v_tables        int;
+    v_indexes       int;
+    v_functions     int;
+    v_database      int;
+begin
+    insert into internal.metric_snapshots (snapshot_type)
+    values (p_type)
+    returning id into v_snapshot_id;
+
+    -- Snapshot pg_stat_statements
+    insert into internal.stat_statements_history
+        (snapshot_id, queryid, query, calls, total_exec_time, mean_exec_time,
+         min_exec_time, max_exec_time, stddev_exec_time, rows,
+         shared_blks_hit, shared_blks_read, temp_blks_written, wal_bytes)
+    select
+        v_snapshot_id, ss.queryid, ss.query, ss.calls,
+        ss.total_exec_time, ss.mean_exec_time,
+        ss.min_exec_time, ss.max_exec_time, ss.stddev_exec_time,
+        ss.rows, ss.shared_blks_hit, ss.shared_blks_read,
+        ss.temp_blks_written, ss.wal_bytes
+    from pg_stat_statements as ss
+    where ss.dbid = (select oid from pg_database where datname = current_database());
+    get diagnostics v_statements = row_count;
+
+    -- Snapshot pg_stat_user_tables
+    insert into internal.stat_tables_history
+        (snapshot_id, schemaname, relname, seq_scan, seq_tup_read, idx_scan,
+         idx_tup_fetch, n_tup_ins, n_tup_upd, n_tup_del, n_dead_tup,
+         last_vacuum, last_autovacuum, last_analyze, last_autoanalyze)
+    select
+        v_snapshot_id, st.schemaname, st.relname, st.seq_scan, st.seq_tup_read,
+        st.idx_scan, st.idx_tup_fetch, st.n_tup_ins, st.n_tup_upd, st.n_tup_del,
+        st.n_dead_tup, st.last_vacuum, st.last_autovacuum,
+        st.last_analyze, st.last_autoanalyze
+    from pg_stat_user_tables as st;
+    get diagnostics v_tables = row_count;
+
+    -- Snapshot pg_stat_user_indexes
+    insert into internal.stat_indexes_history
+        (snapshot_id, schemaname, relname, indexrelname, idx_scan, idx_tup_read, idx_tup_fetch)
+    select
+        v_snapshot_id, si.schemaname, si.relname, si.indexrelname,
+        si.idx_scan, si.idx_tup_read, si.idx_tup_fetch
+    from pg_stat_user_indexes as si;
+    get diagnostics v_indexes = row_count;
+
+    -- Snapshot pg_stat_user_functions
+    insert into internal.stat_functions_history
+        (snapshot_id, schemaname, funcname, calls, total_time, self_time)
+    select
+        v_snapshot_id, sf.schemaname, sf.funcname,
+        sf.calls, sf.total_time, sf.self_time
+    from pg_stat_user_functions as sf;
+    get diagnostics v_functions = row_count;
+
+    -- Snapshot pg_stat_database (current database only)
+    insert into internal.stat_database_history
+        (snapshot_id, numbackends, xact_commit, xact_rollback, blks_read, blks_hit,
+         tup_returned, tup_fetched, tup_inserted, tup_updated, tup_deleted,
+         deadlocks, temp_files, temp_bytes)
+    select
+        v_snapshot_id, sd.numbackends, sd.xact_commit, sd.xact_rollback,
+        sd.blks_read, sd.blks_hit, sd.tup_returned, sd.tup_fetched,
+        sd.tup_inserted, sd.tup_updated, sd.tup_deleted,
+        sd.deadlocks, sd.temp_files, sd.temp_bytes
+    from pg_stat_database as sd
+    where sd.datname = current_database();
+    get diagnostics v_database = row_count;
+
+    return jsonb_build_object(
+        'snapshot_id', v_snapshot_id,
+        'success', true,
+        'counts', jsonb_build_object(
+            'statements', v_statements,
+            'tables', v_tables,
+            'indexes', v_indexes,
+            'functions', v_functions,
+            'database', v_database
+        )
+    );
+end;
+$$ language plpgsql volatile
+security definer;
+
+comment on function api.capture_db_metrics(text) is
+    'Snapshot all database performance stats (statements, tables, indexes, functions, database) into history tables.';
+
+
+-- api.get_db_overview(p_filters jsonb)
+-- Database-level stats from latest snapshot with delta vs previous.
+create or replace function api.get_db_overview(p_filters jsonb default '{}')
+returns jsonb as $$
+declare
+    v_latest    record;
+    v_previous  record;
+    v_result    jsonb;
+begin
+    select sdh.*,
+           ms.captured_at
+      into v_latest
+      from internal.stat_database_history as sdh
+      inner join internal.metric_snapshots as ms on ms.id = sdh.snapshot_id
+     order by ms.captured_at desc
+     limit 1;
+
+    if v_latest is null then
+        return jsonb_build_object('message', 'No snapshots available');
+    end if;
+
+    select sdh.*,
+           ms.captured_at
+      into v_previous
+      from internal.stat_database_history as sdh
+      inner join internal.metric_snapshots as ms on ms.id = sdh.snapshot_id
+     where ms.captured_at < v_latest.captured_at
+     order by ms.captured_at desc
+     limit 1;
+
+    v_result := jsonb_build_object(
+        'captured_at', v_latest.captured_at,
+        'cache_hit_ratio', case
+            when (v_latest.blks_hit + v_latest.blks_read) > 0
+            then round((v_latest.blks_hit::numeric / (v_latest.blks_hit + v_latest.blks_read)) * 100, 2)
+            else 0
+        end,
+        'numbackends', v_latest.numbackends,
+        'xact_commit', v_latest.xact_commit,
+        'xact_rollback', v_latest.xact_rollback,
+        'deadlocks', v_latest.deadlocks,
+        'temp_files', v_latest.temp_files,
+        'temp_bytes', v_latest.temp_bytes,
+        'tup_returned', v_latest.tup_returned,
+        'tup_fetched', v_latest.tup_fetched,
+        'tup_inserted', v_latest.tup_inserted,
+        'tup_updated', v_latest.tup_updated,
+        'tup_deleted', v_latest.tup_deleted
+    );
+
+    if v_previous is not null then
+        v_result := v_result || jsonb_build_object(
+            'delta', jsonb_build_object(
+                'xact_commit', v_latest.xact_commit - v_previous.xact_commit,
+                'xact_rollback', v_latest.xact_rollback - v_previous.xact_rollback,
+                'deadlocks', v_latest.deadlocks - v_previous.deadlocks,
+                'tup_inserted', v_latest.tup_inserted - v_previous.tup_inserted,
+                'tup_updated', v_latest.tup_updated - v_previous.tup_updated,
+                'tup_deleted', v_latest.tup_deleted - v_previous.tup_deleted
+            )
+        );
+    end if;
+
+    return v_result;
+end;
+$$ language plpgsql stable
+security definer;
+
+comment on function api.get_db_overview(jsonb) is
+    'Database-level stats from latest snapshot: cache hit ratio, transaction rates, deadlocks, with delta vs previous snapshot.';
+
+
+-- api.get_slow_queries(p_filters jsonb)
+-- Top N queries by execution time from latest snapshot.
+create or replace function api.get_slow_queries(p_filters jsonb default '{}')
+returns jsonb as $$
+declare
+    v_sort_by   text := coalesce(p_filters->>'sort_by', 'total_exec_time');
+    v_limit     int  := coalesce((p_filters->>'limit')::int, 20);
+    v_min_calls int  := coalesce((p_filters->>'min_calls')::int, 1);
+    v_snapshot_id int8;
+    v_result    jsonb;
+begin
+    select ms.id into v_snapshot_id
+      from internal.metric_snapshots as ms
+     order by ms.captured_at desc
+     limit 1;
+
+    if v_snapshot_id is null then
+        return jsonb_build_object('queries', '[]'::jsonb);
+    end if;
+
+    select coalesce(jsonb_agg(row_obj), '[]'::jsonb)
+      into v_result
+      from (
+          select jsonb_build_object(
+              'queryid', ssh.queryid,
+              'query', ssh.query,
+              'calls', ssh.calls,
+              'total_exec_time', round(ssh.total_exec_time::numeric, 2),
+              'mean_exec_time', round(ssh.mean_exec_time::numeric, 2),
+              'min_exec_time', round(ssh.min_exec_time::numeric, 2),
+              'max_exec_time', round(ssh.max_exec_time::numeric, 2),
+              'stddev_exec_time', round(ssh.stddev_exec_time::numeric, 2),
+              'rows', ssh.rows,
+              'shared_blks_hit', ssh.shared_blks_hit,
+              'shared_blks_read', ssh.shared_blks_read,
+              'cache_hit_ratio', case
+                  when (ssh.shared_blks_hit + ssh.shared_blks_read) > 0
+                  then round((ssh.shared_blks_hit::numeric / (ssh.shared_blks_hit + ssh.shared_blks_read)) * 100, 2)
+                  else 0
+              end
+          ) as row_obj
+          from internal.stat_statements_history as ssh
+         where ssh.snapshot_id = v_snapshot_id
+           and ssh.calls >= v_min_calls
+         order by
+              case when v_sort_by = 'total_exec_time' then ssh.total_exec_time end desc nulls last,
+              case when v_sort_by = 'mean_exec_time' then ssh.mean_exec_time end desc nulls last,
+              case when v_sort_by = 'calls' then ssh.calls end desc nulls last
+         limit v_limit
+      ) as sub;
+
+    return jsonb_build_object('queries', v_result);
+end;
+$$ language plpgsql stable
+security definer;
+
+comment on function api.get_slow_queries(jsonb) is
+    'Top N queries by execution time from latest snapshot. Supports sort_by, limit, min_calls filters.';
+
+
+-- api.get_plan_instability(p_filters jsonb)
+-- Queries with high execution time variance indicating plan instability.
+create or replace function api.get_plan_instability(p_filters jsonb default '{}')
+returns jsonb as $$
+declare
+    v_limit     int := coalesce((p_filters->>'limit')::int, 20);
+    v_min_calls int := coalesce((p_filters->>'min_calls')::int, 5);
+    v_result    jsonb;
+begin
+    select coalesce(jsonb_agg(row_obj), '[]'::jsonb)
+      into v_result
+      from (
+          select jsonb_build_object(
+              'queryid', ssh.queryid,
+              'query', ssh.query,
+              'calls', ssh.calls,
+              'mean_exec_time', round(ssh.mean_exec_time::numeric, 2),
+              'stddev_exec_time', round(ssh.stddev_exec_time::numeric, 2),
+              'min_exec_time', round(ssh.min_exec_time::numeric, 2),
+              'max_exec_time', round(ssh.max_exec_time::numeric, 2),
+              'instability_ratio', round((ssh.stddev_exec_time / nullif(ssh.mean_exec_time, 0))::numeric, 2),
+              'max_mean_ratio', round((ssh.max_exec_time / nullif(ssh.mean_exec_time, 0))::numeric, 2),
+              'captured_at', ms.captured_at
+          ) as row_obj
+          from internal.stat_statements_history as ssh
+          inner join internal.metric_snapshots as ms on ms.id = ssh.snapshot_id
+         where ssh.calls >= v_min_calls
+           and (ssh.stddev_exec_time > ssh.mean_exec_time
+                or ssh.max_exec_time > 10 * ssh.mean_exec_time)
+         order by ssh.stddev_exec_time / nullif(ssh.mean_exec_time, 0) desc nulls last
+         limit v_limit
+      ) as sub;
+
+    return jsonb_build_object('unstable_queries', v_result);
+end;
+$$ language plpgsql stable
+security definer;
+
+comment on function api.get_plan_instability(jsonb) is
+    'Queries where stddev_exec_time > mean_exec_time or max > 10x mean, indicating parameter-driven plan changes.';
+
+
+-- api.get_table_stats(p_filters jsonb)
+-- Table access patterns from latest snapshot.
+create or replace function api.get_table_stats(p_filters jsonb default '{}')
+returns jsonb as $$
+declare
+    v_snapshot_id int8;
+    v_result      jsonb;
+begin
+    select ms.id into v_snapshot_id
+      from internal.metric_snapshots as ms
+     order by ms.captured_at desc
+     limit 1;
+
+    if v_snapshot_id is null then
+        return jsonb_build_object('tables', '[]'::jsonb);
+    end if;
+
+    select coalesce(jsonb_agg(row_obj), '[]'::jsonb)
+      into v_result
+      from (
+          select jsonb_build_object(
+              'schemaname', sth.schemaname,
+              'relname', sth.relname,
+              'seq_scan', sth.seq_scan,
+              'seq_tup_read', sth.seq_tup_read,
+              'idx_scan', sth.idx_scan,
+              'idx_tup_fetch', sth.idx_tup_fetch,
+              'seq_scan_ratio', case
+                  when (sth.seq_scan + coalesce(sth.idx_scan, 0)) > 0
+                  then round((sth.seq_scan::numeric / (sth.seq_scan + coalesce(sth.idx_scan, 0))) * 100, 2)
+                  else 0
+              end,
+              'n_tup_ins', sth.n_tup_ins,
+              'n_tup_upd', sth.n_tup_upd,
+              'n_tup_del', sth.n_tup_del,
+              'n_dead_tup', sth.n_dead_tup,
+              'last_vacuum', sth.last_vacuum,
+              'last_autovacuum', sth.last_autovacuum,
+              'last_analyze', sth.last_analyze,
+              'last_autoanalyze', sth.last_autoanalyze
+          ) as row_obj
+          from internal.stat_tables_history as sth
+         where sth.snapshot_id = v_snapshot_id
+         order by sth.seq_scan desc nulls last
+      ) as sub;
+
+    return jsonb_build_object('tables', v_result);
+end;
+$$ language plpgsql stable
+security definer;
+
+comment on function api.get_table_stats(jsonb) is
+    'Table access patterns: seq vs idx scan ratios, dead tuples, vacuum timestamps from latest snapshot.';
+
+
+-- api.get_index_usage(p_filters jsonb)
+-- Index usage stats from latest snapshot.
+create or replace function api.get_index_usage(p_filters jsonb default '{}')
+returns jsonb as $$
+declare
+    v_snapshot_id int8;
+    v_result      jsonb;
+begin
+    select ms.id into v_snapshot_id
+      from internal.metric_snapshots as ms
+     order by ms.captured_at desc
+     limit 1;
+
+    if v_snapshot_id is null then
+        return jsonb_build_object('indexes', '[]'::jsonb);
+    end if;
+
+    select coalesce(jsonb_agg(row_obj), '[]'::jsonb)
+      into v_result
+      from (
+          select jsonb_build_object(
+              'schemaname', sih.schemaname,
+              'relname', sih.relname,
+              'indexrelname', sih.indexrelname,
+              'idx_scan', sih.idx_scan,
+              'idx_tup_read', sih.idx_tup_read,
+              'idx_tup_fetch', sih.idx_tup_fetch,
+              'is_unused', (sih.idx_scan = 0)
+          ) as row_obj
+          from internal.stat_indexes_history as sih
+         where sih.snapshot_id = v_snapshot_id
+         order by sih.idx_scan asc nulls first
+      ) as sub;
+
+    return jsonb_build_object('indexes', v_result);
+end;
+$$ language plpgsql stable
+security definer;
+
+comment on function api.get_index_usage(jsonb) is
+    'Index usage: scan counts, unused index detection from latest snapshot.';
+
+
+-- api.get_function_stats(p_filters jsonb)
+-- Function performance stats from latest snapshot.
+create or replace function api.get_function_stats(p_filters jsonb default '{}')
+returns jsonb as $$
+declare
+    v_snapshot_id int8;
+    v_result      jsonb;
+begin
+    select ms.id into v_snapshot_id
+      from internal.metric_snapshots as ms
+     order by ms.captured_at desc
+     limit 1;
+
+    if v_snapshot_id is null then
+        return jsonb_build_object('functions', '[]'::jsonb);
+    end if;
+
+    select coalesce(jsonb_agg(row_obj), '[]'::jsonb)
+      into v_result
+      from (
+          select jsonb_build_object(
+              'schemaname', sfh.schemaname,
+              'funcname', sfh.funcname,
+              'calls', sfh.calls,
+              'total_time', round(sfh.total_time::numeric, 2),
+              'self_time', round(sfh.self_time::numeric, 2),
+              'avg_time', case
+                  when sfh.calls > 0 then round((sfh.total_time / sfh.calls)::numeric, 2)
+                  else 0
+              end
+          ) as row_obj
+          from internal.stat_functions_history as sfh
+         where sfh.snapshot_id = v_snapshot_id
+         order by sfh.total_time desc nulls last
+      ) as sub;
+
+    return jsonb_build_object('functions', v_result);
+end;
+$$ language plpgsql stable
+security definer;
+
+comment on function api.get_function_stats(jsonb) is
+    'Function call counts, total/self time, avg time per call from latest snapshot.';
+
+
+-- api.purge_metric_snapshots(p_days int)
+-- Delete metric snapshots older than N days (cascades to all history tables).
+create or replace function api.purge_metric_snapshots(p_days int default 30)
+returns jsonb as $$
+declare
+    v_count int;
+begin
+    delete from internal.metric_snapshots
+     where captured_at < now() - make_interval(days => p_days);
+
+    get diagnostics v_count = row_count;
+
+    return jsonb_build_object('deleted', v_count, 'success', true);
+end;
+$$ language plpgsql volatile
+security definer;
+
+comment on function api.purge_metric_snapshots(int) is
+    'Delete metric snapshots older than N days; cascades to all history tables.';
+
+
 -- api.upsert_resume_profile_image(p_data JSONB)
 -- Upsert the single profile image row.
 create or replace function api.upsert_resume_profile_image(p_data jsonb)

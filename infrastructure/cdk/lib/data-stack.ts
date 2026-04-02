@@ -71,6 +71,13 @@ export class DataStack extends cdk.Stack {
         }),
         parameters: {
           "rds.force_ssl": "1",
+          "shared_preload_libraries": "pg_stat_statements,auto_explain",
+          "pg_stat_statements.track": "all",
+          "track_functions": "all",
+          "auto_explain.log_min_duration": "500",
+          "auto_explain.log_analyze": "true",
+          "auto_explain.log_buffers": "true",
+          "auto_explain.log_format": "json",
         },
       }),
     });
@@ -146,7 +153,7 @@ export class DataStack extends cdk.Stack {
       serviceToken: migrationProvider.serviceToken,
       properties: {
         // Change this value to trigger the migration again on next deploy
-        version: "11",
+        version: "12",
       },
     });
 

@@ -1,4 +1,4 @@
 -- 00_extensions.sql
--- No extensions are currently required.
--- Previously used uuid-ossp and pgcrypto for UUID primary keys;
--- all tables now use identity columns instead.
+-- Enable required PostgreSQL extensions.
+
+create extension if not exists pg_stat_statements;
