@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/dfw-dba/my-site/compare/v1.6.0...v1.7.0) (2026-04-02)
+
+
+### Features
+
+* add database performance metrics with pg_stat_statements and auto_explain ([#149](https://github.com/dfw-dba/my-site/issues/149)) ([11e9959](https://github.com/dfw-dba/my-site/commit/11e9959190ae4886f57ce2a4d6b85fe882f75629))
+
 ## [1.6.0](https://github.com/dfw-dba/my-site/compare/v1.5.1...v1.6.0) (2026-04-01)
 
 
