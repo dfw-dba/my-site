@@ -13,6 +13,16 @@ import type {
   AppLogsResponse,
   AppLogStats,
   ThreatDetectionResponse,
+  DbOverview,
+  SlowQueriesResponse,
+  PlanInstabilityResponse,
+  TableStatsResponse,
+  IndexUsageResponse,
+  FunctionStatsResponse,
+  AnalyticsSummary,
+  AnalyticsVisitors,
+  AnalyticsGeo,
+  AnalyticsTimeseries,
 } from "../types";
 import { getIdToken, isCognitoConfigured } from "./auth";
 
@@ -100,6 +110,84 @@ export const api = {
         qs.set("days", String(params.days ?? 30));
         if (params.client_ip) qs.set("client_ip", params.client_ip);
         return request<ThreatDetectionResponse>(`/api/admin/logs/threats?${qs.toString()}`, { headers });
+      },
+    },
+    metrics: {
+      overview: async () => {
+        const headers = await adminHeaders();
+        return request<DbOverview>("/api/admin/metrics/overview", { headers });
+      },
+      queries: async (params: { sort_by?: string; limit?: number; min_calls?: number } = {}) => {
+        const headers = await adminHeaders();
+        const qs = new URLSearchParams();
+        if (params.sort_by) qs.set("sort_by", params.sort_by);
+        if (params.limit !== undefined) qs.set("limit", String(params.limit));
+        if (params.min_calls !== undefined) qs.set("min_calls", String(params.min_calls));
+        const query = qs.toString();
+        return request<SlowQueriesResponse>(`/api/admin/metrics/queries${query ? `?${query}` : ""}`, { headers });
+      },
+      planInstability: async (params: { limit?: number; min_calls?: number } = {}) => {
+        const headers = await adminHeaders();
+        const qs = new URLSearchParams();
+        if (params.limit !== undefined) qs.set("limit", String(params.limit));
+        if (params.min_calls !== undefined) qs.set("min_calls", String(params.min_calls));
+        const query = qs.toString();
+        return request<PlanInstabilityResponse>(`/api/admin/metrics/plan-instability${query ? `?${query}` : ""}`, { headers });
+      },
+      tables: async () => {
+        const headers = await adminHeaders();
+        return request<TableStatsResponse>("/api/admin/metrics/tables", { headers });
+      },
+      indexes: async () => {
+        const headers = await adminHeaders();
+        return request<IndexUsageResponse>("/api/admin/metrics/indexes", { headers });
+      },
+      functions: async () => {
+        const headers = await adminHeaders();
+        return request<FunctionStatsResponse>("/api/admin/metrics/functions", { headers });
+      },
+      capture: async () => {
+        const headers = await adminHeaders();
+        return request<ApiSuccess>("/api/admin/metrics/capture", { method: "POST", headers });
+      },
+    },
+    analytics: {
+      summary: async (params: { start_date?: string; end_date?: string; page_path?: string; exclude_bots?: boolean } = {}) => {
+        const headers = await adminHeaders();
+        const qs = new URLSearchParams();
+        if (params.start_date) qs.set("start_date", params.start_date);
+        if (params.end_date) qs.set("end_date", params.end_date);
+        if (params.page_path) qs.set("page_path", params.page_path);
+        if (params.exclude_bots !== undefined) qs.set("exclude_bots", String(params.exclude_bots));
+        const query = qs.toString();
+        return request<AnalyticsSummary>(`/api/admin/analytics/summary${query ? `?${query}` : ""}`, { headers });
+      },
+      visitors: async (params: { start_date?: string; end_date?: string; exclude_bots?: boolean } = {}) => {
+        const headers = await adminHeaders();
+        const qs = new URLSearchParams();
+        if (params.start_date) qs.set("start_date", params.start_date);
+        if (params.end_date) qs.set("end_date", params.end_date);
+        if (params.exclude_bots !== undefined) qs.set("exclude_bots", String(params.exclude_bots));
+        const query = qs.toString();
+        return request<AnalyticsVisitors>(`/api/admin/analytics/visitors${query ? `?${query}` : ""}`, { headers });
+      },
+      geo: async (params: { start_date?: string; end_date?: string; exclude_bots?: boolean } = {}) => {
+        const headers = await adminHeaders();
+        const qs = new URLSearchParams();
+        if (params.start_date) qs.set("start_date", params.start_date);
+        if (params.end_date) qs.set("end_date", params.end_date);
+        if (params.exclude_bots !== undefined) qs.set("exclude_bots", String(params.exclude_bots));
+        const query = qs.toString();
+        return request<AnalyticsGeo>(`/api/admin/analytics/geo${query ? `?${query}` : ""}`, { headers });
+      },
+      timeseries: async (params: { start_date?: string; end_date?: string; exclude_bots?: boolean } = {}) => {
+        const headers = await adminHeaders();
+        const qs = new URLSearchParams();
+        if (params.start_date) qs.set("start_date", params.start_date);
+        if (params.end_date) qs.set("end_date", params.end_date);
+        if (params.exclude_bots !== undefined) qs.set("exclude_bots", String(params.exclude_bots));
+        const query = qs.toString();
+        return request<AnalyticsTimeseries>(`/api/admin/analytics/timeseries${query ? `?${query}` : ""}`, { headers });
       },
     },
     resume: {

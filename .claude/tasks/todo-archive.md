@@ -4,6 +4,24 @@ _Completed sprints moved from `todo.md`. For current work, see `todo.md`._
 
 ---
 
+## Sprint 41: Regression Tests & Deploy Lifecycle Automation
+
+### Regression test script
+- [x] 41.1 Create `.github/scripts/regression-test.sh` with 7 tests (health, resume x3, admin auth x2, frontend)
+- [x] 41.2 Add regression test steps to `stage-post-deploy-validation` job in `deploy.yml`
+- [x] 41.3 Add regression test steps to `post-deploy-validation` job in `deploy.yml`
+
+### Deploy lifecycle automation (git-workflow.md)
+- [x] 41.4 Add end-of-cycle cleanup to Prod Deploy Gate (dependabot check, switch to main)
+- [x] 41.5 Update Dependabot section with CI/deploy monitoring after merge
+- [x] 41.6 Add Session Start Checks section (release-please, dependabot, stale branch detection)
+
+### Verification
+- [x] 41.7 Verify YAML syntax and job flow logic
+- [x] 41.8 Read through full git-workflow.md for end-to-end lifecycle coverage
+
+---
+
 ## Sprint 1: Project Scaffolding & Local Dev Environment
 - [x] 1.1 Create directory structure & .gitignore
 - [x] 1.2 Config files (site.example.json, .env.example)

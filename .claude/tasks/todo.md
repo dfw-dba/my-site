@@ -4,24 +4,6 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 
 ---
 
-## Sprint 41: Regression Tests & Deploy Lifecycle Automation
-
-### Regression test script
-- [x] 41.1 Create `.github/scripts/regression-test.sh` with 7 tests (health, resume x3, admin auth x2, frontend)
-- [x] 41.2 Add regression test steps to `stage-post-deploy-validation` job in `deploy.yml`
-- [x] 41.3 Add regression test steps to `post-deploy-validation` job in `deploy.yml`
-
-### Deploy lifecycle automation (git-workflow.md)
-- [x] 41.4 Add end-of-cycle cleanup to Prod Deploy Gate (dependabot check, switch to main)
-- [x] 41.5 Update Dependabot section with CI/deploy monitoring after merge
-- [x] 41.6 Add Session Start Checks section (release-please, dependabot, stale branch detection)
-
-### Verification
-- [x] 41.7 Verify YAML syntax and job flow logic
-- [x] 41.8 Read through full git-workflow.md for end-to-end lifecycle coverage
-
----
-
 ## Sprint 42: Admin Portal Regression Test Suite
 
 ### Backend auth changes
@@ -98,6 +80,41 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 - [x] 44.16 Frontend TypeScript + tests pass (25/25)
 - [x] 44.17 CDK TypeScript compiles
 - [x] 44.18 Security audit: 2 MEDIUM findings fixed (event_data size constraint, listener cleanup)
+
+---
+
+## Sprint 45: Observability Reporting — Admin Dashboard Tabs (PR 1)
+
+### Setup
+- [x] 45.1 Install recharts (`cd frontend && npm install recharts`)
+- [x] 45.2 Add TypeScript types for metrics and analytics API responses to `types/index.ts`
+
+### API layer
+- [x] 45.3 Add metrics + analytics API service methods to `api.ts`
+- [x] 45.4 Add TanStack Query hooks to `useAdminApi.ts` (11 hooks: 7 metrics, 4 analytics)
+
+### Dashboard refactor
+- [x] 45.5 Extract `StatCard` to `components/admin/dashboard/StatCard.tsx`
+- [x] 45.6 Extract all existing Dashboard content to `components/admin/dashboard/LogsTab.tsx`
+- [x] 45.7 Refactor `Dashboard.tsx` to thin tab shell (Logs, DB Performance, Visitor Analytics)
+
+### DB Performance tab
+- [x] 45.8 Build `DbPerformanceTab.tsx` — overview cards, slow queries table + chart, plan instability, table stats, index usage, function stats, manual capture button
+
+### Visitor Analytics tab
+- [x] 45.9 Add `api.get_analytics_timeseries()` function to `03_functions.sql` + migration 006
+- [x] 45.10 Add timeseries backend endpoint + DatabaseAPI method
+- [x] 45.11 Bump CDK migration version
+- [x] 45.12 Build `VisitorAnalyticsTab.tsx` — date filter, overview cards, time series chart, top pages/referrers, device/browser/OS charts, geo table
+
+### Chart wrappers
+- [x] 45.13 Create `DonutChart.tsx`, `TimeSeriesChart.tsx`, `HorizontalBarChart.tsx` in `components/admin/charts/`
+
+### Verification
+- [x] 45.14 Frontend TypeScript compiles (`npx tsc --noEmit`)
+- [x] 45.15 Frontend tests pass (`npx vitest run`) — 25/25
+- [x] 45.16 Backend lint + tests pass — 41/41
+- [x] 45.17 Security audit: no CRITICAL/HIGH issues; 1 LOW (date param validation)
 
 ---
 

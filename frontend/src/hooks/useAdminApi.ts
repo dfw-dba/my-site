@@ -59,6 +59,99 @@ export function useAdminPurgeLogs() {
   });
 }
 
+// ── DB Performance Metrics ───────────────────────────────────────────────────
+
+export function useDbOverview() {
+  return useQuery({
+    queryKey: ["admin-db-overview"],
+    queryFn: () => api.admin.metrics.overview(),
+    refetchInterval: 60_000,
+  });
+}
+
+export function useSlowQueries(params: { sort_by?: string; limit?: number; min_calls?: number } = {}) {
+  return useQuery({
+    queryKey: ["admin-slow-queries", params],
+    queryFn: () => api.admin.metrics.queries(params),
+    refetchInterval: 60_000,
+  });
+}
+
+export function usePlanInstability(params: { limit?: number; min_calls?: number } = {}) {
+  return useQuery({
+    queryKey: ["admin-plan-instability", params],
+    queryFn: () => api.admin.metrics.planInstability(params),
+  });
+}
+
+export function useTableStats() {
+  return useQuery({
+    queryKey: ["admin-table-stats"],
+    queryFn: () => api.admin.metrics.tables(),
+  });
+}
+
+export function useIndexUsage() {
+  return useQuery({
+    queryKey: ["admin-index-usage"],
+    queryFn: () => api.admin.metrics.indexes(),
+  });
+}
+
+export function useFunctionStats() {
+  return useQuery({
+    queryKey: ["admin-function-stats"],
+    queryFn: () => api.admin.metrics.functions(),
+  });
+}
+
+export function useCaptureMetrics() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.admin.metrics.capture(),
+    onSuccess: () => {
+      showToast("Metrics captured", "success");
+      qc.invalidateQueries({ queryKey: ["admin-db-overview"] });
+      qc.invalidateQueries({ queryKey: ["admin-slow-queries"] });
+      qc.invalidateQueries({ queryKey: ["admin-plan-instability"] });
+      qc.invalidateQueries({ queryKey: ["admin-table-stats"] });
+      qc.invalidateQueries({ queryKey: ["admin-index-usage"] });
+      qc.invalidateQueries({ queryKey: ["admin-function-stats"] });
+    },
+    onError: onMutationError,
+  });
+}
+
+// ── Visitor Analytics ───────────────────────────────────────────────────────
+
+export function useAnalyticsSummary(params: { start_date?: string; end_date?: string; page_path?: string; exclude_bots?: boolean } = {}) {
+  return useQuery({
+    queryKey: ["admin-analytics-summary", params],
+    queryFn: () => api.admin.analytics.summary(params),
+  });
+}
+
+export function useAnalyticsVisitors(params: { start_date?: string; end_date?: string; exclude_bots?: boolean } = {}) {
+  return useQuery({
+    queryKey: ["admin-analytics-visitors", params],
+    queryFn: () => api.admin.analytics.visitors(params),
+  });
+}
+
+export function useAnalyticsGeo(params: { start_date?: string; end_date?: string; exclude_bots?: boolean } = {}) {
+  return useQuery({
+    queryKey: ["admin-analytics-geo", params],
+    queryFn: () => api.admin.analytics.geo(params),
+  });
+}
+
+export function useAnalyticsTimeseries(params: { start_date?: string; end_date?: string; exclude_bots?: boolean } = {}) {
+  return useQuery({
+    queryKey: ["admin-analytics-timeseries", params],
+    queryFn: () => api.admin.analytics.timeseries(params),
+  });
+}
+
 // ── Resume ───────────────────────────────────────────────────────────────────
 
 export function useAdminResume() {

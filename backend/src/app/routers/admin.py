@@ -313,6 +313,24 @@ async def get_analytics_geo(
     return await db.get_analytics_geo(filters)
 
 
+@router.get("/analytics/timeseries", dependencies=[Depends(get_admin_auth)])
+@limiter.limit("60/minute")
+async def get_analytics_timeseries(
+    request: Request,
+    db: DatabaseAPI = Depends(get_db_api),
+    start_date: str | None = None,
+    end_date: str | None = None,
+    exclude_bots: bool = True,
+) -> Any:
+    """Fetch daily page view and unique visitor time series."""
+    filters: dict[str, Any] = {"exclude_bots": exclude_bots}
+    if start_date:
+        filters["start_date"] = start_date
+    if end_date:
+        filters["end_date"] = end_date
+    return await db.get_analytics_timeseries(filters)
+
+
 _ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
 _MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5 MB
 _EXT_MAP = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}

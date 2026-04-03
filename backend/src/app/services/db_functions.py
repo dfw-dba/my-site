@@ -259,6 +259,14 @@ class DatabaseAPI:
         )
         return result.scalar_one()
 
+    async def get_analytics_timeseries(self, filters: dict[str, Any] | None = None) -> Any:
+        """Fetch daily page view and unique visitor time series."""
+        result = await self.session.execute(
+            text("SELECT api.get_analytics_timeseries(CAST(:filters AS jsonb))"),
+            {"filters": json.dumps(filters or {}, default=str)},
+        )
+        return result.scalar_one()
+
     async def purge_analytics(self, days: int = 90) -> Any:
         """Delete page views and visitor events older than N days."""
         result = await self.session.execute(
