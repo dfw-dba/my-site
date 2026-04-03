@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.10.0](https://github.com/dfw-dba/my-site/compare/v1.9.0...v1.10.0) (2026-04-03)
+
+
+### Features
+
+* add region and city tabs to geographic breakdown ([#162](https://github.com/dfw-dba/my-site/issues/162)) ([25263e5](https://github.com/dfw-dba/my-site/commit/25263e5e38f8bb3b6d75d431832b17aa1dd9915f))
+
+
+### Bug Fixes
+
+* filter utility statements from plan instability results ([#160](https://github.com/dfw-dba/my-site/issues/160)) ([c06c528](https://github.com/dfw-dba/my-site/commit/c06c528cec13e6d2b44dc635b88f471f739b1efc))
+
 ## [1.9.0](https://github.com/dfw-dba/my-site/compare/v1.8.2...v1.9.0) (2026-04-03)
 
 
