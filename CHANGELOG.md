@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/dfw-dba/my-site/compare/v1.8.2...v1.9.0) (2026-04-03)
+
+
+### Features
+
+* add admin dashboard tabs with DB performance and visitor analytics ([#158](https://github.com/dfw-dba/my-site/issues/158)) ([4a344b6](https://github.com/dfw-dba/my-site/commit/4a344b6314e696907c03785573d84665f9970ee5))
+
 ## [1.8.2](https://github.com/dfw-dba/my-site/compare/v1.8.1...v1.8.2) (2026-04-02)
 
 
