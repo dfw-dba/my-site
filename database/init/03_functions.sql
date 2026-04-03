@@ -955,6 +955,8 @@ begin
           from internal.stat_statements_history as ssh
           inner join internal.metric_snapshots as ms on ms.id = ssh.snapshot_id
          where ssh.calls >= v_min_calls
+           and ssh.mean_exec_time >= 0.1
+           and ssh.query !~* '^\s*(begin|commit|rollback|set|reset|deallocate|discard|close|listen|unlisten|notify)\b'
            and (ssh.stddev_exec_time > ssh.mean_exec_time
                 or ssh.max_exec_time > 10 * ssh.mean_exec_time)
          order by ssh.stddev_exec_time / nullif(ssh.mean_exec_time, 0) desc nulls last
