@@ -635,11 +635,14 @@ Analytics data (page views and visitor events) older than 90 days is automatical
 
 ### GeoIP Setup (Optional)
 
-GeoIP enrichment requires loading MaxMind GeoLite2 data into the `internal.geoip_ranges` table. Without it, analytics still works but geographic data will be empty. Load data via bastion host:
+GeoIP enrichment requires loading MaxMind GeoLite2 City data into `internal.geoip2_networks` and `internal.geoip2_locations`. Without it, analytics still works but geographic data will be empty.
+
+Download the GeoLite2 City CSV from [MaxMind](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) (requires free account), then load via bastion psql session. Load locations first, then network blocks:
 
 ```bash
-# Download GeoLite2 CSV from MaxMind (requires free account)
-# Import into geoip_ranges table via bastion psql session
+\copy internal.geoip2_locations from 'GeoLite2-City-Locations-en.csv' with (format csv, header);
+\copy internal.geoip2_networks from 'GeoLite2-City-Blocks-IPv4.csv' with (format csv, header);
+\copy internal.geoip2_networks from 'GeoLite2-City-Blocks-IPv6.csv' with (format csv, header);
 ```
 
 ## Project Structure

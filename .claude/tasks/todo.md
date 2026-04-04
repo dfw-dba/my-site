@@ -4,28 +4,6 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 
 ---
 
-## Sprint 42: Admin Portal Regression Test Suite
-
-### Backend auth changes
-- [x] 42.1 Add `REGRESSION_TEST_API_KEY` to `backend/src/app/config.py`
-- [x] 42.2 Add `X-Regression-Key` auth path in `backend/src/app/dependencies.py`
-- [x] 42.3 Add `X-Regression-Key` to CORS headers in `backend/src/app/middleware/cors.py`
-
-### Infrastructure changes
-- [x] 42.4 Add `X-Regression-Key` to API Gateway CORS + staging-only Lambda env var in `app-stack.ts`
-- [x] 42.5 Pass `REGRESSION_TEST_API_KEY` secret to staging CDK deploy in `deploy.yml`
-
-### Regression test script
-- [x] 42.6 Create `.github/scripts/regression-test-admin.sh` with full admin CRUD tests
-- [x] 42.7 Integrate admin regression step into `stage-post-deploy-validation` in `deploy.yml`
-
-### Verification
-- [x] 42.8 Backend lint + tests pass (41/41)
-- [x] 42.9 CDK TypeScript compiles
-- [ ] 42.10 Shellcheck passes on new script (will verify in CI)
-
----
-
 ## Sprint 43: Database Performance Metrics (PR 1 of Observability)
 
 ### Infrastructure
@@ -115,6 +93,26 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 - [x] 45.15 Frontend tests pass (`npx vitest run`) — 25/25
 - [x] 45.16 Backend lint + tests pass — 41/41
 - [x] 45.17 Security audit: no CRITICAL/HIGH issues; 1 LOW (date param validation)
+
+---
+
+## Sprint 46: Refactor GeoIP to MaxMind Recommended Schema
+
+### Database
+- [x] 46.1 Replace `geoip_ranges` with `geoip2_networks` + `geoip2_locations` tables in `02_tables.sql`
+- [x] 46.2 Create migration `002_drop_geoip_ranges.sql` to drop old table
+- [x] 46.3 Rewrite `api.geoip_lookup` to use cidr containment join in `03_functions.sql`
+- [x] 46.4 Update `insert_page_view` comment in `03_functions.sql`
+
+### Infrastructure
+- [x] 46.5 Bump CDK migration version 15 → 16 in `data-stack.ts`
+
+### Documentation
+- [x] 46.6 Update README GeoIP Setup section with new table names and `\copy` commands
+
+### Verification
+- [x] 46.7 Backend lint + tests pass (41/41)
+- [x] 46.8 CDK TypeScript compiles
 
 ---
 

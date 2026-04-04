@@ -347,22 +347,57 @@ comment on table internal.visitor_events is 'Visitor interaction events: clicks,
 comment on column internal.visitor_events.event_data is 'Event-specific payload as JSON; e.g. link URL for clicks, depth % for scroll';
 
 -- ============================================================
--- geoip_ranges
+-- geoip2_networks
 -- ============================================================
-create table if not exists internal.geoip_ranges
+create table if not exists internal.geoip2_networks
 (
-  id            int8 generated always as identity primary key,
-  ip_start      inet not null,
-  ip_end        inet not null,
-  country_code  text,
-  country_name  text,
-  region        text,
-  city          text,
-  updated_at    timestamptz default now()
+  network                          cidr    not null,
+  geoname_id                       int4,
+  registered_country_geoname_id    int4,
+  represented_country_geoname_id   int4,
+  is_anonymous_proxy               bool,
+  is_satellite_provider            bool,
+  postal_code                      text,
+  latitude                         numeric,
+  longitude                        numeric,
+  accuracy_radius                  int4,
+  is_anycast                       bool
 );
 
-create index if not exists idx_geoip_ranges_ip on internal.geoip_ranges (ip_start, ip_end);
+create index if not exists idx_geoip2_networks_network
+    on internal.geoip2_networks using gist (network inet_ops);
 
-comment on table internal.geoip_ranges is 'GeoIP lookup table for IP-to-location enrichment; loaded from MaxMind GeoLite2 data';
-comment on column internal.geoip_ranges.ip_start is 'Start of IP range (inclusive)';
-comment on column internal.geoip_ranges.ip_end is 'End of IP range (inclusive)';
+comment on table internal.geoip2_networks is
+    'MaxMind GeoLite2 City network blocks; maps CIDR ranges to geoname locations. No identity PK — bulk-replaced atomically and columns match MaxMind CSV for direct import';
+comment on column internal.geoip2_networks.network is 'CIDR network range for IP geolocation lookup';
+comment on column internal.geoip2_networks.geoname_id is 'Foreign key to geoip2_locations for the resolved city/region/country';
+comment on column internal.geoip2_networks.latitude is 'Approximate latitude of the IP range centroid';
+comment on column internal.geoip2_networks.longitude is 'Approximate longitude of the IP range centroid';
+
+-- ============================================================
+-- geoip2_locations
+-- ============================================================
+create table if not exists internal.geoip2_locations
+(
+  geoname_id                int4    not null,
+  locale_code               text    not null,
+  continent_code            text,
+  continent_name            text,
+  country_iso_code          text,
+  country_name              text,
+  subdivision_1_iso_code    text,
+  subdivision_1_name        text,
+  subdivision_2_iso_code    text,
+  subdivision_2_name        text,
+  city_name                 text,
+  metro_code                int4,
+  time_zone                 text,
+  is_in_european_union      bool    not null,
+  primary key (geoname_id, locale_code)
+);
+
+comment on table internal.geoip2_locations is
+    'MaxMind GeoLite2 City location names; keyed by geoname_id and locale. No identity PK — natural composite key matches MaxMind CSV for direct import';
+comment on column internal.geoip2_locations.geoname_id is 'GeoNames geographic identifier; join key to geoip2_networks';
+comment on column internal.geoip2_locations.country_iso_code is 'ISO 3166-1 alpha-2 country code';
+comment on column internal.geoip2_locations.is_in_european_union is 'Whether the country is an EU member state';

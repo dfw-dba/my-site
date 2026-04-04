@@ -4,6 +4,28 @@ _Completed sprints moved from `todo.md`. For current work, see `todo.md`._
 
 ---
 
+## Sprint 42: Admin Portal Regression Test Suite
+
+### Backend auth changes
+- [x] 42.1 Add `REGRESSION_TEST_API_KEY` to `backend/src/app/config.py`
+- [x] 42.2 Add `X-Regression-Key` auth path in `backend/src/app/dependencies.py`
+- [x] 42.3 Add `X-Regression-Key` to CORS headers in `backend/src/app/middleware/cors.py`
+
+### Infrastructure changes
+- [x] 42.4 Add `X-Regression-Key` to API Gateway CORS + staging-only Lambda env var in `app-stack.ts`
+- [x] 42.5 Pass `REGRESSION_TEST_API_KEY` secret to staging CDK deploy in `deploy.yml`
+
+### Regression test script
+- [x] 42.6 Create `.github/scripts/regression-test-admin.sh` with full admin CRUD tests
+- [x] 42.7 Integrate admin regression step into `stage-post-deploy-validation` in `deploy.yml`
+
+### Verification
+- [x] 42.8 Backend lint + tests pass (41/41)
+- [x] 42.9 CDK TypeScript compiles
+- [ ] 42.10 Shellcheck passes on new script (will verify in CI)
+
+---
+
 ## Sprint 41: Regression Tests & Deploy Lifecycle Automation
 
 ### Regression test script
