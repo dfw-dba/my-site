@@ -1165,17 +1165,33 @@ security definer;
 -- ============================================================
 
 -- api.geoip_lookup(p_ip text)
--- Look up country/region/city for an IP address from the geoip_ranges table.
+-- Look up country/region/city for an IP address using MaxMind GeoLite2 data.
 create or replace function api.geoip_lookup(p_ip text)
 returns jsonb as $$
 declare
     v_result record;
+    v_ip inet;
 begin
-    select country_code, country_name, region, city
+    begin
+        v_ip := p_ip::inet;
+    exception when others then
+        return null;
+    end;
+
+    select
+        loc.country_iso_code   as country_code,
+        loc.country_name       as country_name,
+        loc.subdivision_1_name as region,
+        loc.city_name          as city,
+        net.latitude           as latitude,
+        net.longitude          as longitude,
+        loc.time_zone          as time_zone
       into v_result
-      from internal.geoip_ranges
-     where p_ip::inet >= ip_start
-       and p_ip::inet <= ip_end
+      from internal.geoip2_networks as net
+      inner join internal.geoip2_locations as loc
+        on net.geoname_id = loc.geoname_id
+       and loc.locale_code = 'en'
+     where net.network >>= v_ip
      limit 1;
 
     if not found then
@@ -1185,15 +1201,18 @@ begin
     return jsonb_build_object(
         'country_code', v_result.country_code,
         'country_name', v_result.country_name,
-        'region', v_result.region,
-        'city', v_result.city
+        'region',       v_result.region,
+        'city',         v_result.city,
+        'latitude',     v_result.latitude,
+        'longitude',    v_result.longitude,
+        'time_zone',    v_result.time_zone
     );
 end;
 $$ language plpgsql stable
 security definer;
 
 comment on function api.geoip_lookup(text) is
-    'Look up geographic location for an IP address using the geoip_ranges table.';
+    'Look up geographic location for an IP address using MaxMind GeoLite2 data.';
 
 
 -- api.insert_page_view(p_data jsonb)
@@ -1256,7 +1275,7 @@ $$ language plpgsql volatile
 security definer;
 
 comment on function api.insert_page_view(jsonb) is
-    'Insert a page view with automatic GeoIP enrichment when geoip_ranges data is available.';
+    'Insert a page view with automatic GeoIP enrichment when MaxMind GeoLite2 data is available.';
 
 
 -- api.insert_visitor_event(p_data jsonb)
