@@ -72,17 +72,17 @@ begin
     drop table if exists internal.geoip2_networks_old;
     drop table if exists internal.geoip2_locations_old;
 
-    -- rename production tables to _old
+    -- rename production tables to _old, then drop immediately
+    -- (must drop before moving staging in to avoid constraint name conflicts,
+    -- e.g. geoip2_locations_pkey exists on both old and staging tables)
     alter table internal.geoip2_networks rename to geoip2_networks_old;
     alter table internal.geoip2_locations rename to geoip2_locations_old;
+    drop table internal.geoip2_networks_old;
+    drop table internal.geoip2_locations_old;
 
     -- move staging tables into internal schema (they inherit the production names)
     alter table staging.geoip2_networks set schema internal;
     alter table staging.geoip2_locations set schema internal;
-
-    -- drop old tables
-    drop table internal.geoip2_networks_old;
-    drop table internal.geoip2_locations_old;
 
     -- recreate empty staging tables for the next run
     create table staging.geoip2_networks
