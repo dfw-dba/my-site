@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/dfw-dba/my-site/compare/v1.11.3...v1.12.0) (2026-04-05)
+
+
+### Features
+
+* add admin Utilities tab with GeoData section ([#175](https://github.com/dfw-dba/my-site/issues/175)) ([c457e91](https://github.com/dfw-dba/my-site/commit/c457e919c75b92c46bbcd4140803824bc48d3946))
+
 ## [1.11.3](https://github.com/dfw-dba/my-site/compare/v1.11.2...v1.11.3) (2026-04-05)
 
 
