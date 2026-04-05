@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/dfw-dba/my-site/compare/v1.10.0...v1.11.0) (2026-04-05)
+
+
+### Features
+
+* automate GeoLite2 data refresh with ECS Fargate and zero-downtime swap ([#164](https://github.com/dfw-dba/my-site/issues/164)) ([f91972e](https://github.com/dfw-dba/my-site/commit/f91972ef5ee4891a7f3711899b1c02666032a920))
+
 ## [1.10.0](https://github.com/dfw-dba/my-site/compare/v1.9.0...v1.10.0) (2026-04-03)
 
 
