@@ -360,10 +360,14 @@ export class DataStack extends cdk.Stack {
       cpu: 512,
     });
 
-    // MaxMind credentials secret (must be created manually before first deploy)
-    const maxmindSecret = secretsmanager.Secret.fromSecretNameV2(
-      this, "MaxMindSecret", "/mysite/maxmind-credentials",
-    );
+    const maxmindSecret = new secretsmanager.Secret(this, "MaxMindSecret", {
+      secretName: `${ssmPrefix}/maxmind-credentials`,
+      description: "MaxMind GeoLite2 account_id and license_key for automated GeoIP updates",
+      generateSecretString: {
+        secretStringTemplate: JSON.stringify({ account_id: "", license_key: "" }),
+        generateStringKey: "_placeholder",
+      },
+    });
 
     // Grant task role read access to both secrets
     dbInstance.secret!.grantRead(geoipTaskDef.taskRole);

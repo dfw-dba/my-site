@@ -16,7 +16,33 @@ globs:
 - **S3 bucket names are conditional**: Bucket naming is controlled by `CDK_AUTO_BUCKET_NAMES` (default `true`). When `true`, no `bucketName` property is set (CDK auto-generates). When `false`, explicit `${domainName}-frontend/media` names are used. Never hardcode bucket names directly — always use the `config.autoGenerateBucketNames` conditional.
 - **Route 53 delegation set vs in-zone NS**: When referencing nameservers for delegation, always use `get-hosted-zone` (delegation set), NOT `list-resource-record-sets` (in-zone NS records). They can differ.
 - **ACM cert DNS validation requires delegation first**: Deploying `MySiteCert` before DNS delegation is set up causes the deploy to hang indefinitely waiting for validation. Always deploy `MySiteDns` first, verify delegation, then deploy the rest.
+- **All secrets must be CDK-created resources**: Never use `fromSecretNameV2()` or require manual `create-secret` commands. Create with `new secretsmanager.Secret(...)` using `generateSecretString` with placeholder values. Deployer populates real values post-deploy via `put-secret-value`.
+
+## Style
+
+### Secrets — Good
+
+```typescript
+const mySecret = new secretsmanager.Secret(this, "MySecret", {
+  secretName: `${ssmPrefix}/my-credentials`,
+  description: "Service credentials for XYZ",
+  generateSecretString: {
+    secretStringTemplate: JSON.stringify({ username: "", password: "" }),
+    generateStringKey: "_placeholder",
+  },
+});
+```
+
+### Secrets — Bad
+
+```typescript
+// Requires manual creation before deploy — breaks fork-and-deploy
+const mySecret = secretsmanager.Secret.fromSecretNameV2(
+  this, "MySecret", "/mysite/my-credentials",
+);
+```
 
 ## Verification
 
 - Check migration version matches latest DB change: review `data-stack.ts` version property
+- Check no manual secret lookups: `grep -r "fromSecretNameV2" infrastructure/`

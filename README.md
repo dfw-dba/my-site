@@ -646,14 +646,16 @@ GeoIP enrichment uses MaxMind GeoLite2 City data stored in `internal.geoip2_netw
 
 **Prerequisites:**
 
-1. Create a free [MaxMind account](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) and generate a license key
-2. Store the credentials in Secrets Manager (in each account where you deploy):
+1. Create a free [MaxMind account](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) and generate a license key (Account > Manage License Keys > Generate New License Key)
+2. CDK automatically creates the secret `/mysite/maxmind-credentials` with placeholder values. After deploying `MySiteData`, populate it with your real credentials:
 
 ```bash
-aws secretsmanager create-secret \
-  --name /mysite/maxmind-credentials \
-  --secret-string '{"account_id":"YOUR_ID","license_key":"YOUR_KEY"}'
+aws secretsmanager put-secret-value \
+  --secret-id /mysite/maxmind-credentials \
+  --secret-string '{"account_id":"YOUR_ACCOUNT_ID","license_key":"YOUR_LICENSE_KEY"}'
 ```
+
+> **Upgrading from manual secret?** If you previously created the secret manually via `create-secret`, delete it first (`aws secretsmanager delete-secret --secret-id /mysite/maxmind-credentials --force-delete-without-recovery`), then redeploy `MySiteData` so CDK can create and manage it.
 
 **Initial load:** For the first deployment (before the scheduled task has run), load data manually via bastion psql session:
 
