@@ -1,7 +1,7 @@
 # Fix: MaxMind download fails on redirect (HTTP 400)
 
 **Branch**: `fix/maxmind-download-redirect`
-**Status**: Planning
+**Status**: Implementation complete
 
 ## Context
 
