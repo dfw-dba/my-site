@@ -217,10 +217,42 @@ def main() -> int:
     networks_ipv6_csv = find_csv(extract_dir, NETWORKS_IPV6_FILE)
 
     with psycopg.connect(conninfo, autocommit=False) as conn:
-        # Truncate staging tables
-        print("Truncating staging tables...")
-        conn.execute("truncate staging.geoip2_networks")
-        conn.execute("truncate staging.geoip2_locations")
+        # Reset staging tables (drop + recreate to remove leftover indexes/constraints
+        # from any previous failed run — TRUNCATE only removes rows)
+        print("Resetting staging tables...")
+        conn.execute("drop table if exists staging.geoip2_networks")
+        conn.execute("drop table if exists staging.geoip2_locations")
+        conn.execute(
+            "create table staging.geoip2_networks ("
+            "  network cidr not null,"
+            "  geoname_id int4,"
+            "  registered_country_geoname_id int4,"
+            "  represented_country_geoname_id int4,"
+            "  is_anonymous_proxy bool,"
+            "  is_satellite_provider bool,"
+            "  postal_code text,"
+            "  latitude numeric,"
+            "  longitude numeric,"
+            "  accuracy_radius int4,"
+            "  is_anycast bool)"
+        )
+        conn.execute(
+            "create table staging.geoip2_locations ("
+            "  geoname_id int4 not null,"
+            "  locale_code text not null,"
+            "  continent_code text,"
+            "  continent_name text,"
+            "  country_iso_code text,"
+            "  country_name text,"
+            "  subdivision_1_iso_code text,"
+            "  subdivision_1_name text,"
+            "  subdivision_2_iso_code text,"
+            "  subdivision_2_name text,"
+            "  city_name text,"
+            "  metro_code int4,"
+            "  time_zone text,"
+            "  is_in_european_union bool not null)"
+        )
         conn.commit()
 
         # Load locations
