@@ -149,7 +149,7 @@ def download_and_extract(account_id: str, license_key: str) -> Path:
         shutil.rmtree(extract_dir)
 
     with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
-        zf.extractall(extract_dir, filter="data")
+        zf.extractall(extract_dir)
 
     return extract_dir
 
