@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.11.3](https://github.com/dfw-dba/my-site/compare/v1.11.2...v1.11.3) (2026-04-05)
+
+
+### Bug Fixes
+
+* add migration for geoip swap function and idempotent staging reset ([#174](https://github.com/dfw-dba/my-site/issues/174)) ([4fbdc90](https://github.com/dfw-dba/my-site/commit/4fbdc902c4e0d96ab85aed547c804e83192cfa6b))
+* drop old geoip tables before moving staging to avoid PK name conflict ([#172](https://github.com/dfw-dba/my-site/issues/172)) ([eb7850c](https://github.com/dfw-dba/my-site/commit/eb7850c2440e70311bdb32ccb91ca9229a529470))
+* drop+recreate staging tables instead of truncate for idempotent retries ([#173](https://github.com/dfw-dba/my-site/issues/173)) ([56f7f2f](https://github.com/dfw-dba/my-site/commit/56f7f2f184676b38b88bfcdab14ebbe2e8f56006))
+* remove invalid filter parameter from zipfile extractall ([#170](https://github.com/dfw-dba/my-site/issues/170)) ([3e97497](https://github.com/dfw-dba/my-site/commit/3e97497e89a7e909c5d41ca120937942c8bd5bc0))
+
 ## [1.11.2](https://github.com/dfw-dba/my-site/compare/v1.11.1...v1.11.2) (2026-04-05)
 
 
