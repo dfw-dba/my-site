@@ -452,6 +452,21 @@ _Superseded by the separate staging account work (PR #103). Design changed from 
 
 ---
 
+## Sprint 49: Fix MaxMind Download Redirect
+
+### Implementation
+- [x] 49.1 Add `_NoAuthRedirectHandler` class that strips Authorization on redirect
+- [x] 49.2 Extract `_maxmind_auth_header()` helper to deduplicate auth logic
+- [x] 49.3 Update `check_last_modified()` to use opener + auth helper
+- [x] 49.4 Update `download_and_extract()` to use opener + auth helper
+- [x] 49.5 Move `urllib.request` and `base64` to top-level imports
+
+### Verification
+- [x] 49.6 Python syntax check passes
+- [x] 49.7 Docker image builds successfully
+
+---
+
 ## Sprint 48: CDK-managed MaxMind Secret
 
 ### Rules

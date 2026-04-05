@@ -393,6 +393,8 @@ export interface GeoipUpdateLog {
   duration_ms: number;
   last_modified: string;
   status: string;
+  run_id: number | null;
+  last_message: string | null;
 }
 
 export interface GeoipUpdateLogsResponse {

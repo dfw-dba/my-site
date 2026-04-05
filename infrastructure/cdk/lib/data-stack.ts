@@ -161,7 +161,7 @@ export class DataStack extends cdk.Stack {
       serviceToken: migrationProvider.serviceToken,
       properties: {
         // Change this value to trigger the migration again on next deploy
-        version: "20",
+        version: "21",
       },
     });
 

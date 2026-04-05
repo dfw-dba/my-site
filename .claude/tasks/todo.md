@@ -4,21 +4,6 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 
 ---
 
-## Sprint 49: Fix MaxMind Download Redirect
-
-### Implementation
-- [x] 49.1 Add `_NoAuthRedirectHandler` class that strips Authorization on redirect
-- [x] 49.2 Extract `_maxmind_auth_header()` helper to deduplicate auth logic
-- [x] 49.3 Update `check_last_modified()` to use opener + auth helper
-- [x] 49.4 Update `download_and_extract()` to use opener + auth helper
-- [x] 49.5 Move `urllib.request` and `base64` to top-level imports
-
-### Verification
-- [x] 49.6 Python syntax check passes
-- [x] 49.7 Docker image builds successfully
-
----
-
 ## Sprint 50: Admin Utilities Tab — GeoData
 
 ### Database
@@ -73,6 +58,22 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 - [x] 51.7 Backend lint + tests pass (41/41)
 - [x] 51.8 CDK TypeScript compiles
 - [x] 51.9 Security audit (no CRITICAL/HIGH; 2 MEDIUM — error message sanitization, admin-only access mitigates)
+
+---
+
+## Sprint 52: GeoIP Log Run Tracking
+
+### Implementation
+- [x] 52.1 Create migration `010_geoip_log_run_tracking.sql` (add run_id + last_message columns, recreate query function)
+- [x] 52.2 Track `last_message` in `ProgressLogger`, include both columns in INSERT (`update.py`)
+- [x] 52.3 Update `GeoipUpdateLog` TypeScript type with new nullable fields
+- [x] 52.4 Add Run and Last Message columns to Update History table (`GeoDataTab.tsx`)
+- [x] 52.5 Bump CDK migration version 20 → 21
+
+### Verification
+- [x] 52.6 Backend lint + tests pass (41/41)
+- [x] 52.7 Frontend type check + tests pass (25/25)
+- [x] 52.8 CDK TypeScript compiles
 
 ---
 
