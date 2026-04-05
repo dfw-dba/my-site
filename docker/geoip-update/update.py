@@ -1,0 +1,287 @@
+"""GeoLite2 City data refresh: download, bulk-load, atomic swap."""
+
+import io
+import json
+import os
+import sys
+import time
+import zipfile
+from pathlib import Path
+
+import boto3
+import psycopg
+from psycopg import sql
+
+MAXMIND_URL = (
+    "https://download.maxmind.com/geoip/databases/GeoLite2-City-CSV/download?suffix=zip"
+)
+
+# CSV file patterns inside the ZIP
+LOCATIONS_FILE = "GeoLite2-City-Locations-en.csv"
+NETWORKS_IPV4_FILE = "GeoLite2-City-Blocks-IPv4.csv"
+NETWORKS_IPV6_FILE = "GeoLite2-City-Blocks-IPv6.csv"
+
+# Staging table columns matching MaxMind CSV headers
+NETWORKS_COLUMNS = [
+    "network",
+    "geoname_id",
+    "registered_country_geoname_id",
+    "represented_country_geoname_id",
+    "is_anonymous_proxy",
+    "is_satellite_provider",
+    "postal_code",
+    "latitude",
+    "longitude",
+    "accuracy_radius",
+    "is_anycast",
+]
+
+LOCATIONS_COLUMNS = [
+    "geoname_id",
+    "locale_code",
+    "continent_code",
+    "continent_name",
+    "country_iso_code",
+    "country_name",
+    "subdivision_1_iso_code",
+    "subdivision_1_name",
+    "subdivision_2_iso_code",
+    "subdivision_2_name",
+    "city_name",
+    "metro_code",
+    "time_zone",
+    "is_in_european_union",
+]
+
+
+def get_secret(secret_arn: str) -> dict:
+    """Fetch a JSON secret from AWS Secrets Manager."""
+    client = boto3.client("secretsmanager")
+    resp = client.get_secret_value(SecretId=secret_arn)
+    return json.loads(resp["SecretString"])
+
+
+def get_db_connection_string() -> str:
+    """Build a PostgreSQL connection string from env vars and Secrets Manager."""
+    db_secret = get_secret(os.environ["DB_SECRET_ARN"])
+    password = db_secret["password"]
+    host = os.environ["DB_HOST"]
+    port = os.environ.get("DB_PORT", "5432")
+    user = os.environ.get("DB_USER", "mysite")
+    dbname = os.environ.get("DB_NAME", "mysite")
+    return f"postgresql://{user}:{password}@{host}:{port}/{dbname}?sslmode=require"
+
+
+def get_maxmind_credentials() -> tuple[str, str]:
+    """Fetch MaxMind account_id and license_key from Secrets Manager."""
+    secret = get_secret(os.environ["MAXMIND_SECRET_ARN"])
+    return secret["account_id"], secret["license_key"]
+
+
+def check_last_modified(account_id: str, license_key: str) -> str | None:
+    """HEAD request to check Last-Modified header. Returns the header value."""
+    import urllib.request
+
+    req = urllib.request.Request(MAXMIND_URL, method="HEAD")
+    # MaxMind uses HTTP Basic Auth for downloads
+    import base64
+
+    credentials = base64.b64encode(f"{account_id}:{license_key}".encode()).decode()
+    req.add_header("Authorization", f"Basic {credentials}")
+
+    try:
+        with urllib.request.urlopen(req) as resp:
+            return resp.headers.get("Last-Modified")
+    except urllib.error.HTTPError as e:
+        print(f"HEAD request failed: {e.code} {e.reason}", file=sys.stderr)
+        raise
+
+
+def should_skip(conn: psycopg.Connection, last_modified: str | None) -> bool:
+    """Check if we already loaded this version of the data."""
+    if not last_modified:
+        return False
+
+    row = conn.execute(
+        "select last_modified from internal.geoip_update_log "
+        "where status = 'success' order by updated_at desc limit 1"
+    ).fetchone()
+
+    if row and row[0] == last_modified:
+        return True
+    return False
+
+
+def download_and_extract(account_id: str, license_key: str) -> Path:
+    """Download the GeoLite2 City CSV ZIP and extract to /tmp."""
+    import urllib.request
+    import base64
+
+    print("Downloading GeoLite2 City CSV...")
+    req = urllib.request.Request(MAXMIND_URL)
+    credentials = base64.b64encode(f"{account_id}:{license_key}".encode()).decode()
+    req.add_header("Authorization", f"Basic {credentials}")
+
+    with urllib.request.urlopen(req) as resp:
+        zip_data = resp.read()
+
+    print(f"Downloaded {len(zip_data) / 1024 / 1024:.1f} MB")
+
+    extract_dir = Path("/tmp/geoip")
+    if extract_dir.exists():
+        import shutil
+
+        shutil.rmtree(extract_dir)
+
+    with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
+        zf.extractall(extract_dir, filter="data")
+
+    return extract_dir
+
+
+def find_csv(extract_dir: Path, filename: str) -> Path:
+    """Find a CSV file inside the extracted ZIP (may be in a subdirectory)."""
+    matches = list(extract_dir.rglob(filename))
+    if not matches:
+        raise FileNotFoundError(f"{filename} not found in {extract_dir}")
+    return matches[0]
+
+
+def copy_csv_to_staging(
+    conn: psycopg.Connection,
+    csv_path: Path,
+    schema: str,
+    table: str,
+    columns: list[str],
+) -> int:
+    """Bulk-load a CSV into a staging table using COPY FROM STDIN."""
+    qualified_table = sql.Identifier(schema, table)
+    col_list = sql.SQL(", ").join(sql.Identifier(c) for c in columns)
+    copy_query = sql.SQL("copy {} ({}) from stdin with (format csv)").format(
+        qualified_table, col_list
+    )
+    count_query = sql.SQL("select count(*) from {}").format(qualified_table)
+
+    with open(csv_path, "r") as f:
+        # Skip the CSV header line
+        header = f.readline()
+        print(f"  CSV header: {header.strip()}")
+
+        with conn.cursor().copy(copy_query) as copy:
+            while True:
+                chunk = f.read(65536)
+                if not chunk:
+                    break
+                copy.write(chunk.encode())
+
+    row_count = conn.execute(count_query).fetchone()[0]
+    return row_count
+
+
+def main() -> int:
+    start_time = time.time()
+
+    # Fetch credentials
+    account_id, license_key = get_maxmind_credentials()
+    conninfo = get_db_connection_string()
+
+    # Check Last-Modified
+    last_modified = check_last_modified(account_id, license_key)
+    print(f"MaxMind Last-Modified: {last_modified}")
+
+    with psycopg.connect(conninfo) as conn:
+        if should_skip(conn, last_modified):
+            print("Data unchanged (Last-Modified matches). Skipping update.")
+            return 0
+
+    # Download and extract
+    extract_dir = download_and_extract(account_id, license_key)
+
+    locations_csv = find_csv(extract_dir, LOCATIONS_FILE)
+    networks_ipv4_csv = find_csv(extract_dir, NETWORKS_IPV4_FILE)
+    networks_ipv6_csv = find_csv(extract_dir, NETWORKS_IPV6_FILE)
+
+    with psycopg.connect(conninfo, autocommit=False) as conn:
+        # Truncate staging tables
+        print("Truncating staging tables...")
+        conn.execute("truncate staging.geoip2_networks")
+        conn.execute("truncate staging.geoip2_locations")
+        conn.commit()
+
+        # Load locations
+        print(f"Loading locations from {locations_csv.name}...")
+        loc_count = copy_csv_to_staging(
+            conn, locations_csv, "staging", "geoip2_locations", LOCATIONS_COLUMNS
+        )
+        conn.commit()
+        print(f"  Loaded {loc_count:,} location rows")
+
+        # Load networks (IPv4 + IPv6)
+        print(f"Loading networks from {networks_ipv4_csv.name}...")
+        net_count = copy_csv_to_staging(
+            conn, networks_ipv4_csv, "staging", "geoip2_networks", NETWORKS_COLUMNS
+        )
+        conn.commit()
+        print(f"  Loaded {net_count:,} IPv4 network rows")
+
+        print(f"Loading networks from {networks_ipv6_csv.name}...")
+        ipv6_count = copy_csv_to_staging(
+            conn, networks_ipv6_csv, "staging", "geoip2_networks", NETWORKS_COLUMNS
+        )
+        conn.commit()
+        net_count += ipv6_count
+        print(f"  Loaded {ipv6_count:,} IPv6 network rows ({net_count:,} total)")
+
+        # Build indexes on staging tables before swap
+        print("Building GiST index on staging.geoip2_networks...")
+        conn.execute(
+            "create index idx_staging_geoip2_networks_network "
+            "on staging.geoip2_networks using gist (network inet_ops)"
+        )
+        conn.commit()
+
+        print("Building PK on staging.geoip2_locations...")
+        conn.execute(
+            "alter table staging.geoip2_locations "
+            "add primary key (geoname_id, locale_code)"
+        )
+        conn.commit()
+
+        # Atomic swap
+        print("Performing atomic table swap...")
+        conn.execute("select internal.geoip_swap_staging()")
+        conn.commit()
+
+        # Analyze new production tables
+        print("Analyzing new tables...")
+        conn.execute("analyze internal.geoip2_networks")
+        conn.execute("analyze internal.geoip2_locations")
+        conn.commit()
+
+        # Log success
+        duration_ms = int((time.time() - start_time) * 1000)
+        conn.execute(
+            "insert into internal.geoip_update_log "
+            "(network_rows, location_rows, duration_ms, last_modified, status) "
+            "values (%s, %s, %s, %s, 'success')",
+            (net_count, loc_count, duration_ms, last_modified),
+        )
+        conn.commit()
+
+        print(
+            f"GeoIP update complete: {net_count:,} networks, {loc_count:,} locations "
+            f"in {duration_ms / 1000:.1f}s"
+        )
+
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except Exception as e:
+        print(f"FATAL: {e}", file=sys.stderr)
+        import traceback
+
+        traceback.print_exc()
+        sys.exit(1)

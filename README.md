@@ -43,6 +43,9 @@ Production and staging are fully isolated in separate AWS accounts. Each account
     │   │                                     │   │
     │  Bastion (SSM)                          │  Bastion (SSM)
     │                                         │
+    │  ECS Fargate (GeoIP refresh)            │  ECS Fargate (GeoIP refresh)
+    │    EventBridge: Wed+Sat 06:00 UTC       │    EventBridge: Wed+Sat 06:00 UTC
+    │                                         │
     ├── VPC endpoints (Cognito, S3)           ├── VPC endpoints (Cognito, S3)
     ├── ACM wildcard cert                     ├── ACM wildcard cert
     └── Budget alarm                          └── Budget alarm
@@ -58,7 +61,8 @@ Production and staging are fully isolated in separate AWS accounts. Each account
 | RDS db.t4g.micro | $0.00 | $12.50 |
 | VPC endpoint (cognito-idp) | $7.20 | $7.20 |
 | CloudFront / S3 / Lambda / API GW / Cognito / ACM | ~$0 | ~$0 |
-| **Total** | **~$8/month** | **~$20/month** |
+| GeoIP refresh (Fargate + Secrets Manager) | ~$0.45 | ~$0.45 |
+| **Total** | **~$8/month** | **~$21/month** |
 
 **Staging account (optional, separate AWS account):**
 
@@ -69,7 +73,8 @@ Production and staging are fully isolated in separate AWS accounts. Each account
 | VPC endpoint (cognito-idp) | $7.20 | $7.20 |
 | Bastion host (t4g.nano) | ~$3.00 | ~$3.00 |
 | CloudFront / S3 / Lambda / API GW / Cognito / ACM | ~$0 | ~$0 |
-| **Total** | **~$11/month** | **~$23/month** |
+| GeoIP refresh (Fargate + Secrets Manager) | ~$0.45 | ~$0.45 |
+| **Total** | **~$11/month** | **~$24/month** |
 
 Built-in cost safeguards: API Gateway throttling (10 req/s), Lambda reserved concurrency (5), and a configurable budget alarm (per account).
 
@@ -633,17 +638,42 @@ All admin analytics endpoints accept optional query parameters: `start_date`, `e
 
 Analytics data (page views and visitor events) older than 90 days is automatically purged during daily maintenance.
 
-### GeoIP Setup (Optional)
+### GeoIP Setup
 
-GeoIP enrichment requires loading MaxMind GeoLite2 City data into `internal.geoip2_networks` and `internal.geoip2_locations`. Without it, analytics still works but geographic data will be empty.
+GeoIP enrichment uses MaxMind GeoLite2 City data stored in `internal.geoip2_networks` and `internal.geoip2_locations`. Without it, analytics still works but geographic data will be empty.
 
-Download the GeoLite2 City CSV from [MaxMind](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) (requires free account), then load via bastion psql session. Load locations first, then network blocks:
+**Automated refresh** runs twice weekly (Wed + Sat at 06:00 UTC) via an ECS Fargate task triggered by EventBridge. The task downloads fresh data from MaxMind, bulk-loads it into staging tables, then performs a zero-downtime atomic table swap. No manual intervention needed after initial setup.
+
+**Prerequisites:**
+
+1. Create a free [MaxMind account](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) and generate a license key
+2. Store the credentials in Secrets Manager (in each account where you deploy):
+
+```bash
+aws secretsmanager create-secret \
+  --name /mysite/maxmind-credentials \
+  --secret-string '{"account_id":"YOUR_ID","license_key":"YOUR_KEY"}'
+```
+
+**Initial load:** For the first deployment (before the scheduled task has run), load data manually via bastion psql session:
 
 ```bash
 \copy internal.geoip2_locations from 'GeoLite2-City-Locations-en.csv' with (format csv, header);
 \copy internal.geoip2_networks from 'GeoLite2-City-Blocks-IPv4.csv' with (format csv, header);
 \copy internal.geoip2_networks from 'GeoLite2-City-Blocks-IPv6.csv' with (format csv, header);
 ```
+
+**Manual trigger** (ad-hoc refresh):
+
+```bash
+aws ecs run-task \
+  --cluster mysite-geoip \
+  --task-definition mysite-geoip-update \
+  --launch-type FARGATE \
+  --network-configuration "awsvpcConfiguration={subnets=[SUBNET_ID],securityGroups=[SG_ID],assignPublicIp=ENABLED}"
+```
+
+The task uses HEAD requests to check MaxMind's `Last-Modified` header and skips the update if data hasn't changed.
 
 ## Project Structure
 
@@ -670,7 +700,7 @@ Download the GeoLite2 City CSV from [MaxMind](https://dev.maxmind.com/geoip/geol
 │   └── seed/              # Optional sample seed data (loaded via ./dev.sh --seed)
 ├── dev.sh                 # Local dev startup script (supports --seed flag)
 ├── docs/                  # Extended documentation (AWS setup guide, etc.)
-├── docker/                # Dockerfiles (dev, production, Lambda)
+├── docker/                # Dockerfiles (dev, production, Lambda, GeoIP update)
 ├── infrastructure/cdk/    # AWS CDK stacks (TypeScript)
 │   ├── lib/               # Stack definitions (DNS, Cert, Data, App)
 │   └── config/            # Deployment configuration

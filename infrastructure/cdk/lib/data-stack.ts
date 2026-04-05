@@ -8,6 +8,11 @@ import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as ssm from "aws-cdk-lib/aws-ssm";
 import * as route53 from "aws-cdk-lib/aws-route53";
+import * as ecs from "aws-cdk-lib/aws-ecs";
+import * as logs from "aws-cdk-lib/aws-logs";
+import * as events from "aws-cdk-lib/aws-events";
+import * as targets from "aws-cdk-lib/aws-events-targets";
+import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { config } from "../config";
 
@@ -153,7 +158,7 @@ export class DataStack extends cdk.Stack {
       serviceToken: migrationProvider.serviceToken,
       properties: {
         // Change this value to trigger the migration again on next deploy
-        version: "16",
+        version: "17",
       },
     });
 
@@ -335,6 +340,81 @@ export class DataStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, "BastionInstanceId", {
       value: bastion.instanceId,
+    });
+
+    // --- GeoIP Auto-Update (ECS Fargate + EventBridge) ---
+
+    const geoipLogGroup = new logs.LogGroup(this, "GeoipUpdateLogGroup", {
+      logGroupName: "/mysite/geoip-update",
+      retention: logs.RetentionDays.TWO_WEEKS,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    const geoipCluster = new ecs.Cluster(this, "GeoipCluster", {
+      vpc: this.vpc,
+      clusterName: `mysite-geoip${isStaging ? "-stage" : ""}`,
+    });
+
+    const geoipTaskDef = new ecs.FargateTaskDefinition(this, "GeoipTaskDef", {
+      memoryLimitMiB: 1024,
+      cpu: 512,
+    });
+
+    // MaxMind credentials secret (must be created manually before first deploy)
+    const maxmindSecret = secretsmanager.Secret.fromSecretNameV2(
+      this, "MaxMindSecret", "/mysite/maxmind-credentials",
+    );
+
+    // Grant task role read access to both secrets
+    dbInstance.secret!.grantRead(geoipTaskDef.taskRole);
+    maxmindSecret.grantRead(geoipTaskDef.taskRole);
+
+    geoipTaskDef.addContainer("geoip-update", {
+      image: ecs.ContainerImage.fromAsset(
+        path.join(__dirname, "../../../docker/geoip-update"),
+      ),
+      environment: {
+        DB_HOST: dbInstance.dbInstanceEndpointAddress,
+        DB_PORT: dbInstance.dbInstanceEndpointPort,
+        DB_USER: dbCredentials.username,
+        DB_NAME: "mysite",
+        DB_SECRET_ARN: dbInstance.secret!.secretArn,
+        MAXMIND_SECRET_ARN: maxmindSecret.secretArn,
+      },
+      logging: ecs.LogDrivers.awsLogs({
+        logGroup: geoipLogGroup,
+        streamPrefix: "geoip",
+      }),
+    });
+
+    const geoipSg = new ec2.SecurityGroup(this, "GeoipTaskSg", {
+      vpc: this.vpc,
+      description: "GeoIP update Fargate task - internet and RDS access",
+      allowAllOutbound: true,
+    });
+
+    this.databaseSecurityGroup.addIngressRule(
+      geoipSg,
+      ec2.Port.tcp(5432),
+      "Allow GeoIP update task to connect to RDS",
+    );
+
+    // Schedule: Wed + Sat at 06:00 UTC (MaxMind updates Tue + Fri)
+    new events.Rule(this, "GeoipScheduleRule", {
+      schedule: events.Schedule.cron({
+        minute: "0",
+        hour: "6",
+        weekDay: "WED,SAT",
+      }),
+      targets: [
+        new targets.EcsTask({
+          cluster: geoipCluster,
+          taskDefinition: geoipTaskDef,
+          subnetSelection: { subnetType: ec2.SubnetType.PUBLIC },
+          assignPublicIp: true,
+          securityGroups: [geoipSg],
+        }),
+      ],
     });
 
   }
