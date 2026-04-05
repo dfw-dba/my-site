@@ -449,3 +449,21 @@ _Superseded by the separate staging account work (PR #103). Design changed from 
 - [x] 40.4 Update `.claude/agents/aws-architect.md` (2 workflow references)
 - [x] 40.5 Update `README.md` (Continuous Deployment, Staging, Production sections)
 - [x] 40.6 Verification: YAML syntax, job chain, secrets, no stale references
+
+---
+
+## Sprint 48: CDK-managed MaxMind Secret
+
+### Rules
+- [x] 48.1 Add CDK-managed secrets rule + style examples + verification to `aws-cdk.md`
+
+### Infrastructure
+- [x] 48.2 Replace `fromSecretNameV2` with `new Secret()` in `data-stack.ts`
+
+### Documentation
+- [x] 48.3 Update README GeoIP prerequisites (create-secret → put-secret-value)
+
+### Verification
+- [x] 48.4 CDK TypeScript compiles (`npx tsc --noEmit`)
+- [x] 48.5 No `fromSecretNameV2` references in infrastructure/
+- [x] 48.6 Security audit: no CRITICAL/HIGH/MEDIUM; 1 LOW (placeholder empty strings — expected)

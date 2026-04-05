@@ -457,44 +457,61 @@ import os
 import urllib.parse
 
 ecs = boto3.client("ecs")
+s3 = boto3.client("s3")
+
+def _write_status(bucket, run_id, status_data):
+    """Write a status file so the admin API can detect Lambda/ECS failures."""
+    s3.put_object(
+        Bucket=bucket,
+        Key=f"triggers/{run_id}.status.json",
+        Body=json.dumps(status_data),
+        ContentType="application/json",
+    )
 
 def handler(event, context):
     bucket = event["Records"][0]["s3"]["bucket"]["name"]
     key = urllib.parse.unquote_plus(event["Records"][0]["s3"]["object"]["key"])
 
-    s3 = boto3.client("s3")
     obj = s3.get_object(Bucket=bucket, Key=key)
     trigger = json.loads(obj["Body"].read())
     run_id = str(trigger["run_id"])
 
-    response = ecs.run_task(
-        cluster=os.environ["ECS_CLUSTER_ARN"],
-        taskDefinition=os.environ["ECS_TASK_DEF_ARN"],
-        launchType="FARGATE",
-        networkConfiguration={
-            "awsvpcConfiguration": {
-                "subnets": os.environ["ECS_SUBNETS"].split(","),
-                "securityGroups": [os.environ["ECS_SECURITY_GROUP"]],
-                "assignPublicIp": "ENABLED",
-            }
-        },
-        overrides={
-            "containerOverrides": [{
-                "name": "geoip-update",
-                "environment": [
-                    {"name": "GEOIP_RUN_ID", "value": run_id},
-                ],
-            }],
-        },
-    )
+    try:
+        response = ecs.run_task(
+            cluster=os.environ["ECS_CLUSTER_ARN"],
+            taskDefinition=os.environ["ECS_TASK_DEF_ARN"],
+            launchType="FARGATE",
+            networkConfiguration={
+                "awsvpcConfiguration": {
+                    "subnets": os.environ["ECS_SUBNETS"].split(","),
+                    "securityGroups": [os.environ["ECS_SECURITY_GROUP"]],
+                    "assignPublicIp": "ENABLED",
+                }
+            },
+            overrides={
+                "containerOverrides": [{
+                    "name": "geoip-update",
+                    "environment": [
+                        {"name": "GEOIP_RUN_ID", "value": run_id},
+                    ],
+                }],
+            },
+        )
 
-    failures = response.get("failures", [])
-    if failures:
-        raise RuntimeError(f"ECS RunTask failed: {failures}")
+        failures = response.get("failures", [])
+        if failures:
+            error = f"ECS RunTask failed: {failures}"
+            _write_status(bucket, run_id, {"status": "failed", "error": error})
+            raise RuntimeError(error)
 
-    task_arn = response["tasks"][0]["taskArn"]
-    print(f"Started ECS task {task_arn} for run_id={run_id}")
-    return {"taskArn": task_arn}
+        task_arn = response["tasks"][0]["taskArn"]
+        _write_status(bucket, run_id, {"status": "started", "task_arn": task_arn})
+        print(f"Started ECS task {task_arn} for run_id={run_id}")
+        return {"taskArn": task_arn}
+
+    except Exception as e:
+        _write_status(bucket, run_id, {"status": "failed", "error": str(e)})
+        raise
 `),
       timeout: cdk.Duration.seconds(30),
       environment: {
@@ -522,8 +539,8 @@ def handler(event, context):
       }),
     );
 
-    // Grant trigger Lambda read access to the trigger bucket
-    geoipTriggerBucket.grantRead(geoipTriggerFn);
+    // Grant trigger Lambda read + write access (reads trigger files, writes status files)
+    geoipTriggerBucket.grantReadWrite(geoipTriggerFn);
 
     // Wire S3 event notification to trigger Lambda
     geoipTriggerBucket.addEventNotification(

@@ -282,8 +282,9 @@ export class AppStack extends cdk.Stack {
     mediaBucket.grantRead(backendFn);
     mediaBucket.grantPut(backendFn);
 
-    // Grant Lambda write access to GeoIP trigger bucket (S3 trigger chain)
-    props.geoipTriggerBucket.grantPut(backendFn);
+    // Grant Lambda read + write access to GeoIP trigger bucket
+    // (write: trigger files, read: status files written by trigger Lambda)
+    props.geoipTriggerBucket.grantReadWrite(backendFn);
 
     // --- Scheduled Log Maintenance (daily at 03:00 UTC) ---
 

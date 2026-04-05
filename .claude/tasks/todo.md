@@ -4,24 +4,6 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 
 ---
 
-## Sprint 48: CDK-managed MaxMind Secret
-
-### Rules
-- [x] 48.1 Add CDK-managed secrets rule + style examples + verification to `aws-cdk.md`
-
-### Infrastructure
-- [x] 48.2 Replace `fromSecretNameV2` with `new Secret()` in `data-stack.ts`
-
-### Documentation
-- [x] 48.3 Update README GeoIP prerequisites (create-secret → put-secret-value)
-
-### Verification
-- [x] 48.4 CDK TypeScript compiles (`npx tsc --noEmit`)
-- [x] 48.5 No `fromSecretNameV2` references in infrastructure/
-- [x] 48.6 Security audit: no CRITICAL/HIGH/MEDIUM; 1 LOW (placeholder empty strings — expected)
-
----
-
 ## Sprint 49: Fix MaxMind Download Redirect
 
 ### Implementation
@@ -70,6 +52,27 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 - [x] 50.18 Backend lint + tests pass (41/41)
 - [x] 50.19 Frontend type check + tests pass (25/25)
 - [x] 50.20 Security audit (no issues found)
+
+---
+
+## Sprint 51: Fix GeoIP Silent Timeout — S3 Status Feedback
+
+### Docker
+- [x] 51.1 Reorder `update.py` startup: DB connect → set "running" → fetch MaxMind creds
+
+### Infrastructure
+- [x] 51.2 Update trigger Lambda to write `status.json` to S3 (success/failure)
+- [x] 51.3 Grant trigger Lambda readWrite on trigger bucket (was read-only)
+- [x] 51.4 Grant backend Lambda readWrite on trigger bucket (was put-only)
+
+### Backend
+- [x] 51.5 Add `check_geoip_trigger_status(run_id)` to `geoip_trigger.py`
+- [x] 51.6 Modify `get_geoip_task_status` endpoint to check S3 when task is pending
+
+### Verification
+- [x] 51.7 Backend lint + tests pass (41/41)
+- [x] 51.8 CDK TypeScript compiles
+- [x] 51.9 Security audit (no CRITICAL/HIGH; 2 MEDIUM — error message sanitization, admin-only access mitigates)
 
 ---
 

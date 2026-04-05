@@ -292,6 +292,14 @@ class DatabaseAPI:
         )
         return result.scalar_one()
 
+    async def update_geoip_task_run(self, data: dict[str, Any]) -> Any:
+        """Update a GeoIP task run (status, task_arn, error_message)."""
+        result = await self.session.execute(
+            text("SELECT api.update_geoip_task_run(CAST(:data AS jsonb))"),
+            {"data": json.dumps(data, default=str)},
+        )
+        return result.scalar_one()
+
     async def create_geoip_task_run(self, data: dict[str, Any]) -> Any:
         """Create a new pending GeoIP task run record."""
         result = await self.session.execute(
