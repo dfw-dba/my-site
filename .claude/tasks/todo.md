@@ -4,38 +4,6 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 
 ---
 
-## Sprint 44: Visitor Analytics (PR 2 of Observability)
-
-### Database
-- [x] 44.1 Add `page_views`, `visitor_events`, `geoip_ranges` tables to `02_tables.sql` with indexes and comments
-- [x] 44.2 Add analytics functions to `03_functions.sql` (geoip_lookup, insert_page_view, insert_visitor_event, get_analytics_summary, get_analytics_visitors, get_analytics_geo, purge_analytics)
-
-### Backend
-- [x] 44.3 Create Pydantic schemas in `schemas/analytics.py` with strict validation and 4KB event_data limit
-- [x] 44.4 Create public analytics router `routers/analytics.py` with bot detection and 30/min rate limit
-- [x] 44.5 Add admin analytics endpoints to `admin.py` (summary, visitors, geo)
-- [x] 44.6 Add DatabaseAPI analytics methods to `db_functions.py`
-- [x] 44.7 Register analytics router in `main.py`
-- [x] 44.8 Add `/api/analytics/event` to skip paths in logging middleware
-- [x] 44.9 Add analytics purge (90d) and VACUUM to lambda maintenance handler
-
-### Frontend
-- [x] 44.10 Create analytics tracker service `services/analytics.ts` (fingerprint, session, batching, sendBeacon)
-- [x] 44.11 Create `useAnalytics` hook with page view, click, scroll, print, visibility tracking
-- [x] 44.12 Wire `useAnalytics()` into `MainLayout.tsx`
-
-### Infrastructure & docs
-- [x] 44.13 Bump CDK migration version from "12" to "13" in `data-stack.ts`
-- [x] 44.14 Update `README.md` with visitor analytics documentation
-
-### Verification
-- [x] 44.15 Backend lint + tests pass (41/41)
-- [x] 44.16 Frontend TypeScript + tests pass (25/25)
-- [x] 44.17 CDK TypeScript compiles
-- [x] 44.18 Security audit: 2 MEDIUM findings fixed (event_data size constraint, listener cleanup)
-
----
-
 ## Sprint 45: Observability Reporting — Admin Dashboard Tabs (PR 1)
 
 ### Setup
@@ -111,6 +79,24 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 - [x] 47.7 CDK TypeScript compiles
 - [x] 47.8 Backend lint + tests pass (41/41)
 - [x] 47.9 Security audit: 4 MEDIUM + 1 LOW fixed (zip-slip, SQL identifiers, root container, unpinned deps, search_path)
+
+---
+
+## Sprint 48: CDK-managed MaxMind Secret
+
+### Rules
+- [x] 48.1 Add CDK-managed secrets rule + style examples + verification to `aws-cdk.md`
+
+### Infrastructure
+- [x] 48.2 Replace `fromSecretNameV2` with `new Secret()` in `data-stack.ts`
+
+### Documentation
+- [x] 48.3 Update README GeoIP prerequisites (create-secret → put-secret-value)
+
+### Verification
+- [x] 48.4 CDK TypeScript compiles (`npx tsc --noEmit`)
+- [x] 48.5 No `fromSecretNameV2` references in infrastructure/
+- [x] 48.6 Security audit: no CRITICAL/HIGH/MEDIUM; 1 LOW (placeholder empty strings — expected)
 
 ---
 
