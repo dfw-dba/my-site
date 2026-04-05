@@ -4,6 +4,31 @@ _Completed sprints moved from `todo.md`. For current work, see `todo.md`._
 
 ---
 
+## Sprint 43: Database Performance Metrics (PR 1 of Observability)
+
+### Infrastructure
+- [x] 43.1 Add PG params to RDS parameter group in `data-stack.ts` (pg_stat_statements, auto_explain, track_functions)
+- [x] 43.2 Enable `pg_stat_statements` extension in `00_extensions.sql`
+- [x] 43.3 Add hourly EventBridge rule for metrics capture in `app-stack.ts`
+- [x] 43.4 Bump CDK migration version from "11" to "12" in `data-stack.ts`
+
+### Database tables & functions
+- [x] 43.5 Add 6 metric snapshot tables to `02_tables.sql` (metric_snapshots, stat_statements_history, stat_tables_history, stat_indexes_history, stat_functions_history, stat_database_history)
+- [x] 43.6 Add `api.capture_db_metrics()` function to `03_functions.sql`
+- [x] 43.7 Add query/dashboard functions to `03_functions.sql` (get_db_overview, get_slow_queries, get_plan_instability, get_table_stats, get_index_usage, get_function_stats, purge_metric_snapshots)
+
+### Backend
+- [x] 43.8 Extend Lambda handler to dispatch metrics capture events in `lambda_handler.py`
+- [x] 43.9 Extend maintenance job to purge old snapshots and VACUUM metric tables
+- [x] 43.10 Add DatabaseAPI methods for all metrics functions in `db_functions.py`
+- [x] 43.11 Add admin metrics endpoints in `admin.py` (7 endpoints: overview, queries, plan-instability, tables, indexes, functions, manual capture)
+
+### Documentation & verification
+- [x] 43.12 Update `README.md` with DB metrics feature documentation
+- [x] 43.13 Verification: backend lint + tests pass, CDK TypeScript compiles
+
+---
+
 ## Sprint 42: Admin Portal Regression Test Suite
 
 ### Backend auth changes

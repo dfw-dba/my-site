@@ -4,31 +4,6 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 
 ---
 
-## Sprint 43: Database Performance Metrics (PR 1 of Observability)
-
-### Infrastructure
-- [x] 43.1 Add PG params to RDS parameter group in `data-stack.ts` (pg_stat_statements, auto_explain, track_functions)
-- [x] 43.2 Enable `pg_stat_statements` extension in `00_extensions.sql`
-- [x] 43.3 Add hourly EventBridge rule for metrics capture in `app-stack.ts`
-- [x] 43.4 Bump CDK migration version from "11" to "12" in `data-stack.ts`
-
-### Database tables & functions
-- [x] 43.5 Add 6 metric snapshot tables to `02_tables.sql` (metric_snapshots, stat_statements_history, stat_tables_history, stat_indexes_history, stat_functions_history, stat_database_history)
-- [x] 43.6 Add `api.capture_db_metrics()` function to `03_functions.sql`
-- [x] 43.7 Add query/dashboard functions to `03_functions.sql` (get_db_overview, get_slow_queries, get_plan_instability, get_table_stats, get_index_usage, get_function_stats, purge_metric_snapshots)
-
-### Backend
-- [x] 43.8 Extend Lambda handler to dispatch metrics capture events in `lambda_handler.py`
-- [x] 43.9 Extend maintenance job to purge old snapshots and VACUUM metric tables
-- [x] 43.10 Add DatabaseAPI methods for all metrics functions in `db_functions.py`
-- [x] 43.11 Add admin metrics endpoints in `admin.py` (7 endpoints: overview, queries, plan-instability, tables, indexes, functions, manual capture)
-
-### Documentation & verification
-- [x] 43.12 Update `README.md` with DB metrics feature documentation
-- [x] 43.13 Verification: backend lint + tests pass, CDK TypeScript compiles
-
----
-
 ## Sprint 44: Visitor Analytics (PR 2 of Observability)
 
 ### Database
@@ -113,6 +88,29 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 ### Verification
 - [x] 46.7 Backend lint + tests pass (41/41)
 - [x] 46.8 CDK TypeScript compiles
+
+---
+
+## Sprint 47: Automated GeoLite2 Data Refresh
+
+### Database
+- [x] 47.1 Create migration `007_geoip_refresh.sql` (staging schema, tables, swap function, update log)
+
+### Docker
+- [x] 47.2 Create `docker/geoip-update/Dockerfile` (Python 3.12-slim with psycopg + boto3)
+- [x] 47.3 Create `docker/geoip-update/update.py` (download, COPY, atomic swap script)
+
+### Infrastructure
+- [x] 47.4 Add ECS cluster, task definition, security group, EventBridge rule, log group to `data-stack.ts`
+- [x] 47.5 Bump CDK migration version 16 → 17 in `data-stack.ts`
+
+### Documentation
+- [x] 47.6 Update README.md (architecture diagram, cost estimate, GeoIP section, project structure)
+
+### Verification
+- [x] 47.7 CDK TypeScript compiles
+- [x] 47.8 Backend lint + tests pass (41/41)
+- [x] 47.9 Security audit: 4 MEDIUM + 1 LOW fixed (zip-slip, SQL identifiers, root container, unpinned deps, search_path)
 
 ---
 
