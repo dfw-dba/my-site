@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.2](https://github.com/dfw-dba/my-site/compare/v1.11.1...v1.11.2) (2026-04-05)
+
+
+### Bug Fixes
+
+* strip Authorization header on MaxMind download redirect ([#168](https://github.com/dfw-dba/my-site/issues/168)) ([fe54911](https://github.com/dfw-dba/my-site/commit/fe54911ccb15138b6757ecdb79c1549f1bbf3e33))
+
 ## [1.11.1](https://github.com/dfw-dba/my-site/compare/v1.11.0...v1.11.1) (2026-04-05)
 
 
