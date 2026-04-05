@@ -4,6 +4,7 @@ import Resume from "../pages/Resume";
 import ProtectedRoute from "../components/admin/ProtectedRoute";
 import AdminLayout from "../pages/admin/AdminLayout";
 import Dashboard from "../pages/admin/Dashboard";
+import Utilities from "../pages/admin/Utilities";
 import ResumeEditor from "../pages/admin/ResumeEditor";
 
 export default function AppRoutes() {
@@ -16,6 +17,7 @@ export default function AppRoutes() {
       <Route path="admin" element={<ProtectedRoute />}>
         <Route element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
+          <Route path="utilities" element={<Utilities />} />
           <Route path="resume" element={<ResumeEditor />} />
         </Route>
       </Route>

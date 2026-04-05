@@ -4,29 +4,6 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 
 ---
 
-## Sprint 47: Automated GeoLite2 Data Refresh
-
-### Database
-- [x] 47.1 Create migration `007_geoip_refresh.sql` (staging schema, tables, swap function, update log)
-
-### Docker
-- [x] 47.2 Create `docker/geoip-update/Dockerfile` (Python 3.12-slim with psycopg + boto3)
-- [x] 47.3 Create `docker/geoip-update/update.py` (download, COPY, atomic swap script)
-
-### Infrastructure
-- [x] 47.4 Add ECS cluster, task definition, security group, EventBridge rule, log group to `data-stack.ts`
-- [x] 47.5 Bump CDK migration version 16 → 17 in `data-stack.ts`
-
-### Documentation
-- [x] 47.6 Update README.md (architecture diagram, cost estimate, GeoIP section, project structure)
-
-### Verification
-- [x] 47.7 CDK TypeScript compiles
-- [x] 47.8 Backend lint + tests pass (41/41)
-- [x] 47.9 Security audit: 4 MEDIUM + 1 LOW fixed (zip-slip, SQL identifiers, root container, unpinned deps, search_path)
-
----
-
 ## Sprint 48: CDK-managed MaxMind Secret
 
 ### Rules
@@ -57,6 +34,42 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 ### Verification
 - [x] 49.6 Python syntax check passes
 - [x] 49.7 Docker image builds successfully
+
+---
+
+## Sprint 50: Admin Utilities Tab — GeoData
+
+### Database
+- [x] 50.1 Create migration `009_geoip_task_tracking.sql` (task_runs table, task_progress table, 6 API functions)
+
+### Docker
+- [x] 50.2 Add `ProgressLogger` to `docker/geoip-update/update.py` (DB-based progress + status tracking)
+
+### Infrastructure
+- [x] 50.3 Add S3 trigger bucket, trigger Lambda, S3 notification, IAM to `data-stack.ts`
+- [x] 50.4 Export `geoipTriggerBucket` from DataStack, wire through `app.ts` to AppStack
+- [x] 50.5 Add `GEOIP_TRIGGER_BUCKET` env var + S3 write grant to Lambda in `app-stack.ts`
+- [x] 50.6 Bump CDK migration version 19 → 20
+
+### Backend
+- [x] 50.7 Add `GEOIP_TRIGGER_BUCKET` to `config.py`
+- [x] 50.8 Add 4 GeoIP methods to `db_functions.py`
+- [x] 50.9 Create `services/geoip_trigger.py` (S3 trigger writer)
+- [x] 50.10 Add 4 GeoIP endpoints to `admin.py`
+
+### Frontend
+- [x] 50.11 Add GeoIP types to `types/index.ts`
+- [x] 50.12 Add `api.admin.geoip` namespace to `api.ts`
+- [x] 50.13 Add 4 GeoIP hooks to `useAdminApi.ts`
+- [x] 50.14 Add Utilities nav item to `AdminSidebar.tsx` + route to `routes/index.tsx`
+- [x] 50.15 Create `pages/admin/Utilities.tsx` (tab page)
+- [x] 50.16 Create `components/admin/utilities/GeoDataTab.tsx` (main component)
+
+### Documentation & Verification
+- [x] 50.17 Update `README.md` (trigger bucket, trigger Lambda, env var, admin features)
+- [x] 50.18 Backend lint + tests pass (41/41)
+- [x] 50.19 Frontend type check + tests pass (25/25)
+- [x] 50.20 Security audit (no issues found)
 
 ---
 

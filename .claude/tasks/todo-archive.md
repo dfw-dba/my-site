@@ -4,6 +4,29 @@ _Completed sprints moved from `todo.md`. For current work, see `todo.md`._
 
 ---
 
+## Sprint 47: Automated GeoLite2 Data Refresh
+
+### Database
+- [x] 47.1 Create migration `007_geoip_refresh.sql` (staging schema, tables, swap function, update log)
+
+### Docker
+- [x] 47.2 Create `docker/geoip-update/Dockerfile` (Python 3.12-slim with psycopg + boto3)
+- [x] 47.3 Create `docker/geoip-update/update.py` (download, COPY, atomic swap script)
+
+### Infrastructure
+- [x] 47.4 Add ECS cluster, task definition, security group, EventBridge rule, log group to `data-stack.ts`
+- [x] 47.5 Bump CDK migration version 16 → 17 in `data-stack.ts`
+
+### Documentation
+- [x] 47.6 Update README.md (architecture diagram, cost estimate, GeoIP section, project structure)
+
+### Verification
+- [x] 47.7 CDK TypeScript compiles
+- [x] 47.8 Backend lint + tests pass (41/41)
+- [x] 47.9 Security audit: 4 MEDIUM + 1 LOW fixed (zip-slip, SQL identifiers, root container, unpinned deps, search_path)
+
+---
+
 ## Sprint 46: Refactor GeoIP to MaxMind Recommended Schema
 
 ### Database

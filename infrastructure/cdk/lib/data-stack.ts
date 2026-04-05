@@ -13,6 +13,8 @@ import * as logs from "aws-cdk-lib/aws-logs";
 import * as events from "aws-cdk-lib/aws-events";
 import * as targets from "aws-cdk-lib/aws-events-targets";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
+import * as s3 from "aws-cdk-lib/aws-s3";
+import * as s3n from "aws-cdk-lib/aws-s3-notifications";
 import { Construct } from "constructs";
 import { config } from "../config";
 
@@ -27,6 +29,7 @@ export class DataStack extends cdk.Stack {
   public readonly userPoolId: string;
   public readonly userPoolClientId: string;
   public readonly bastionSecurityGroup: ec2.ISecurityGroup;
+  public readonly geoipTriggerBucket: s3.IBucket;
   constructor(scope: Construct, id: string, props: DataStackProps) {
     super(scope, id, props);
 
@@ -158,7 +161,7 @@ export class DataStack extends cdk.Stack {
       serviceToken: migrationProvider.serviceToken,
       properties: {
         // Change this value to trigger the migration again on next deploy
-        version: "19",
+        version: "20",
       },
     });
 
@@ -420,6 +423,114 @@ export class DataStack extends cdk.Stack {
         }),
       ],
     });
+
+    // --- GeoIP Manual Trigger (S3 → Lambda → ECS RunTask) ---
+    // The VPC Lambda cannot call ECS directly (no ECS VPC endpoint).
+    // Instead, the VPC Lambda writes a trigger file to S3 (free gateway
+    // endpoint), which invokes a non-VPC Lambda that calls ECS RunTask.
+
+    const geoipTriggerBucket = new s3.Bucket(this, "GeoipTriggerBucket", {
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+      lifecycleRules: [
+        { expiration: cdk.Duration.days(1) },
+      ],
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+    });
+
+    this.geoipTriggerBucket = geoipTriggerBucket;
+
+    // Resolve public subnet IDs for the ECS task network configuration
+    const publicSubnets = this.vpc.selectSubnets({
+      subnetType: ec2.SubnetType.PUBLIC,
+    }).subnetIds;
+
+    const geoipTriggerFn = new lambda.Function(this, "GeoipTriggerFn", {
+      functionName: `mysite-geoip-trigger${isStaging ? "-stage" : ""}`,
+      runtime: lambda.Runtime.PYTHON_3_12,
+      handler: "index.handler",
+      code: lambda.Code.fromInline(`
+import json
+import boto3
+import os
+import urllib.parse
+
+ecs = boto3.client("ecs")
+
+def handler(event, context):
+    bucket = event["Records"][0]["s3"]["bucket"]["name"]
+    key = urllib.parse.unquote_plus(event["Records"][0]["s3"]["object"]["key"])
+
+    s3 = boto3.client("s3")
+    obj = s3.get_object(Bucket=bucket, Key=key)
+    trigger = json.loads(obj["Body"].read())
+    run_id = str(trigger["run_id"])
+
+    response = ecs.run_task(
+        cluster=os.environ["ECS_CLUSTER_ARN"],
+        taskDefinition=os.environ["ECS_TASK_DEF_ARN"],
+        launchType="FARGATE",
+        networkConfiguration={
+            "awsvpcConfiguration": {
+                "subnets": os.environ["ECS_SUBNETS"].split(","),
+                "securityGroups": [os.environ["ECS_SECURITY_GROUP"]],
+                "assignPublicIp": "ENABLED",
+            }
+        },
+        overrides={
+            "containerOverrides": [{
+                "name": "geoip-update",
+                "environment": [
+                    {"name": "GEOIP_RUN_ID", "value": run_id},
+                ],
+            }],
+        },
+    )
+
+    failures = response.get("failures", [])
+    if failures:
+        raise RuntimeError(f"ECS RunTask failed: {failures}")
+
+    task_arn = response["tasks"][0]["taskArn"]
+    print(f"Started ECS task {task_arn} for run_id={run_id}")
+    return {"taskArn": task_arn}
+`),
+      timeout: cdk.Duration.seconds(30),
+      environment: {
+        ECS_CLUSTER_ARN: geoipCluster.clusterArn,
+        ECS_TASK_DEF_ARN: geoipTaskDef.taskDefinitionArn,
+        ECS_SUBNETS: publicSubnets.join(","),
+        ECS_SECURITY_GROUP: geoipSg.securityGroupId,
+      },
+    });
+
+    // Grant trigger Lambda permissions to run the ECS task
+    geoipTriggerFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["ecs:RunTask"],
+        resources: [geoipTaskDef.taskDefinitionArn],
+      }),
+    );
+    geoipTriggerFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["iam:PassRole"],
+        resources: [
+          geoipTaskDef.taskRole.roleArn,
+          geoipTaskDef.executionRole!.roleArn,
+        ],
+      }),
+    );
+
+    // Grant trigger Lambda read access to the trigger bucket
+    geoipTriggerBucket.grantRead(geoipTriggerFn);
+
+    // Wire S3 event notification to trigger Lambda
+    geoipTriggerBucket.addEventNotification(
+      s3.EventType.OBJECT_CREATED,
+      new s3n.LambdaDestination(geoipTriggerFn),
+      { prefix: "triggers/" },
+    );
 
   }
 }

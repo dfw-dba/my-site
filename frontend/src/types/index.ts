@@ -382,3 +382,42 @@ export interface AnalyticsTimeseriesDay {
 export interface AnalyticsTimeseries {
   daily: AnalyticsTimeseriesDay[];
 }
+
+// ── GeoIP ─────────────────────────────────────────────────────────────────
+
+export interface GeoipUpdateLog {
+  id: number;
+  updated_at: string;
+  network_rows: number;
+  location_rows: number;
+  duration_ms: number;
+  last_modified: string;
+  status: string;
+}
+
+export interface GeoipUpdateLogsResponse {
+  logs: GeoipUpdateLog[];
+  total: number;
+}
+
+export interface GeoipTaskStatus {
+  id: number;
+  task_arn: string | null;
+  status: string;
+  triggered_by: string;
+  started_at: string;
+  completed_at: string | null;
+  error_message: string | null;
+}
+
+export interface GeoipTaskProgress {
+  id: number;
+  logged_at: string;
+  message: string;
+  level: string;
+}
+
+export interface GeoipTriggerResponse {
+  success: boolean;
+  run_id: number;
+}

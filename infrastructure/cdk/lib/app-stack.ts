@@ -28,6 +28,7 @@ interface AppStackProps extends cdk.StackProps {
   vpc: ec2.IVpc;
   userPoolId: string;
   userPoolClientId: string;
+  geoipTriggerBucket: s3.IBucket;
 }
 
 export class AppStack extends cdk.Stack {
@@ -255,6 +256,7 @@ export class AppStack extends cdk.Stack {
         DB_USER: dbUser,
         DB_NAME: "mysite",
         AWS_LWA_INVOKE_MODE: "BUFFERED",
+        GEOIP_TRIGGER_BUCKET: props.geoipTriggerBucket.bucketName,
         ...(isStaging && process.env.REGRESSION_TEST_API_KEY
           ? { REGRESSION_TEST_API_KEY: process.env.REGRESSION_TEST_API_KEY }
           : {}),
@@ -279,6 +281,9 @@ export class AppStack extends cdk.Stack {
     // Delete is not granted -- profile image uploads overwrite in place.
     mediaBucket.grantRead(backendFn);
     mediaBucket.grantPut(backendFn);
+
+    // Grant Lambda write access to GeoIP trigger bucket (S3 trigger chain)
+    props.geoipTriggerBucket.grantPut(backendFn);
 
     // --- Scheduled Log Maintenance (daily at 03:00 UTC) ---
 

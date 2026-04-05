@@ -45,6 +45,7 @@ Production and staging are fully isolated in separate AWS accounts. Each account
     │                                         │
     │  ECS Fargate (GeoIP refresh)            │  ECS Fargate (GeoIP refresh)
     │    EventBridge: Wed+Sat 06:00 UTC       │    EventBridge: Wed+Sat 06:00 UTC
+    │    S3 trigger → Lambda → RunTask        │    S3 trigger → Lambda → RunTask
     │                                         │
     ├── VPC endpoints (Cognito, S3)           ├── VPC endpoints (Cognito, S3)
     ├── ACM wildcard cert                     ├── ACM wildcard cert
@@ -665,7 +666,7 @@ aws secretsmanager put-secret-value \
 \copy internal.geoip2_networks from 'GeoLite2-City-Blocks-IPv6.csv' with (format csv, header);
 ```
 
-**Manual trigger** (ad-hoc refresh):
+**Manual trigger:** Use the admin portal's **Utilities > GeoData** tab to trigger an update and watch progress in real time. Alternatively, trigger via AWS CLI:
 
 ```bash
 aws ecs run-task \
@@ -674,6 +675,8 @@ aws ecs run-task \
   --launch-type FARGATE \
   --network-configuration "awsvpcConfiguration={subnets=[SUBNET_ID],securityGroups=[SG_ID],assignPublicIp=ENABLED}"
 ```
+
+The admin portal trigger uses an S3-based chain (VPC Lambda writes a trigger file to S3, which invokes a non-VPC Lambda that calls ECS RunTask) to avoid VPC endpoint costs. Progress is tracked via database inserts from the Docker container.
 
 The task uses HEAD requests to check MaxMind's `Last-Modified` header and skips the update if data hasn't changed.
 
