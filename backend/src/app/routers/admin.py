@@ -409,8 +409,46 @@ async def get_geoip_task_status(
     request: Request,
     db: DatabaseAPI = Depends(get_db_api),
 ) -> Any:
-    """Fetch the latest GeoIP task run status."""
-    return await db.get_geoip_task_status()
+    """Fetch the latest GeoIP task run status.
+
+    When a task is still pending (no DB progress yet), checks S3 for a
+    status file written by the trigger Lambda. This surfaces Lambda/ECS
+    failures immediately instead of waiting for the 30-min timeout.
+    """
+    from src.app.services.geoip_trigger import check_geoip_trigger_status
+
+    result = await db.get_geoip_task_status()
+    if not result:
+        return result
+
+    # If the DB still shows pending, check S3 for Lambda-level feedback
+    if result.get("status") == "pending":
+        run_id = result.get("id")
+        if run_id:
+            trigger_status = check_geoip_trigger_status(run_id)
+            if trigger_status:
+                if trigger_status.get("status") == "failed":
+                    # Lambda or ECS RunTask failed — update DB and return
+                    await db.update_geoip_task_run(
+                        {
+                            "run_id": run_id,
+                            "status": "failed",
+                            "error_message": trigger_status.get("error", "Trigger Lambda failed"),
+                        }
+                    )
+                    result["status"] = "failed"
+                    result["error_message"] = trigger_status.get("error", "Trigger Lambda failed")
+                elif trigger_status.get("task_arn"):
+                    # ECS task was started — update task_arn in DB
+                    await db.update_geoip_task_run(
+                        {
+                            "run_id": run_id,
+                            "task_arn": trigger_status["task_arn"],
+                        }
+                    )
+                    result["task_arn"] = trigger_status["task_arn"]
+
+    return result
 
 
 @router.post("/geoip/trigger", dependencies=[Depends(get_admin_auth)])

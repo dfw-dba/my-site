@@ -241,8 +241,9 @@ def copy_csv_to_staging(
 def main() -> int:
     start_time = time.time()
 
-    # Fetch credentials
-    account_id, license_key = get_maxmind_credentials()
+    # Connect to DB first so progress/errors are visible in the admin UI.
+    # MaxMind credentials are fetched later — if they fail, the error
+    # is logged to the DB instead of silently timing out.
     conninfo = get_db_connection_string()
 
     # Initialize progress logger (writes to DB if GEOIP_RUN_ID is set)
@@ -250,6 +251,7 @@ def main() -> int:
     progress.set_status("running")
 
     try:
+        account_id, license_key = get_maxmind_credentials()
         return _run_update(
             start_time, account_id, license_key, conninfo, progress
         )
