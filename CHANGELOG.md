@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.2](https://github.com/dfw-dba/my-site/compare/v1.12.1...v1.12.2) (2026-04-05)
+
+
+### Bug Fixes
+
+* add ::text casts to psycopg3 params in ProgressLogger.log() ([#179](https://github.com/dfw-dba/my-site/issues/179)) ([52df0a6](https://github.com/dfw-dba/my-site/commit/52df0a6cab1ea431c4f7e0a80c0e40eee4325762))
+
 ## [1.12.1](https://github.com/dfw-dba/my-site/compare/v1.12.0...v1.12.1) (2026-04-05)
 
 
