@@ -100,7 +100,7 @@ class ProgressLogger:
         if self._conn and self.run_id:
             self._conn.execute(
                 "select api.insert_geoip_task_progress("
-                "jsonb_build_object('run_id', %s::text, 'message', %s, 'level', %s))",
+                "jsonb_build_object('run_id', %s::text, 'message', %s::text, 'level', %s::text))",
                 (self.run_id, message, level),
             )
 
