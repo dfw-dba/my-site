@@ -274,3 +274,36 @@ class DatabaseAPI:
             {"days": days},
         )
         return result.scalar_one()
+
+    # ── GeoIP ───────────────────────────────────────────────────────────────
+
+    async def get_geoip_update_logs(self, filters: dict[str, Any] | None = None) -> Any:
+        """Fetch paginated GeoIP update log history."""
+        result = await self.session.execute(
+            text("SELECT api.get_geoip_update_logs(CAST(:filters AS jsonb))"),
+            {"filters": json.dumps(filters or {}, default=str)},
+        )
+        return result.scalar_one()
+
+    async def get_geoip_task_status(self) -> Any:
+        """Fetch the latest GeoIP task run status."""
+        result = await self.session.execute(
+            text("SELECT api.get_geoip_task_status()"),
+        )
+        return result.scalar_one()
+
+    async def create_geoip_task_run(self, data: dict[str, Any]) -> Any:
+        """Create a new pending GeoIP task run record."""
+        result = await self.session.execute(
+            text("SELECT api.create_geoip_task_run(CAST(:data AS jsonb))"),
+            {"data": json.dumps(data, default=str)},
+        )
+        return result.scalar_one()
+
+    async def get_geoip_task_progress(self, filters: dict[str, Any] | None = None) -> Any:
+        """Fetch progress lines for a GeoIP task run."""
+        result = await self.session.execute(
+            text("SELECT api.get_geoip_task_progress(CAST(:filters AS jsonb))"),
+            {"filters": json.dumps(filters or {}, default=str)},
+        )
+        return result.scalar_one()

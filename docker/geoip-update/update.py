@@ -79,6 +79,48 @@ LOCATIONS_COLUMNS = [
 ]
 
 
+class ProgressLogger:
+    """Log progress to stdout and optionally to the database.
+
+    When GEOIP_RUN_ID is set (manual triggers), progress lines are inserted
+    into internal.geoip_task_progress using a separate autocommit connection
+    so they're visible even if the main transaction rolls back.
+    """
+
+    def __init__(self, conninfo: str | None = None) -> None:
+        self.run_id = os.environ.get("GEOIP_RUN_ID")
+        self._conn = None
+        if self.run_id and conninfo:
+            self._conn = psycopg.connect(conninfo, autocommit=True)
+
+    def log(self, message: str, level: str = "info") -> None:
+        """Print to stdout and insert into DB if tracking a run."""
+        output = sys.stderr if level == "error" else sys.stdout
+        print(message, file=output)
+        if self._conn and self.run_id:
+            self._conn.execute(
+                "select api.insert_geoip_task_progress("
+                "jsonb_build_object('run_id', %s::text, 'message', %s, 'level', %s))",
+                (self.run_id, message, level),
+            )
+
+    def set_status(self, status: str, error_message: str | None = None) -> None:
+        """Update the task run status in the database."""
+        if not self._conn or not self.run_id:
+            return
+        params = {"run_id": self.run_id, "status": status}
+        if error_message:
+            params["error_message"] = error_message
+        self._conn.execute(
+            "select api.update_geoip_task_run(%s::jsonb)",
+            (json.dumps(params),),
+        )
+
+    def close(self) -> None:
+        if self._conn:
+            self._conn.close()
+
+
 def get_secret(secret_arn: str) -> dict:
     """Fetch a JSON secret from AWS Secrets Manager."""
     client = boto3.client("secretsmanager")
@@ -131,16 +173,19 @@ def should_skip(conn: psycopg.Connection, last_modified: str | None) -> bool:
     return False
 
 
-def download_and_extract(account_id: str, license_key: str) -> Path:
+def download_and_extract(
+    account_id: str, license_key: str, progress: ProgressLogger | None = None
+) -> Path:
     """Download the GeoLite2 City CSV ZIP and extract to /tmp."""
-    print("Downloading GeoLite2 City CSV...")
+    _log = progress.log if progress else print
+    _log("Downloading GeoLite2 City CSV...")
     req = urllib.request.Request(MAXMIND_URL)
     req.add_header("Authorization", _maxmind_auth_header(account_id, license_key))
 
     with _opener.open(req) as resp:
         zip_data = resp.read()
 
-    print(f"Downloaded {len(zip_data) / 1024 / 1024:.1f} MB")
+    _log(f"Downloaded {len(zip_data) / 1024 / 1024:.1f} MB")
 
     extract_dir = Path("/tmp/geoip")
     if extract_dir.exists():
@@ -200,17 +245,41 @@ def main() -> int:
     account_id, license_key = get_maxmind_credentials()
     conninfo = get_db_connection_string()
 
+    # Initialize progress logger (writes to DB if GEOIP_RUN_ID is set)
+    progress = ProgressLogger(conninfo)
+    progress.set_status("running")
+
+    try:
+        return _run_update(
+            start_time, account_id, license_key, conninfo, progress
+        )
+    except Exception as e:
+        progress.log(f"FATAL: {e}", level="error")
+        progress.set_status("failed", error_message=str(e))
+        raise
+    finally:
+        progress.close()
+
+
+def _run_update(
+    start_time: float,
+    account_id: str,
+    license_key: str,
+    conninfo: str,
+    progress: ProgressLogger,
+) -> int:
     # Check Last-Modified
     last_modified = check_last_modified(account_id, license_key)
-    print(f"MaxMind Last-Modified: {last_modified}")
+    progress.log(f"MaxMind Last-Modified: {last_modified}")
 
     with psycopg.connect(conninfo) as conn:
         if should_skip(conn, last_modified):
-            print("Data unchanged (Last-Modified matches). Skipping update.")
+            progress.log("Data unchanged (Last-Modified matches). Skipping update.")
+            progress.set_status("completed")
             return 0
 
     # Download and extract
-    extract_dir = download_and_extract(account_id, license_key)
+    extract_dir = download_and_extract(account_id, license_key, progress)
 
     locations_csv = find_csv(extract_dir, LOCATIONS_FILE)
     networks_ipv4_csv = find_csv(extract_dir, NETWORKS_IPV4_FILE)
@@ -219,7 +288,7 @@ def main() -> int:
     with psycopg.connect(conninfo, autocommit=False) as conn:
         # Reset staging tables (drop + recreate to remove leftover indexes/constraints
         # from any previous failed run — TRUNCATE only removes rows)
-        print("Resetting staging tables...")
+        progress.log("Resetting staging tables...")
         conn.execute("drop table if exists staging.geoip2_networks")
         conn.execute("drop table if exists staging.geoip2_locations")
         conn.execute(
@@ -256,38 +325,38 @@ def main() -> int:
         conn.commit()
 
         # Load locations
-        print(f"Loading locations from {locations_csv.name}...")
+        progress.log(f"Loading locations from {locations_csv.name}...")
         loc_count = copy_csv_to_staging(
             conn, locations_csv, "staging", "geoip2_locations", LOCATIONS_COLUMNS
         )
         conn.commit()
-        print(f"  Loaded {loc_count:,} location rows")
+        progress.log(f"  Loaded {loc_count:,} location rows")
 
         # Load networks (IPv4 + IPv6)
-        print(f"Loading networks from {networks_ipv4_csv.name}...")
+        progress.log(f"Loading networks from {networks_ipv4_csv.name}...")
         net_count = copy_csv_to_staging(
             conn, networks_ipv4_csv, "staging", "geoip2_networks", NETWORKS_COLUMNS
         )
         conn.commit()
-        print(f"  Loaded {net_count:,} IPv4 network rows")
+        progress.log(f"  Loaded {net_count:,} IPv4 network rows")
 
-        print(f"Loading networks from {networks_ipv6_csv.name}...")
+        progress.log(f"Loading networks from {networks_ipv6_csv.name}...")
         ipv6_count = copy_csv_to_staging(
             conn, networks_ipv6_csv, "staging", "geoip2_networks", NETWORKS_COLUMNS
         )
         conn.commit()
         net_count += ipv6_count
-        print(f"  Loaded {ipv6_count:,} IPv6 network rows ({net_count:,} total)")
+        progress.log(f"  Loaded {ipv6_count:,} IPv6 network rows ({net_count:,} total)")
 
         # Build indexes on staging tables before swap
-        print("Building GiST index on staging.geoip2_networks...")
+        progress.log("Building GiST index on staging.geoip2_networks...")
         conn.execute(
             "create index idx_staging_geoip2_networks_network "
             "on staging.geoip2_networks using gist (network inet_ops)"
         )
         conn.commit()
 
-        print("Building PK on staging.geoip2_locations...")
+        progress.log("Building PK on staging.geoip2_locations...")
         conn.execute(
             "alter table staging.geoip2_locations "
             "add primary key (geoname_id, locale_code)"
@@ -295,12 +364,12 @@ def main() -> int:
         conn.commit()
 
         # Atomic swap
-        print("Performing atomic table swap...")
+        progress.log("Performing atomic table swap...")
         conn.execute("select internal.geoip_swap_staging()")
         conn.commit()
 
         # Analyze new production tables
-        print("Analyzing new tables...")
+        progress.log("Analyzing new tables...")
         conn.execute("analyze internal.geoip2_networks")
         conn.execute("analyze internal.geoip2_locations")
         conn.commit()
@@ -315,10 +384,11 @@ def main() -> int:
         )
         conn.commit()
 
-        print(
+        progress.log(
             f"GeoIP update complete: {net_count:,} networks, {loc_count:,} locations "
             f"in {duration_ms / 1000:.1f}s"
         )
+        progress.set_status("completed")
 
     return 0
 

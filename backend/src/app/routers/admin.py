@@ -386,3 +386,67 @@ async def upload_profile_image(
     await db.upsert_resume_profile_image({"image_url": url_with_version})
 
     return {"success": True, "image_url": url_with_version}
+
+
+# ── GeoIP ─────────────────────────────────────────────────────────────────
+
+
+@router.get("/geoip/logs", dependencies=[Depends(get_admin_auth)])
+@limiter.limit("60/minute")
+async def get_geoip_update_logs(
+    request: Request,
+    db: DatabaseAPI = Depends(get_db_api),
+    limit: int = Query(default=10, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+) -> Any:
+    """Fetch paginated GeoIP update log history."""
+    return await db.get_geoip_update_logs({"limit": limit, "offset": offset})
+
+
+@router.get("/geoip/task-status", dependencies=[Depends(get_admin_auth)])
+@limiter.limit("120/minute")
+async def get_geoip_task_status(
+    request: Request,
+    db: DatabaseAPI = Depends(get_db_api),
+) -> Any:
+    """Fetch the latest GeoIP task run status."""
+    return await db.get_geoip_task_status()
+
+
+@router.post("/geoip/trigger", dependencies=[Depends(get_admin_auth)])
+@limiter.limit("2/minute")
+async def trigger_geoip_update(
+    request: Request,
+    db: DatabaseAPI = Depends(get_db_api),
+) -> Any:
+    """Trigger a manual GeoIP data update via ECS Fargate."""
+    from src.app.services.geoip_trigger import trigger_geoip_update as do_trigger
+
+    # Check if a task is already running
+    current = await db.get_geoip_task_status()
+    if current and current.get("status") in ("pending", "running"):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A GeoIP update task is already running",
+        )
+
+    # Create pending run record
+    run_result = await db.create_geoip_task_run({"triggered_by": "manual"})
+    run_id = run_result["id"]
+
+    # Write S3 trigger file (invokes the non-VPC trigger Lambda)
+    do_trigger(run_id)
+
+    return {"success": True, "run_id": run_id}
+
+
+@router.get("/geoip/task-progress", dependencies=[Depends(get_admin_auth)])
+@limiter.limit("120/minute")
+async def get_geoip_task_progress(
+    request: Request,
+    db: DatabaseAPI = Depends(get_db_api),
+    run_id: int = Query(ge=1),
+    after_id: int = Query(default=0, ge=0),
+) -> Any:
+    """Fetch progress lines for a GeoIP task run."""
+    return await db.get_geoip_task_progress({"run_id": run_id, "after_id": after_id})

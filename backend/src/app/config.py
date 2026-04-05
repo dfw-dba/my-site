@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     AWS_REGION: str = "us-east-1"
     MEDIA_CDN_URL: str = ""
 
+    # GeoIP trigger (S3 trigger chain)
+    GEOIP_TRIGGER_BUCKET: str = ""
+
     # RDS connection details (Lambda only)
     DB_HOST: str = ""
     DB_PORT: str = "5432"

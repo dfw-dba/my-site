@@ -36,6 +36,7 @@ new AppStack(app, "MySiteApp", {
   vpc: data.vpc,
   userPoolId: data.userPoolId,
   userPoolClientId: data.userPoolClientId,
+  geoipTriggerBucket: data.geoipTriggerBucket,
 });
 
 app.synth();

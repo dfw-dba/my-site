@@ -152,6 +152,48 @@ export function useAnalyticsTimeseries(params: { start_date?: string; end_date?:
   });
 }
 
+// ── GeoIP ───────────────────────────────────────────────────────────────────
+
+export function useGeoipUpdateLogs(params: { limit?: number; offset?: number } = {}) {
+  return useQuery({
+    queryKey: ["admin-geoip-logs", params],
+    queryFn: () => api.admin.geoip.logs(params),
+  });
+}
+
+export function useGeoipTaskStatus() {
+  return useQuery({
+    queryKey: ["admin-geoip-task-status"],
+    queryFn: () => api.admin.geoip.taskStatus(),
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      if (status === "pending" || status === "running") return 3000;
+      return false;
+    },
+  });
+}
+
+export function useGeoipTrigger() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.admin.geoip.trigger(),
+    onSuccess: () => {
+      showToast("GeoIP update triggered", "success");
+      qc.invalidateQueries({ queryKey: ["admin-geoip-task-status"] });
+    },
+    onError: onMutationError,
+  });
+}
+
+export function useGeoipTaskProgress(runId: number | null, afterId?: number) {
+  return useQuery({
+    queryKey: ["admin-geoip-progress", runId, afterId],
+    queryFn: () => api.admin.geoip.taskProgress({ run_id: runId!, after_id: afterId }),
+    enabled: runId !== null,
+    refetchInterval: 2000,
+  });
+}
+
 // ── Resume ───────────────────────────────────────────────────────────────────
 
 export function useAdminResume() {
