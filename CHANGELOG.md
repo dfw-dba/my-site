@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.1](https://github.com/dfw-dba/my-site/compare/v1.11.0...v1.11.1) (2026-04-05)
+
+
+### Bug Fixes
+
+* replace manual MaxMind secret with CDK-managed resource ([#166](https://github.com/dfw-dba/my-site/issues/166)) ([35c1bdb](https://github.com/dfw-dba/my-site/commit/35c1bdb4967bbcbd04fbb9873ce9b21e1e5e64d6))
+
 ## [1.11.0](https://github.com/dfw-dba/my-site/compare/v1.10.0...v1.11.0) (2026-04-05)
 
 
