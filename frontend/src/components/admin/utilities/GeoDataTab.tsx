@@ -160,6 +160,8 @@ export default function GeoDataTab() {
                       <th className="px-4 py-3 font-medium text-right">Locations</th>
                       <th className="px-4 py-3 font-medium text-right">Duration</th>
                       <th className="px-4 py-3 font-medium">Last-Modified</th>
+                      <th className="px-4 py-3 font-medium text-right">Run</th>
+                      <th className="px-4 py-3 font-medium">Last Message</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -171,6 +173,8 @@ export default function GeoDataTab() {
                         <td className="px-4 py-2 text-right tabular-nums">{log.location_rows.toLocaleString()}</td>
                         <td className="px-4 py-2 text-right tabular-nums">{formatDuration(log.duration_ms)}</td>
                         <td className="px-4 py-2 text-xs text-gray-400 max-w-48 truncate">{log.last_modified}</td>
+                        <td className="px-4 py-2 text-right tabular-nums">{log.run_id ?? <span className="text-gray-500">&mdash;</span>}</td>
+                        <td className="px-4 py-2 text-xs text-gray-400 max-w-64 truncate" title={log.last_message ?? undefined}>{log.last_message ?? <span className="text-gray-500">&mdash;</span>}</td>
                       </tr>
                     ))}
                   </tbody>

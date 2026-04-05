@@ -89,12 +89,14 @@ class ProgressLogger:
 
     def __init__(self, conninfo: str | None = None) -> None:
         self.run_id = os.environ.get("GEOIP_RUN_ID")
+        self.last_message = None
         self._conn = None
         if self.run_id and conninfo:
             self._conn = psycopg.connect(conninfo, autocommit=True)
 
     def log(self, message: str, level: str = "info") -> None:
         """Print to stdout and insert into DB if tracking a run."""
+        self.last_message = message
         output = sys.stderr if level == "error" else sys.stdout
         print(message, file=output)
         if self._conn and self.run_id:
@@ -380,9 +382,11 @@ def _run_update(
         duration_ms = int((time.time() - start_time) * 1000)
         conn.execute(
             "insert into internal.geoip_update_log "
-            "(network_rows, location_rows, duration_ms, last_modified, status) "
-            "values (%s, %s, %s, %s, 'success')",
-            (net_count, loc_count, duration_ms, last_modified),
+            "(network_rows, location_rows, duration_ms, last_modified, status, run_id, last_message) "
+            "values (%s, %s, %s, %s, 'success', %s, %s)",
+            (net_count, loc_count, duration_ms, last_modified,
+             int(progress.run_id) if progress.run_id else None,
+             progress.last_message),
         )
         conn.commit()
 
