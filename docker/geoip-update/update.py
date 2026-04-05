@@ -1,16 +1,41 @@
 """GeoLite2 City data refresh: download, bulk-load, atomic swap."""
 
+import base64
 import io
 import json
 import os
 import sys
 import time
+import urllib.request
 import zipfile
 from pathlib import Path
 
 import boto3
 import psycopg
 from psycopg import sql
+
+
+class _NoAuthRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Strip Authorization header on redirect.
+
+    MaxMind returns a 302 to a presigned S3 URL. If the Authorization
+    header is forwarded, S3 rejects it with HTTP 400.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        new_req = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if new_req is not None:
+            new_req.remove_header("Authorization")
+        return new_req
+
+
+def _maxmind_auth_header(account_id: str, license_key: str) -> str:
+    """Return the Basic auth header value for MaxMind downloads."""
+    credentials = base64.b64encode(f"{account_id}:{license_key}".encode()).decode()
+    return f"Basic {credentials}"
+
+
+_opener = urllib.request.build_opener(_NoAuthRedirectHandler)
 
 MAXMIND_URL = (
     "https://download.maxmind.com/geoip/databases/GeoLite2-City-CSV/download?suffix=zip"
@@ -80,17 +105,11 @@ def get_maxmind_credentials() -> tuple[str, str]:
 
 def check_last_modified(account_id: str, license_key: str) -> str | None:
     """HEAD request to check Last-Modified header. Returns the header value."""
-    import urllib.request
-
     req = urllib.request.Request(MAXMIND_URL, method="HEAD")
-    # MaxMind uses HTTP Basic Auth for downloads
-    import base64
-
-    credentials = base64.b64encode(f"{account_id}:{license_key}".encode()).decode()
-    req.add_header("Authorization", f"Basic {credentials}")
+    req.add_header("Authorization", _maxmind_auth_header(account_id, license_key))
 
     try:
-        with urllib.request.urlopen(req) as resp:
+        with _opener.open(req) as resp:
             return resp.headers.get("Last-Modified")
     except urllib.error.HTTPError as e:
         print(f"HEAD request failed: {e.code} {e.reason}", file=sys.stderr)
@@ -114,15 +133,11 @@ def should_skip(conn: psycopg.Connection, last_modified: str | None) -> bool:
 
 def download_and_extract(account_id: str, license_key: str) -> Path:
     """Download the GeoLite2 City CSV ZIP and extract to /tmp."""
-    import urllib.request
-    import base64
-
     print("Downloading GeoLite2 City CSV...")
     req = urllib.request.Request(MAXMIND_URL)
-    credentials = base64.b64encode(f"{account_id}:{license_key}".encode()).decode()
-    req.add_header("Authorization", f"Basic {credentials}")
+    req.add_header("Authorization", _maxmind_auth_header(account_id, license_key))
 
-    with urllib.request.urlopen(req) as resp:
+    with _opener.open(req) as resp:
         zip_data = resp.read()
 
     print(f"Downloaded {len(zip_data) / 1024 / 1024:.1f} MB")
