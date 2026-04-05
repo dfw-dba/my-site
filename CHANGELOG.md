@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.1](https://github.com/dfw-dba/my-site/compare/v1.12.0...v1.12.1) (2026-04-05)
+
+
+### Bug Fixes
+
+* add S3-based status feedback for GeoIP manual trigger failures ([#177](https://github.com/dfw-dba/my-site/issues/177)) ([c70a909](https://github.com/dfw-dba/my-site/commit/c70a909e77668f4c9d3b3b016d3d8bbbbfc46474))
+
 ## [1.12.0](https://github.com/dfw-dba/my-site/compare/v1.11.3...v1.12.0) (2026-04-05)
 
 
