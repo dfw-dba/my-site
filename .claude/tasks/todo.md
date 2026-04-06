@@ -4,42 +4,6 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 
 ---
 
-## Sprint 50: Admin Utilities Tab — GeoData
-
-### Database
-- [x] 50.1 Create migration `009_geoip_task_tracking.sql` (task_runs table, task_progress table, 6 API functions)
-
-### Docker
-- [x] 50.2 Add `ProgressLogger` to `docker/geoip-update/update.py` (DB-based progress + status tracking)
-
-### Infrastructure
-- [x] 50.3 Add S3 trigger bucket, trigger Lambda, S3 notification, IAM to `data-stack.ts`
-- [x] 50.4 Export `geoipTriggerBucket` from DataStack, wire through `app.ts` to AppStack
-- [x] 50.5 Add `GEOIP_TRIGGER_BUCKET` env var + S3 write grant to Lambda in `app-stack.ts`
-- [x] 50.6 Bump CDK migration version 19 → 20
-
-### Backend
-- [x] 50.7 Add `GEOIP_TRIGGER_BUCKET` to `config.py`
-- [x] 50.8 Add 4 GeoIP methods to `db_functions.py`
-- [x] 50.9 Create `services/geoip_trigger.py` (S3 trigger writer)
-- [x] 50.10 Add 4 GeoIP endpoints to `admin.py`
-
-### Frontend
-- [x] 50.11 Add GeoIP types to `types/index.ts`
-- [x] 50.12 Add `api.admin.geoip` namespace to `api.ts`
-- [x] 50.13 Add 4 GeoIP hooks to `useAdminApi.ts`
-- [x] 50.14 Add Utilities nav item to `AdminSidebar.tsx` + route to `routes/index.tsx`
-- [x] 50.15 Create `pages/admin/Utilities.tsx` (tab page)
-- [x] 50.16 Create `components/admin/utilities/GeoDataTab.tsx` (main component)
-
-### Documentation & Verification
-- [x] 50.17 Update `README.md` (trigger bucket, trigger Lambda, env var, admin features)
-- [x] 50.18 Backend lint + tests pass (41/41)
-- [x] 50.19 Frontend type check + tests pass (25/25)
-- [x] 50.20 Security audit (no issues found)
-
----
-
 ## Sprint 51: Fix GeoIP Silent Timeout — S3 Status Feedback
 
 ### Docker
@@ -74,6 +38,50 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 - [x] 52.6 Backend lint + tests pass (41/41)
 - [x] 52.7 Frontend type check + tests pass (25/25)
 - [x] 52.8 CDK TypeScript compiles
+
+---
+
+## Sprint 53: GeoIP Table Consolidation + Schedule Management
+
+### Database
+- [x] 53.1 Create migration `011_consolidate_geoip_tables.sql`
+  - New sequence `internal.geoip_run_id_seq`
+  - New table `internal.geoip_update_log_v2` (consolidated append-only log)
+  - New table `internal.geoip_schedule`
+  - Data migration from 3 old tables
+  - Drop old functions and old tables
+  - Rename v2 table to `geoip_update_log`
+  - 8 new SQL functions (create_geoip_run, update_geoip_run, insert_geoip_run_progress, get_geoip_run_progress, get_geoip_run_status, get_geoip_run_history, get_geoip_schedule, update_geoip_schedule)
+
+### Docker
+- [x] 53.2 Update `docker/geoip-update/update.py` — ProgressLogger always creates runs, scheduled runs get progress tracking, use new function names
+
+### Backend
+- [x] 53.3 Update `backend/src/app/services/db_functions.py` — rename methods, add schedule methods
+- [x] 53.4 Update `backend/src/app/routers/admin.py` — rename calls, add GET/PUT /geoip/schedule endpoints
+- [x] 53.5 Update `backend/src/app/services/geoip_trigger.py` — add `trigger_schedule_update()`
+
+### Infrastructure
+- [x] 53.6 Update `infrastructure/cdk/lib/data-stack.ts`
+  - Remove hardcoded EventBridge rule
+  - Create explicit ECS events role
+  - Create schedule manager Lambda (non-VPC)
+  - Create custom resource for initial rule
+  - Add S3 notification for schedule/ prefix
+  - Bump migration version 21 → 22
+
+### Frontend
+- [x] 53.7 Update `frontend/src/types/index.ts` — replace GeoIP types
+- [x] 53.8 Update `frontend/src/services/api.ts` — update geoip methods, add schedule endpoints
+- [x] 53.9 Update `frontend/src/hooks/useAdminApi.ts` — update hooks, add schedule hooks
+- [x] 53.10 Update `frontend/src/components/admin/utilities/GeoDataTab.tsx` — schedule section with day/time picker, unified task output, updated history table
+
+### Documentation & Verification
+- [x] 53.11 Update README.md (schedule management, consolidated tracking)
+- [x] 53.12 Backend lint + tests pass (41/41)
+- [x] 53.13 Frontend type check + tests pass (25/25)
+- [x] 53.14 CDK TypeScript compiles
+- [x] 53.15 Security audit (MEDIUM: cron validation — fixed with Pydantic schema; no CRITICAL/HIGH)
 
 ---
 

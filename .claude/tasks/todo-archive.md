@@ -4,6 +4,42 @@ _Completed sprints moved from `todo.md`. For current work, see `todo.md`._
 
 ---
 
+## Sprint 50: Admin Utilities Tab — GeoData
+
+### Database
+- [x] 50.1 Create migration `009_geoip_task_tracking.sql` (task_runs table, task_progress table, 6 API functions)
+
+### Docker
+- [x] 50.2 Add `ProgressLogger` to `docker/geoip-update/update.py` (DB-based progress + status tracking)
+
+### Infrastructure
+- [x] 50.3 Add S3 trigger bucket, trigger Lambda, S3 notification, IAM to `data-stack.ts`
+- [x] 50.4 Export `geoipTriggerBucket` from DataStack, wire through `app.ts` to AppStack
+- [x] 50.5 Add `GEOIP_TRIGGER_BUCKET` env var + S3 write grant to Lambda in `app-stack.ts`
+- [x] 50.6 Bump CDK migration version 19 → 20
+
+### Backend
+- [x] 50.7 Add `GEOIP_TRIGGER_BUCKET` to `config.py`
+- [x] 50.8 Add 4 GeoIP methods to `db_functions.py`
+- [x] 50.9 Create `services/geoip_trigger.py` (S3 trigger writer)
+- [x] 50.10 Add 4 GeoIP endpoints to `admin.py`
+
+### Frontend
+- [x] 50.11 Add GeoIP types to `types/index.ts`
+- [x] 50.12 Add `api.admin.geoip` namespace to `api.ts`
+- [x] 50.13 Add 4 GeoIP hooks to `useAdminApi.ts`
+- [x] 50.14 Add Utilities nav item to `AdminSidebar.tsx` + route to `routes/index.tsx`
+- [x] 50.15 Create `pages/admin/Utilities.tsx` (tab page)
+- [x] 50.16 Create `components/admin/utilities/GeoDataTab.tsx` (main component)
+
+### Documentation & Verification
+- [x] 50.17 Update `README.md` (trigger bucket, trigger Lambda, env var, admin features)
+- [x] 50.18 Backend lint + tests pass (41/41)
+- [x] 50.19 Frontend type check + tests pass (25/25)
+- [x] 50.20 Security audit (no issues found)
+
+---
+
 ## Sprint 47: Automated GeoLite2 Data Refresh
 
 ### Database

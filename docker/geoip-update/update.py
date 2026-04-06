@@ -80,41 +80,55 @@ LOCATIONS_COLUMNS = [
 
 
 class ProgressLogger:
-    """Log progress to stdout and optionally to the database.
+    """Log progress to stdout and to the database.
 
-    When GEOIP_RUN_ID is set (manual triggers), progress lines are inserted
-    into internal.geoip_task_progress using a separate autocommit connection
-    so they're visible even if the main transaction rolls back.
+    Every run (manual or scheduled) gets a run_id and writes progress to
+    internal.geoip_update_log. Manual triggers pass GEOIP_RUN_ID via env;
+    scheduled runs create their own run_id at startup.
     """
 
-    def __init__(self, conninfo: str | None = None) -> None:
+    def __init__(self, conninfo: str) -> None:
         self.run_id = os.environ.get("GEOIP_RUN_ID")
+        self.triggered_by = "manual" if self.run_id else "scheduled"
         self.last_message = None
-        self._conn = None
-        if self.run_id and conninfo:
-            self._conn = psycopg.connect(conninfo, autocommit=True)
+        self._conn = psycopg.connect(conninfo, autocommit=True)
+
+        if not self.run_id:
+            # Scheduled run — create our own run entry
+            row = self._conn.execute(
+                "select api.create_geoip_run(%s::jsonb)",
+                (json.dumps({"triggered_by": "scheduled"}),),
+            ).fetchone()
+            self.run_id = str(row[0]["run_id"])
 
     def log(self, message: str, level: str = "info") -> None:
-        """Print to stdout and insert into DB if tracking a run."""
+        """Print to stdout and insert into DB."""
         self.last_message = message
         output = sys.stderr if level == "error" else sys.stdout
         print(message, file=output)
-        if self._conn and self.run_id:
-            self._conn.execute(
-                "select api.insert_geoip_task_progress("
-                "jsonb_build_object('run_id', %s::text, 'message', %s::text, 'level', %s::text))",
-                (self.run_id, message, level),
-            )
+        self._conn.execute(
+            "select api.insert_geoip_run_progress("
+            "jsonb_build_object('run_id', %s::text, 'message', %s::text, 'level', %s::text))",
+            (self.run_id, message, level),
+        )
 
-    def set_status(self, status: str, error_message: str | None = None) -> None:
-        """Update the task run status in the database."""
-        if not self._conn or not self.run_id:
-            return
-        params = {"run_id": self.run_id, "status": status}
+    def set_status(
+        self,
+        status: str,
+        error_message: str | None = None,
+        **kwargs: object,
+    ) -> None:
+        """Insert a lifecycle event for this run."""
+        params: dict[str, object] = {
+            "run_id": self.run_id,
+            "status": status,
+            "triggered_by": self.triggered_by,
+        }
         if error_message:
             params["error_message"] = error_message
+        params.update(kwargs)
         self._conn.execute(
-            "select api.update_geoip_task_run(%s::jsonb)",
+            "select api.update_geoip_run(%s::jsonb)",
             (json.dumps(params),),
         )
 
@@ -167,7 +181,7 @@ def should_skip(conn: psycopg.Connection, last_modified: str | None) -> bool:
 
     row = conn.execute(
         "select last_modified from internal.geoip_update_log "
-        "where status = 'success' order by updated_at desc limit 1"
+        "where status = 'success' order by id desc limit 1"
     ).fetchone()
 
     if row and row[0] == last_modified:
@@ -380,21 +394,18 @@ def _run_update(
 
         # Log success
         duration_ms = int((time.time() - start_time) * 1000)
-        conn.execute(
-            "insert into internal.geoip_update_log "
-            "(network_rows, location_rows, duration_ms, last_modified, status, run_id, last_message) "
-            "values (%s, %s, %s, %s, 'success', %s, %s)",
-            (net_count, loc_count, duration_ms, last_modified,
-             int(progress.run_id) if progress.run_id else None,
-             progress.last_message),
-        )
-        conn.commit()
 
         progress.log(
             f"GeoIP update complete: {net_count:,} networks, {loc_count:,} locations "
             f"in {duration_ms / 1000:.1f}s"
         )
-        progress.set_status("completed")
+        progress.set_status(
+            "completed",
+            network_rows=net_count,
+            location_rows=loc_count,
+            duration_ms=duration_ms,
+            last_modified=last_modified,
+        )
 
     return 0
 

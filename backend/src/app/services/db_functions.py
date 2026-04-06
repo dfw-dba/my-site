@@ -277,41 +277,56 @@ class DatabaseAPI:
 
     # ── GeoIP ───────────────────────────────────────────────────────────────
 
-    async def get_geoip_update_logs(self, filters: dict[str, Any] | None = None) -> Any:
-        """Fetch paginated GeoIP update log history."""
+    async def get_geoip_run_history(self, filters: dict[str, Any] | None = None) -> Any:
+        """Fetch paginated GeoIP run history."""
         result = await self.session.execute(
-            text("SELECT api.get_geoip_update_logs(CAST(:filters AS jsonb))"),
+            text("SELECT api.get_geoip_run_history(CAST(:filters AS jsonb))"),
             {"filters": json.dumps(filters or {}, default=str)},
         )
         return result.scalar_one()
 
-    async def get_geoip_task_status(self) -> Any:
-        """Fetch the latest GeoIP task run status."""
+    async def get_geoip_run_status(self) -> Any:
+        """Fetch the latest GeoIP run status."""
         result = await self.session.execute(
-            text("SELECT api.get_geoip_task_status()"),
+            text("SELECT api.get_geoip_run_status()"),
         )
         return result.scalar_one()
 
-    async def update_geoip_task_run(self, data: dict[str, Any]) -> Any:
-        """Update a GeoIP task run (status, task_arn, error_message)."""
+    async def update_geoip_run(self, data: dict[str, Any]) -> Any:
+        """Insert a lifecycle event for a GeoIP run."""
         result = await self.session.execute(
-            text("SELECT api.update_geoip_task_run(CAST(:data AS jsonb))"),
+            text("SELECT api.update_geoip_run(CAST(:data AS jsonb))"),
             {"data": json.dumps(data, default=str)},
         )
         return result.scalar_one()
 
-    async def create_geoip_task_run(self, data: dict[str, Any]) -> Any:
-        """Create a new pending GeoIP task run record."""
+    async def create_geoip_run(self, data: dict[str, Any]) -> Any:
+        """Create a new pending GeoIP run."""
         result = await self.session.execute(
-            text("SELECT api.create_geoip_task_run(CAST(:data AS jsonb))"),
+            text("SELECT api.create_geoip_run(CAST(:data AS jsonb))"),
             {"data": json.dumps(data, default=str)},
         )
         return result.scalar_one()
 
-    async def get_geoip_task_progress(self, filters: dict[str, Any] | None = None) -> Any:
-        """Fetch progress lines for a GeoIP task run."""
+    async def get_geoip_run_progress(self, filters: dict[str, Any] | None = None) -> Any:
+        """Fetch progress lines for a GeoIP run."""
         result = await self.session.execute(
-            text("SELECT api.get_geoip_task_progress(CAST(:filters AS jsonb))"),
+            text("SELECT api.get_geoip_run_progress(CAST(:filters AS jsonb))"),
             {"filters": json.dumps(filters or {}, default=str)},
+        )
+        return result.scalar_one()
+
+    async def get_geoip_schedule(self) -> Any:
+        """Fetch the current GeoIP refresh schedule."""
+        result = await self.session.execute(
+            text("SELECT api.get_geoip_schedule()"),
+        )
+        return result.scalar_one()
+
+    async def update_geoip_schedule(self, data: dict[str, Any]) -> Any:
+        """Update the GeoIP refresh schedule."""
+        result = await self.session.execute(
+            text("SELECT api.update_geoip_schedule(CAST(:data AS jsonb))"),
+            {"data": json.dumps(data, default=str)},
         )
         return result.scalar_one()

@@ -643,7 +643,7 @@ Analytics data (page views and visitor events) older than 90 days is automatical
 
 GeoIP enrichment uses MaxMind GeoLite2 City data stored in `internal.geoip2_networks` and `internal.geoip2_locations`. Without it, analytics still works but geographic data will be empty.
 
-**Automated refresh** runs twice weekly (Wed + Sat at 06:00 UTC) via an ECS Fargate task triggered by EventBridge. The task downloads fresh data from MaxMind, bulk-loads it into staging tables, then performs a zero-downtime atomic table swap. No manual intervention needed after initial setup.
+**Automated refresh** runs on a configurable schedule (default: Wed + Sat at 06:00 UTC) via an ECS Fargate task triggered by EventBridge. The schedule can be changed from the admin portal's **Utilities > GeoData** tab using the day/time picker. The task downloads fresh data from MaxMind, bulk-loads it into staging tables, then performs a zero-downtime atomic table swap. Both manual and scheduled runs produce real-time progress logs visible in the admin portal.
 
 **Prerequisites:**
 
@@ -676,7 +676,7 @@ aws ecs run-task \
   --network-configuration "awsvpcConfiguration={subnets=[SUBNET_ID],securityGroups=[SG_ID],assignPublicIp=ENABLED}"
 ```
 
-The admin portal trigger uses an S3-based chain (VPC Lambda writes a trigger file to S3, which invokes a non-VPC Lambda that calls ECS RunTask) to avoid VPC endpoint costs. Progress is tracked via database inserts from the Docker container.
+The admin portal trigger uses an S3-based chain (VPC Lambda writes a trigger file to S3, which invokes a non-VPC Lambda that calls ECS RunTask) to avoid VPC endpoint costs. The same S3-based pattern is used for schedule updates (admin UI writes to `schedule/` prefix, a schedule manager Lambda updates the EventBridge rule). Progress is tracked via database inserts from the Docker container into a consolidated `internal.geoip_update_log` table.
 
 The task uses HEAD requests to check MaxMind's `Last-Modified` header and skips the update if data hasn't changed.
 

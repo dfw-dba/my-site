@@ -385,34 +385,42 @@ export interface AnalyticsTimeseries {
 
 // ── GeoIP ─────────────────────────────────────────────────────────────────
 
-export interface GeoipUpdateLog {
-  id: number;
+export interface GeoipRunSummary {
+  run_id: number;
   updated_at: string;
-  network_rows: number;
-  location_rows: number;
-  duration_ms: number;
-  last_modified: string;
-  status: string;
-  run_id: number | null;
-  last_message: string | null;
-}
-
-export interface GeoipUpdateLogsResponse {
-  logs: GeoipUpdateLog[];
-  total: number;
-}
-
-export interface GeoipTaskStatus {
-  id: number;
-  task_arn: string | null;
   status: string;
   triggered_by: string;
   started_at: string;
   completed_at: string | null;
+  task_arn: string | null;
   error_message: string | null;
+  last_message: string | null;
+  network_rows: number | null;
+  location_rows: number | null;
+  duration_ms: number | null;
+  last_modified: string | null;
 }
 
-export interface GeoipTaskProgress {
+export interface GeoipRunHistoryResponse {
+  runs: GeoipRunSummary[];
+  total: number;
+}
+
+export interface GeoipRunStatus {
+  run_id: number;
+  status: string;
+  triggered_by: string;
+  started_at: string;
+  completed_at: string | null;
+  task_arn: string | null;
+  error_message: string | null;
+  network_rows: number | null;
+  location_rows: number | null;
+  duration_ms: number | null;
+  last_modified: string | null;
+}
+
+export interface GeoipRunProgress {
   id: number;
   logged_at: string;
   message: string;
@@ -422,4 +430,11 @@ export interface GeoipTaskProgress {
 export interface GeoipTriggerResponse {
   success: boolean;
   run_id: number;
+}
+
+export interface GeoipSchedule {
+  cron_expression: string;
+  description: string;
+  updated_at: string;
+  updated_by: string;
 }

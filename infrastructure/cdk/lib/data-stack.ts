@@ -10,8 +10,6 @@ import * as ssm from "aws-cdk-lib/aws-ssm";
 import * as route53 from "aws-cdk-lib/aws-route53";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as logs from "aws-cdk-lib/aws-logs";
-import * as events from "aws-cdk-lib/aws-events";
-import * as targets from "aws-cdk-lib/aws-events-targets";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as s3n from "aws-cdk-lib/aws-s3-notifications";
@@ -161,7 +159,7 @@ export class DataStack extends cdk.Stack {
       serviceToken: migrationProvider.serviceToken,
       properties: {
         // Change this value to trigger the migration again on next deploy
-        version: "21",
+        version: "22",
       },
     });
 
@@ -406,22 +404,173 @@ export class DataStack extends cdk.Stack {
       "Allow GeoIP update task to connect to RDS",
     );
 
-    // Schedule: Wed + Sat at 06:00 UTC (MaxMind updates Tue + Fri)
-    new events.Rule(this, "GeoipScheduleRule", {
-      schedule: events.Schedule.cron({
-        minute: "0",
-        hour: "6",
-        weekDay: "WED,SAT",
+    // Resolve public subnet IDs for the ECS task network configuration
+    const publicSubnets = this.vpc.selectSubnets({
+      subnetType: ec2.SubnetType.PUBLIC,
+    }).subnetIds;
+
+    // --- GeoIP Schedule Manager (Lambda-managed EventBridge rule) ---
+    // The schedule is stored in the database and applied to EventBridge
+    // at deploy time (custom resource) and at runtime (S3 trigger from admin UI).
+    // This prevents CDK deploys from overwriting runtime schedule changes.
+
+    const geoipScheduleRuleName = `mysite-geoip-schedule${isStaging ? "-stage" : ""}`;
+
+    // Explicit IAM role for EventBridge → ECS (the schedule manager Lambda
+    // configures EventBridge to assume this role when triggering ECS tasks)
+    const geoipEventsRole = new iam.Role(this, "GeoipEventsRole", {
+      assumedBy: new iam.ServicePrincipal("events.amazonaws.com"),
+    });
+    geoipEventsRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: ["ecs:RunTask"],
+        resources: [geoipTaskDef.taskDefinitionArn],
       }),
-      targets: [
-        new targets.EcsTask({
-          cluster: geoipCluster,
-          taskDefinition: geoipTaskDef,
-          subnetSelection: { subnetType: ec2.SubnetType.PUBLIC },
-          assignPublicIp: true,
-          securityGroups: [geoipSg],
-        }),
-      ],
+    );
+    geoipEventsRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: ["iam:PassRole"],
+        resources: [
+          geoipTaskDef.taskRole.roleArn,
+          geoipTaskDef.executionRole!.roleArn,
+        ],
+      }),
+    );
+
+    const geoipScheduleFn = new lambda.Function(this, "GeoipScheduleFn", {
+      functionName: `mysite-geoip-schedule${isStaging ? "-stage" : ""}`,
+      runtime: lambda.Runtime.PYTHON_3_12,
+      handler: "index.handler",
+      code: lambda.Code.fromInline(`
+import json
+import boto3
+import os
+import urllib.parse
+
+events_client = boto3.client("events")
+s3 = boto3.client("s3")
+
+RULE_NAME = os.environ["RULE_NAME"]
+CLUSTER_ARN = os.environ["ECS_CLUSTER_ARN"]
+TASK_DEF_ARN = os.environ["ECS_TASK_DEF_ARN"]
+SUBNETS = os.environ["ECS_SUBNETS"]
+SECURITY_GROUP = os.environ["ECS_SECURITY_GROUP"]
+EVENTS_ROLE_ARN = os.environ["EVENTS_ROLE_ARN"]
+
+def _ensure_rule(cron_expression):
+    """Create or update the EventBridge rule with the given schedule."""
+    events_client.put_rule(
+        Name=RULE_NAME,
+        ScheduleExpression=cron_expression,
+        State="ENABLED",
+        Description="GeoIP automated refresh schedule (managed by Lambda)",
+        RoleArn=EVENTS_ROLE_ARN,
+    )
+    # Ensure the ECS target is configured
+    events_client.put_targets(
+        Rule=RULE_NAME,
+        Targets=[{
+            "Id": "geoip-ecs-task",
+            "Arn": CLUSTER_ARN,
+            "RoleArn": EVENTS_ROLE_ARN,
+            "EcsParameters": {
+                "TaskDefinitionArn": TASK_DEF_ARN,
+                "LaunchType": "FARGATE",
+                "NetworkConfiguration": {
+                    "awsvpcConfiguration": {
+                        "Subnets": SUBNETS.split(","),
+                        "SecurityGroups": [SECURITY_GROUP],
+                        "AssignPublicIp": "ENABLED",
+                    }
+                },
+            },
+        }],
+    )
+
+def handler(event, context):
+    # Custom Resource invocation (deploy-time)
+    if "RequestType" in event:
+        import urllib.request
+        response_data = {}
+        try:
+            cron_expression = event.get("ResourceProperties", {}).get(
+                "CronExpression", "cron(0 6 ? * WED,SAT *)")
+            _ensure_rule(cron_expression)
+            status = "SUCCESS"
+        except Exception as e:
+            print(f"Error: {e}")
+            response_data["Error"] = str(e)
+            status = "FAILED"
+
+        body = json.dumps({
+            "Status": status,
+            "Reason": response_data.get("Error", "OK"),
+            "PhysicalResourceId": RULE_NAME,
+            "StackId": event["StackId"],
+            "RequestId": event["RequestId"],
+            "LogicalResourceId": event["LogicalResourceId"],
+            "Data": response_data,
+        })
+        req = urllib.request.Request(
+            event["ResponseURL"], data=body.encode(),
+            headers={"Content-Type": ""}, method="PUT")
+        urllib.request.urlopen(req)
+        return
+
+    # S3 notification invocation (runtime schedule update from admin UI)
+    bucket = event["Records"][0]["s3"]["bucket"]["name"]
+    key = urllib.parse.unquote_plus(event["Records"][0]["s3"]["object"]["key"])
+
+    obj = s3.get_object(Bucket=bucket, Key=key)
+    data = json.loads(obj["Body"].read())
+    cron_expression = data["cron_expression"]
+
+    _ensure_rule(cron_expression)
+    print(f"Updated schedule to: {cron_expression}")
+`),
+      timeout: cdk.Duration.seconds(30),
+      environment: {
+        RULE_NAME: geoipScheduleRuleName,
+        ECS_CLUSTER_ARN: geoipCluster.clusterArn,
+        ECS_TASK_DEF_ARN: geoipTaskDef.taskDefinitionArn,
+        ECS_SUBNETS: publicSubnets.join(","),
+        ECS_SECURITY_GROUP: geoipSg.securityGroupId,
+        EVENTS_ROLE_ARN: geoipEventsRole.roleArn,
+      },
+    });
+
+    // Grant schedule Lambda permissions to manage EventBridge rules
+    geoipScheduleFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [
+          "events:PutRule",
+          "events:PutTargets",
+          "events:DescribeRule",
+          "events:RemoveTargets",
+        ],
+        resources: [
+          `arn:aws:events:${this.region}:${this.account}:rule/${geoipScheduleRuleName}`,
+        ],
+      }),
+    );
+    geoipScheduleFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["iam:PassRole"],
+        resources: [geoipEventsRole.roleArn],
+      }),
+    );
+
+    // Custom resource to ensure the EventBridge rule exists on deploy
+    const scheduleProvider = new cr.Provider(this, "GeoipScheduleProvider", {
+      onEventHandler: geoipScheduleFn,
+    });
+
+    new cdk.CustomResource(this, "GeoipScheduleResource", {
+      serviceToken: scheduleProvider.serviceToken,
+      properties: {
+        // Default schedule — only used on initial creation if no rule exists
+        CronExpression: "cron(0 6 ? * WED,SAT *)",
+      },
     });
 
     // --- GeoIP Manual Trigger (S3 → Lambda → ECS RunTask) ---
@@ -440,11 +589,6 @@ export class DataStack extends cdk.Stack {
     });
 
     this.geoipTriggerBucket = geoipTriggerBucket;
-
-    // Resolve public subnet IDs for the ECS task network configuration
-    const publicSubnets = this.vpc.selectSubnets({
-      subnetType: ec2.SubnetType.PUBLIC,
-    }).subnetIds;
 
     const geoipTriggerFn = new lambda.Function(this, "GeoipTriggerFn", {
       functionName: `mysite-geoip-trigger${isStaging ? "-stage" : ""}`,
@@ -542,11 +686,19 @@ def handler(event, context):
     // Grant trigger Lambda read + write access (reads trigger files, writes status files)
     geoipTriggerBucket.grantReadWrite(geoipTriggerFn);
 
-    // Wire S3 event notification to trigger Lambda
+    // Wire S3 event notification to trigger Lambda (manual trigger files)
     geoipTriggerBucket.addEventNotification(
       s3.EventType.OBJECT_CREATED,
       new s3n.LambdaDestination(geoipTriggerFn),
       { prefix: "triggers/" },
+    );
+
+    // Wire S3 event notification to schedule Lambda (schedule update files)
+    geoipTriggerBucket.grantRead(geoipScheduleFn);
+    geoipTriggerBucket.addEventNotification(
+      s3.EventType.OBJECT_CREATED,
+      new s3n.LambdaDestination(geoipScheduleFn),
+      { prefix: "schedule/" },
     );
 
   }

@@ -194,6 +194,26 @@ export function useGeoipTaskProgress(runId: number | null, afterId?: number) {
   });
 }
 
+export function useGeoipSchedule() {
+  return useQuery({
+    queryKey: ["admin-geoip-schedule"],
+    queryFn: () => api.admin.geoip.schedule(),
+  });
+}
+
+export function useUpdateGeoipSchedule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { cron_expression: string; description: string }) =>
+      api.admin.geoip.updateSchedule(data),
+    onSuccess: () => {
+      showToast("Schedule updated", "success");
+      qc.invalidateQueries({ queryKey: ["admin-geoip-schedule"] });
+    },
+    onError: onMutationError,
+  });
+}
+
 // ── Resume ───────────────────────────────────────────────────────────────────
 
 export function useAdminResume() {
