@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.0](https://github.com/dfw-dba/my-site/compare/v1.12.2...v1.13.0) (2026-04-05)
+
+
+### Features
+
+* add run_id and last_message to GeoIP update history ([#181](https://github.com/dfw-dba/my-site/issues/181)) ([1fb68ec](https://github.com/dfw-dba/my-site/commit/1fb68ecc21b6f60a651847468a7743ff8e2bcb12))
+
 ## [1.12.2](https://github.com/dfw-dba/my-site/compare/v1.12.1...v1.12.2) (2026-04-05)
 
 
