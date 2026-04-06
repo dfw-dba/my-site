@@ -46,3 +46,19 @@ def check_geoip_trigger_status(run_id: int) -> dict | None:
             return None
         logger.warning("Failed to read GeoIP trigger status: %s", e)
         return None
+
+
+def trigger_schedule_update(cron_expression: str) -> None:
+    """Write a schedule update file to S3, which invokes the schedule manager Lambda."""
+    if not settings.GEOIP_TRIGGER_BUCKET:
+        raise RuntimeError("GEOIP_TRIGGER_BUCKET is not configured")
+
+    import time
+
+    s3 = boto3.client("s3")
+    s3.put_object(
+        Bucket=settings.GEOIP_TRIGGER_BUCKET,
+        Key=f"schedule/{int(time.time())}.json",
+        Body=json.dumps({"cron_expression": cron_expression}),
+        ContentType="application/json",
+    )

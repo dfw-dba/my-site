@@ -23,10 +23,11 @@ import type {
   AnalyticsVisitors,
   AnalyticsGeo,
   AnalyticsTimeseries,
-  GeoipUpdateLogsResponse,
-  GeoipTaskStatus,
-  GeoipTaskProgress,
+  GeoipRunHistoryResponse,
+  GeoipRunStatus,
+  GeoipRunProgress,
   GeoipTriggerResponse,
+  GeoipSchedule,
 } from "../types";
 import { getIdToken, isCognitoConfigured } from "./auth";
 
@@ -201,11 +202,11 @@ export const api = {
         if (params.limit !== undefined) qs.set("limit", String(params.limit));
         if (params.offset !== undefined) qs.set("offset", String(params.offset));
         const query = qs.toString();
-        return request<GeoipUpdateLogsResponse>(`/api/admin/geoip/logs${query ? `?${query}` : ""}`, { headers });
+        return request<GeoipRunHistoryResponse>(`/api/admin/geoip/logs${query ? `?${query}` : ""}`, { headers });
       },
       taskStatus: async () => {
         const headers = await adminHeaders();
-        return request<GeoipTaskStatus | null>("/api/admin/geoip/task-status", { headers });
+        return request<GeoipRunStatus | null>("/api/admin/geoip/task-status", { headers });
       },
       trigger: async () => {
         const headers = await adminHeaders();
@@ -216,7 +217,19 @@ export const api = {
         const qs = new URLSearchParams();
         qs.set("run_id", String(params.run_id));
         if (params.after_id !== undefined) qs.set("after_id", String(params.after_id));
-        return request<GeoipTaskProgress[]>(`/api/admin/geoip/task-progress?${qs.toString()}`, { headers });
+        return request<GeoipRunProgress[]>(`/api/admin/geoip/task-progress?${qs.toString()}`, { headers });
+      },
+      schedule: async () => {
+        const headers = await adminHeaders();
+        return request<GeoipSchedule>("/api/admin/geoip/schedule", { headers });
+      },
+      updateSchedule: async (data: { cron_expression: string; description: string }) => {
+        const headers = await adminHeaders();
+        return request<GeoipSchedule>("/api/admin/geoip/schedule", {
+          method: "PUT",
+          headers,
+          body: JSON.stringify(data),
+        });
       },
     },
     resume: {

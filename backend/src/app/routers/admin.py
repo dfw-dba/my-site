@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFil
 
 from src.app.dependencies import get_admin_auth, get_db_api, get_storage
 from src.app.middleware.rate_limit import limiter
+from src.app.schemas.geoip import GeoipScheduleUpdate
 from src.app.schemas.logs import PurgeLogs
 from src.app.schemas.resume import (
     PerformanceReviewCreate,
@@ -399,8 +400,8 @@ async def get_geoip_update_logs(
     limit: int = Query(default=10, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
 ) -> Any:
-    """Fetch paginated GeoIP update log history."""
-    return await db.get_geoip_update_logs({"limit": limit, "offset": offset})
+    """Fetch paginated GeoIP run history."""
+    return await db.get_geoip_run_history({"limit": limit, "offset": offset})
 
 
 @router.get("/geoip/task-status", dependencies=[Depends(get_admin_auth)])
@@ -409,7 +410,7 @@ async def get_geoip_task_status(
     request: Request,
     db: DatabaseAPI = Depends(get_db_api),
 ) -> Any:
-    """Fetch the latest GeoIP task run status.
+    """Fetch the latest GeoIP run status.
 
     When a task is still pending (no DB progress yet), checks S3 for a
     status file written by the trigger Lambda. This surfaces Lambda/ECS
@@ -417,19 +418,19 @@ async def get_geoip_task_status(
     """
     from src.app.services.geoip_trigger import check_geoip_trigger_status
 
-    result = await db.get_geoip_task_status()
+    result = await db.get_geoip_run_status()
     if not result:
         return result
 
     # If the DB still shows pending, check S3 for Lambda-level feedback
     if result.get("status") == "pending":
-        run_id = result.get("id")
+        run_id = result.get("run_id")
         if run_id:
             trigger_status = check_geoip_trigger_status(run_id)
             if trigger_status:
                 if trigger_status.get("status") == "failed":
                     # Lambda or ECS RunTask failed — update DB and return
-                    await db.update_geoip_task_run(
+                    await db.update_geoip_run(
                         {
                             "run_id": run_id,
                             "status": "failed",
@@ -440,7 +441,7 @@ async def get_geoip_task_status(
                     result["error_message"] = trigger_status.get("error", "Trigger Lambda failed")
                 elif trigger_status.get("task_arn"):
                     # ECS task was started — update task_arn in DB
-                    await db.update_geoip_task_run(
+                    await db.update_geoip_run(
                         {
                             "run_id": run_id,
                             "task_arn": trigger_status["task_arn"],
@@ -461,7 +462,7 @@ async def trigger_geoip_update(
     from src.app.services.geoip_trigger import trigger_geoip_update as do_trigger
 
     # Check if a task is already running
-    current = await db.get_geoip_task_status()
+    current = await db.get_geoip_run_status()
     if current and current.get("status") in ("pending", "running"):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -469,8 +470,8 @@ async def trigger_geoip_update(
         )
 
     # Create pending run record
-    run_result = await db.create_geoip_task_run({"triggered_by": "manual"})
-    run_id = run_result["id"]
+    run_result = await db.create_geoip_run({"triggered_by": "manual"})
+    run_id = run_result["run_id"]
 
     # Write S3 trigger file (invokes the non-VPC trigger Lambda)
     do_trigger(run_id)
@@ -486,5 +487,39 @@ async def get_geoip_task_progress(
     run_id: int = Query(ge=1),
     after_id: int = Query(default=0, ge=0),
 ) -> Any:
-    """Fetch progress lines for a GeoIP task run."""
-    return await db.get_geoip_task_progress({"run_id": run_id, "after_id": after_id})
+    """Fetch progress lines for a GeoIP run."""
+    return await db.get_geoip_run_progress({"run_id": run_id, "after_id": after_id})
+
+
+@router.get("/geoip/schedule", dependencies=[Depends(get_admin_auth)])
+@limiter.limit("60/minute")
+async def get_geoip_schedule(
+    request: Request,
+    db: DatabaseAPI = Depends(get_db_api),
+) -> Any:
+    """Fetch the current GeoIP refresh schedule."""
+    return await db.get_geoip_schedule()
+
+
+@router.put("/geoip/schedule", dependencies=[Depends(get_admin_auth)])
+@limiter.limit("10/minute")
+async def update_geoip_schedule(
+    request: Request,
+    body: GeoipScheduleUpdate,
+    db: DatabaseAPI = Depends(get_db_api),
+) -> Any:
+    """Update the GeoIP refresh schedule and apply to EventBridge."""
+    from src.app.services.geoip_trigger import trigger_schedule_update
+
+    # Update DB
+    result = await db.update_geoip_schedule(
+        {
+            "cron_expression": body.cron_expression,
+            "description": body.description,
+        }
+    )
+
+    # Trigger EventBridge update via S3 → Lambda
+    trigger_schedule_update(body.cron_expression)
+
+    return result
