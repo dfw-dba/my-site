@@ -65,7 +65,7 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i);
 function parseCron(cron: string): { days: string[]; hour: number } {
   // Parse "cron(M H ? * DAYS *)" format
   const match = cron.match(/cron\(\d+\s+(\d+)\s+\?\s+\*\s+([\w,]+)\s+\*\)/);
-  if (!match) return { days: ["WED", "SAT"], hour: 6 };
+  if (!match || !match[1] || !match[2]) return { days: ["WED", "SAT"], hour: 6 };
   return {
     hour: parseInt(match[1], 10),
     days: match[2].split(","),
