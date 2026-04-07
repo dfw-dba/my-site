@@ -3,6 +3,6 @@
     "databaseInsightsAdvanced": false
   },
   "production": {
-    "databaseInsightsAdvanced": false
+    "databaseInsightsAdvanced": true
   }
 }
