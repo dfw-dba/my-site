@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.14.0](https://github.com/dfw-dba/my-site/compare/v1.13.0...v1.14.0) (2026-04-07)
+
+
+### Features
+
+* consolidate GeoIP tables and add schedule management ([#183](https://github.com/dfw-dba/my-site/issues/183)) ([57533d7](https://github.com/dfw-dba/my-site/commit/57533d7df6eba3eeb585129c0a329e3c0b8bc06b))
+
+
+### Bug Fixes
+
+* replace currval with max(run_id) in GeoIP migration sequence sync ([#185](https://github.com/dfw-dba/my-site/issues/185)) ([e26f152](https://github.com/dfw-dba/my-site/commit/e26f152aa9fec7abd593696ed29939ffc3057b77))
+
 ## [1.13.0](https://github.com/dfw-dba/my-site/compare/v1.12.2...v1.13.0) (2026-04-05)
 
 
