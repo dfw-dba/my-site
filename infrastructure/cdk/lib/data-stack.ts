@@ -71,6 +71,16 @@ export class DataStack extends cdk.Stack {
       deletionProtection: !isStaging,
       removalPolicy: isStaging ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN,
       storageEncrypted: true,
+      // Database Insights Advanced (~$5-6/month on t4g.micro with 2 vCPUs).
+      // Adds anomaly detection, recommendations, and 15-month PI retention.
+      // Toggle via infrastructure/cdk/config/features.json per environment.
+      ...(config.features.databaseInsightsAdvanced
+        ? {
+            enablePerformanceInsights: true,
+            performanceInsightRetention: rds.PerformanceInsightRetention.MONTHS_15,
+            databaseInsightsMode: rds.DatabaseInsightsMode.ADVANCED,
+          }
+        : {}),
       parameterGroup: new rds.ParameterGroup(this, "DbParams", {
         engine: rds.DatabaseInstanceEngine.postgres({
           version: rds.PostgresEngineVersion.VER_17,
