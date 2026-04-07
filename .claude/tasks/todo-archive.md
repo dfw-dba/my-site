@@ -4,6 +4,27 @@ _Completed sprints moved from `todo.md`. For current work, see `todo.md`._
 
 ---
 
+## Sprint 51: Fix GeoIP Silent Timeout — S3 Status Feedback
+
+### Docker
+- [x] 51.1 Reorder `update.py` startup: DB connect → set "running" → fetch MaxMind creds
+
+### Infrastructure
+- [x] 51.2 Update trigger Lambda to write `status.json` to S3 (success/failure)
+- [x] 51.3 Grant trigger Lambda readWrite on trigger bucket (was read-only)
+- [x] 51.4 Grant backend Lambda readWrite on trigger bucket (was put-only)
+
+### Backend
+- [x] 51.5 Add `check_geoip_trigger_status(run_id)` to `geoip_trigger.py`
+- [x] 51.6 Modify `get_geoip_task_status` endpoint to check S3 when task is pending
+
+### Verification
+- [x] 51.7 Backend lint + tests pass (41/41)
+- [x] 51.8 CDK TypeScript compiles
+- [x] 51.9 Security audit (no CRITICAL/HIGH; 2 MEDIUM — error message sanitization, admin-only access mitigates)
+
+---
+
 ## Sprint 50: Admin Utilities Tab — GeoData
 
 ### Database

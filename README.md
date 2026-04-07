@@ -63,7 +63,10 @@ Production and staging are fully isolated in separate AWS accounts. Each account
 | VPC endpoint (cognito-idp) | $7.20 | $7.20 |
 | CloudFront / S3 / Lambda / API GW / Cognito / ACM | ~$0 | ~$0 |
 | GeoIP refresh (Fargate + Secrets Manager) | ~$0.45 | ~$0.45 |
+| Database Insights Advanced (optional) | ~$5.50 | ~$5.50 |
 | **Total** | **~$8/month** | **~$21/month** |
+
+> Database Insights Advanced is disabled by default. When enabled via `features.json`, it adds ~$5.50/month for Performance Insights with 15-month retention and anomaly detection. See [Feature Toggles](#feature-toggles).
 
 **Staging account (optional, separate AWS account):**
 
@@ -75,6 +78,7 @@ Production and staging are fully isolated in separate AWS accounts. Each account
 | Bastion host (t4g.nano) | ~$3.00 | ~$3.00 |
 | CloudFront / S3 / Lambda / API GW / Cognito / ACM | ~$0 | ~$0 |
 | GeoIP refresh (Fargate + Secrets Manager) | ~$0.45 | ~$0.45 |
+| Database Insights Advanced (optional) | ~$5.50 | ~$5.50 |
 | **Total** | **~$11/month** | **~$24/month** |
 
 Built-in cost safeguards: API Gateway throttling (10 req/s), Lambda reserved concurrency (5), and a configurable budget alarm (per account).
@@ -548,6 +552,39 @@ Production validation extracts commands from the PR's `## Prod-Post-deploy valid
 
 To manually trigger the full pipeline: **Actions → Deploy → Run workflow**.
 
+## Feature Toggles
+
+Infrastructure features can be independently enabled or disabled per environment via `infrastructure/cdk/config/features.json`:
+
+```json
+{
+  "staging": {
+    "databaseInsightsAdvanced": false
+  },
+  "production": {
+    "databaseInsightsAdvanced": false
+  }
+}
+```
+
+| Feature | Description | Cost When Enabled |
+|---------|-------------|-------------------|
+| `databaseInsightsAdvanced` | AWS Database Insights Advanced: Performance Insights with 15-month retention, anomaly detection, and recommendations | ~$5.50/month (t4g.micro, 2 vCPUs) |
+
+To toggle a feature:
+
+1. Edit `features.json` — set the feature to `true` or `false` for the target environment
+2. Commit and push to `main` (deploys via the normal CI/CD pipeline), **or**
+3. Use the **Toggle Features** workflow for a fast, targeted deploy
+
+### Toggle Features Workflow
+
+The **Toggle Features** workflow (`.github/workflows/toggle-features.yml`) deploys only the `MySiteData` stack — no DNS, certificates, frontend build, or validation jobs. This makes feature toggles fast (~2-3 minutes) compared to the full deploy pipeline (~10+ minutes).
+
+**Usage:** Actions → Toggle Features → Run workflow → Select environment (`staging`, `production`, or `both`).
+
+When `both` is selected, staging deploys first. If staging fails, production is skipped.
+
 ## Database Performance Monitoring
 
 Built-in database observability using PostgreSQL's native statistics infrastructure. No external monitoring services required.
@@ -708,7 +745,7 @@ The task uses HEAD requests to check MaxMind's `Last-Modified` header and skips 
 ├── docker/                # Dockerfiles (dev, production, Lambda, GeoIP update)
 ├── infrastructure/cdk/    # AWS CDK stacks (TypeScript)
 │   ├── lib/               # Stack definitions (DNS, Cert, Data, App)
-│   └── config/            # Deployment configuration
+│   └── config/            # Deployment configuration + feature toggles
 ├── .github/workflows/     # CI + CD pipelines
 └── config/                # Site configuration
 ```

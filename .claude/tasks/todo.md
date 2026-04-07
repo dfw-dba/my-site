@@ -4,27 +4,6 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 
 ---
 
-## Sprint 51: Fix GeoIP Silent Timeout — S3 Status Feedback
-
-### Docker
-- [x] 51.1 Reorder `update.py` startup: DB connect → set "running" → fetch MaxMind creds
-
-### Infrastructure
-- [x] 51.2 Update trigger Lambda to write `status.json` to S3 (success/failure)
-- [x] 51.3 Grant trigger Lambda readWrite on trigger bucket (was read-only)
-- [x] 51.4 Grant backend Lambda readWrite on trigger bucket (was put-only)
-
-### Backend
-- [x] 51.5 Add `check_geoip_trigger_status(run_id)` to `geoip_trigger.py`
-- [x] 51.6 Modify `get_geoip_task_status` endpoint to check S3 when task is pending
-
-### Verification
-- [x] 51.7 Backend lint + tests pass (41/41)
-- [x] 51.8 CDK TypeScript compiles
-- [x] 51.9 Security audit (no CRITICAL/HIGH; 2 MEDIUM — error message sanitization, admin-only access mitigates)
-
----
-
 ## Sprint 52: GeoIP Log Run Tracking
 
 ### Implementation
@@ -82,6 +61,23 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 - [x] 53.13 Frontend type check + tests pass (25/25)
 - [x] 53.14 CDK TypeScript compiles
 - [x] 53.15 Security audit (MEDIUM: cron validation — fixed with Pydantic schema; no CRITICAL/HIGH)
+
+---
+
+## Sprint 54: Database Insights Advanced + Feature Toggle System
+
+### Config
+- [x] 54.1 Create `infrastructure/cdk/config/features.json` with staging/production sections
+- [x] 54.2 Update `infrastructure/cdk/config/index.ts` — add features loader and interfaces
+
+### Infrastructure
+- [x] 54.3 Update `infrastructure/cdk/lib/data-stack.ts` — conditional Database Insights Advanced on RDS
+- [x] 54.4 Create `.github/workflows/toggle-features.yml` — lightweight feature toggle deploy workflow
+
+### Documentation & Verification
+- [x] 54.5 Update README.md (feature toggles, new workflow, cost update)
+- [x] 54.6 CDK synth verification (toggle on/off, staging/prod isolation)
+- [x] 54.7 Security audit (no CRITICAL/HIGH; 2 LOW — runtime type validation on JSON, direct-to-prod access by design)
 
 ---
 

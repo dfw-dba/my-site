@@ -10,7 +10,31 @@
  * Optional environment variables (sensible defaults provided):
  *   CDK_DB_INSTANCE_CLASS, CDK_LAMBDA_MEMORY_MB,
  *   CDK_API_THROTTLE_RATE, CDK_API_THROTTLE_BURST, CDK_BUDGET_LIMIT_USD
+ *
+ * Feature toggles are in features.json (per-environment, checked into repo).
  */
+
+import * as fs from "fs";
+import * as path from "path";
+
+interface FeatureToggles {
+  databaseInsightsAdvanced: boolean;
+}
+
+interface FeaturesConfig {
+  staging: FeatureToggles;
+  production: FeatureToggles;
+}
+
+function loadFeatures(): FeatureToggles {
+  const raw = fs.readFileSync(
+    path.join(__dirname, "features.json"),
+    "utf-8",
+  );
+  const all: FeaturesConfig = JSON.parse(raw);
+  const env = process.env.CDK_IS_STAGING === "true" ? "staging" : "production";
+  return all[env];
+}
 
 function required(name: string, ...fallbacks: string[]): string {
   const value = [name, ...fallbacks]
@@ -45,4 +69,5 @@ export const config = {
   budgetAlertEmail: required("CDK_BUDGET_EMAIL"),
   isStaging: process.env.CDK_IS_STAGING === "true",
   autoGenerateBucketNames: optional("CDK_AUTO_BUCKET_NAMES", "true") === "true",
+  features: loadFeatures(),
 };
