@@ -123,11 +123,13 @@ where l.run_id is null
 order by l.id;
 
 -- 4d. Sync the sequence past all migrated run_ids
+-- Use max(run_id) only — currval() fails if nextval() was never called in this session
+-- (which happens when step 4c has no rows to insert)
 select setval(
     'internal.geoip_run_id_seq',
     greatest(
         (select coalesce(max(run_id), 0) from internal.geoip_update_log_v2),
-        currval('internal.geoip_run_id_seq')
+        1
     )
 );
 
