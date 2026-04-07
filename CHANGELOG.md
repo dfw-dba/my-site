@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.0](https://github.com/dfw-dba/my-site/compare/v1.14.0...v1.15.0) (2026-04-07)
+
+
+### Features
+
+* add Database Insights Advanced with configuration-driven feature toggles ([#186](https://github.com/dfw-dba/my-site/issues/186)) ([2a134e4](https://github.com/dfw-dba/my-site/commit/2a134e4ecd2f10a088d33263139b12538b094556))
+
 ## [1.14.0](https://github.com/dfw-dba/my-site/compare/v1.13.0...v1.14.0) (2026-04-07)
 
 
