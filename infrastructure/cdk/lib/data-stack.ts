@@ -81,7 +81,7 @@ export class DataStack extends cdk.Stack {
             databaseInsightsMode: rds.DatabaseInsightsMode.ADVANCED,
           }
         : {}),
-        
+
       cloudwatchLogsExports: ["postgresql"],
       cloudwatchLogsRetention: logs.RetentionDays.ONE_MONTH,
 
@@ -91,7 +91,7 @@ export class DataStack extends cdk.Stack {
         }),
         parameters: {
           "rds.force_ssl": "1",
-          "shared_preload_libraries": "pg_stat_statements,auto_explain",
+          "shared_preload_libraries": "pg_stat_statements,auto_explain.pgaudit",
           "pg_stat_statements.track": "all",
           "track_functions": "all",
           "auto_explain.log_min_duration": "500",
