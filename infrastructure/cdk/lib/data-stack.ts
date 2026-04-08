@@ -81,6 +81,10 @@ export class DataStack extends cdk.Stack {
             databaseInsightsMode: rds.DatabaseInsightsMode.ADVANCED,
           }
         : {}),
+        
+      cloudwatchLogsExports: ["postgresql"],
+      cloudwatchLogsRetention: logs.RetentionDays.ONE_MONTH,
+
       parameterGroup: new rds.ParameterGroup(this, "DbParams", {
         engine: rds.DatabaseInstanceEngine.postgres({
           version: rds.PostgresEngineVersion.VER_17,
@@ -94,6 +98,8 @@ export class DataStack extends cdk.Stack {
           "auto_explain.log_analyze": "true",
           "auto_explain.log_buffers": "true",
           "auto_explain.log_format": "json",
+          "pgaudit.log": "read,write,function,role,ddl",
+          "pgaudit.log_parameter": "1", 
         },
       }),
     });
