@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.1](https://github.com/dfw-dba/my-site/compare/v1.15.0...v1.15.1) (2026-04-08)
+
+
+### Bug Fixes
+
+* incorrect seperator between auto_explain and pgaudit on shared_preload_libraries ([#191](https://github.com/dfw-dba/my-site/issues/191)) ([0ee4aba](https://github.com/dfw-dba/my-site/commit/0ee4aba0fb84d9e2dd2b628f9cbbad46e769d38a))
+
 ## [1.15.0](https://github.com/dfw-dba/my-site/compare/v1.14.0...v1.15.0) (2026-04-07)
 
 
