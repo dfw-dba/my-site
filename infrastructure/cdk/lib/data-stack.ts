@@ -91,7 +91,6 @@ export class DataStack extends cdk.Stack {
         }),
         parameters: {
           "rds.force_ssl": "1",
-
           "shared_preload_libraries": "pg_stat_statements,auto_explain,pgaudit",
           "pg_stat_statements.track": "all",
           "track_functions": "all",
