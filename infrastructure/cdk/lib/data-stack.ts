@@ -91,15 +91,22 @@ export class DataStack extends cdk.Stack {
         }),
         parameters: {
           "rds.force_ssl": "1",
-          "shared_preload_libraries": "pg_stat_statements,auto_explain.pgaudit",
+          
+          "shared_preload_libraries": "pg_stat_statements,auto_explain,pgaudit",
           "pg_stat_statements.track": "all",
           "track_functions": "all",
+
           "auto_explain.log_min_duration": "500",
           "auto_explain.log_analyze": "true",
           "auto_explain.log_buffers": "true",
           "auto_explain.log_format": "json",
+          "log_connections": "1",
+          "log_disconnections": "1",
+          "log_min_duration_statement": "500",
+          "log_statement": "none",
+
           "pgaudit.log": "read,write,function,role,ddl",
-          "pgaudit.log_parameter": "1", 
+          "pgaudit.log_parameter": "1",           
         },
       }),
     });
