@@ -99,8 +99,6 @@ export class DataStack extends cdk.Stack {
           "auto_explain.log_analyze": "true",
           "auto_explain.log_buffers": "true",
           "auto_explain.log_format": "json",
-          "log_connections": "1",
-          "log_disconnections": "1",
           "log_statement": "none",
 
           "pgaudit.log": "read,write,function,role,ddl",
