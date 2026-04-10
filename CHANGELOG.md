@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.0](https://github.com/dfw-dba/my-site/compare/v1.16.0...v1.17.0) (2026-04-10)
+
+
+### Features
+
+* db logging refinement  ([#196](https://github.com/dfw-dba/my-site/issues/196)) ([c255c94](https://github.com/dfw-dba/my-site/commit/c255c94803a2c863e6f61ce3c1c0a93ee9982661))
+
 ## [1.16.0](https://github.com/dfw-dba/my-site/compare/v1.15.1...v1.16.0) (2026-04-08)
 
 
