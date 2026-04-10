@@ -52,6 +52,8 @@ Production and staging are fully isolated in separate AWS accounts. Each account
     └── Budget alarm                          └── Budget alarm
 ```
 
+> **[View interactive architecture diagram](docs/architecture.md)** — detailed Mermaid diagrams showing all resources, request flows, and stack dependencies.
+
 ## Cost Estimate
 
 **Production account:**
