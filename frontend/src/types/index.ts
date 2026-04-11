@@ -277,6 +277,19 @@ export interface FunctionStatsResponse {
 
 // ── Visitor Analytics ───────────────────────────────────────────────────────
 
+export interface AnalyticsFilters {
+  start_date?: string;
+  end_date?: string;
+  page_path?: string;
+  exclude_bots?: boolean;
+  device_type?: string;
+  browser?: string;
+  os?: string;
+  country_code?: string;
+  region?: string;
+  city?: string;
+}
+
 export interface AnalyticsTopPage {
   page_path: string;
   views: number;
@@ -338,6 +351,8 @@ export interface AnalyticsTopSession {
 
 export interface AnalyticsVisitors {
   avg_pages_per_session: number;
+  avg_session_duration: number;
+  avg_scroll_depth: number;
   total_sessions: number;
   top_sessions: AnalyticsTopSession[];
   return_visitors: AnalyticsReturnVisitor[];

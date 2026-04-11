@@ -19,6 +19,7 @@ import type {
   TableStatsResponse,
   IndexUsageResponse,
   FunctionStatsResponse,
+  AnalyticsFilters,
   AnalyticsSummary,
   AnalyticsVisitors,
   AnalyticsGeo,
@@ -157,40 +158,39 @@ export const api = {
       },
     },
     analytics: {
-      summary: async (params: { start_date?: string; end_date?: string; page_path?: string; exclude_bots?: boolean } = {}) => {
+      summary: async (params: AnalyticsFilters = {}) => {
         const headers = await adminHeaders();
         const qs = new URLSearchParams();
-        if (params.start_date) qs.set("start_date", params.start_date);
-        if (params.end_date) qs.set("end_date", params.end_date);
-        if (params.page_path) qs.set("page_path", params.page_path);
-        if (params.exclude_bots !== undefined) qs.set("exclude_bots", String(params.exclude_bots));
+        for (const [key, val] of Object.entries(params)) {
+          if (val !== undefined && val !== null) qs.set(key, String(val));
+        }
         const query = qs.toString();
         return request<AnalyticsSummary>(`/api/admin/analytics/summary${query ? `?${query}` : ""}`, { headers });
       },
-      visitors: async (params: { start_date?: string; end_date?: string; exclude_bots?: boolean } = {}) => {
+      visitors: async (params: AnalyticsFilters = {}) => {
         const headers = await adminHeaders();
         const qs = new URLSearchParams();
-        if (params.start_date) qs.set("start_date", params.start_date);
-        if (params.end_date) qs.set("end_date", params.end_date);
-        if (params.exclude_bots !== undefined) qs.set("exclude_bots", String(params.exclude_bots));
+        for (const [key, val] of Object.entries(params)) {
+          if (val !== undefined && val !== null) qs.set(key, String(val));
+        }
         const query = qs.toString();
         return request<AnalyticsVisitors>(`/api/admin/analytics/visitors${query ? `?${query}` : ""}`, { headers });
       },
-      geo: async (params: { start_date?: string; end_date?: string; exclude_bots?: boolean } = {}) => {
+      geo: async (params: AnalyticsFilters = {}) => {
         const headers = await adminHeaders();
         const qs = new URLSearchParams();
-        if (params.start_date) qs.set("start_date", params.start_date);
-        if (params.end_date) qs.set("end_date", params.end_date);
-        if (params.exclude_bots !== undefined) qs.set("exclude_bots", String(params.exclude_bots));
+        for (const [key, val] of Object.entries(params)) {
+          if (val !== undefined && val !== null) qs.set(key, String(val));
+        }
         const query = qs.toString();
         return request<AnalyticsGeo>(`/api/admin/analytics/geo${query ? `?${query}` : ""}`, { headers });
       },
-      timeseries: async (params: { start_date?: string; end_date?: string; exclude_bots?: boolean } = {}) => {
+      timeseries: async (params: AnalyticsFilters = {}) => {
         const headers = await adminHeaders();
         const qs = new URLSearchParams();
-        if (params.start_date) qs.set("start_date", params.start_date);
-        if (params.end_date) qs.set("end_date", params.end_date);
-        if (params.exclude_bots !== undefined) qs.set("exclude_bots", String(params.exclude_bots));
+        for (const [key, val] of Object.entries(params)) {
+          if (val !== undefined && val !== null) qs.set(key, String(val));
+        }
         const query = qs.toString();
         return request<AnalyticsTimeseries>(`/api/admin/analytics/timeseries${query ? `?${query}` : ""}`, { headers });
       },

@@ -1314,6 +1314,12 @@ declare
     v_end timestamptz;
     v_page_path text;
     v_exclude_bots boolean;
+    v_device_type text;
+    v_browser text;
+    v_os text;
+    v_country text;
+    v_region text;
+    v_city text;
     v_totals jsonb;
     v_top_pages jsonb;
     v_top_referrers jsonb;
@@ -1325,6 +1331,12 @@ begin
     v_end := coalesce((p_filters->>'end_date')::timestamptz, now());
     v_page_path := p_filters->>'page_path';
     v_exclude_bots := coalesce((p_filters->>'exclude_bots')::boolean, true);
+    v_device_type := p_filters->>'device_type';
+    v_browser := p_filters->>'browser';
+    v_os := p_filters->>'os';
+    v_country := p_filters->>'country_code';
+    v_region := p_filters->>'region';
+    v_city := p_filters->>'city';
 
     -- totals
     select jsonb_build_object(
@@ -1335,7 +1347,13 @@ begin
     from internal.page_views
     where created_at between v_start and v_end
       and (v_page_path is null or page_path = v_page_path)
-      and (not v_exclude_bots or is_bot = false);
+      and (not v_exclude_bots or is_bot = false)
+      and (v_device_type is null or device_type = v_device_type)
+      and (v_browser is null or browser = v_browser)
+      and (v_os is null or os = v_os)
+      and (v_country is null or country_code = v_country)
+      and (v_region is null or region = v_region)
+      and (v_city is null or city = v_city);
 
     -- top pages
     select coalesce(jsonb_agg(row_to_json(t)::jsonb), '[]')
@@ -1345,6 +1363,12 @@ begin
           from internal.page_views
          where created_at between v_start and v_end
            and (not v_exclude_bots or is_bot = false)
+           and (v_device_type is null or device_type = v_device_type)
+           and (v_browser is null or browser = v_browser)
+           and (v_os is null or os = v_os)
+           and (v_country is null or country_code = v_country)
+           and (v_region is null or region = v_region)
+           and (v_city is null or city = v_city)
          group by page_path
          order by views desc
          limit 20
@@ -1359,6 +1383,12 @@ begin
          where created_at between v_start and v_end
            and referrer is not null and referrer != ''
            and (not v_exclude_bots or is_bot = false)
+           and (v_device_type is null or device_type = v_device_type)
+           and (v_browser is null or browser = v_browser)
+           and (v_os is null or os = v_os)
+           and (v_country is null or country_code = v_country)
+           and (v_region is null or region = v_region)
+           and (v_city is null or city = v_city)
          group by referrer
          order by views desc
          limit 20
@@ -1373,6 +1403,12 @@ begin
          where created_at between v_start and v_end
            and device_type is not null
            and (not v_exclude_bots or is_bot = false)
+           and (v_device_type is null or device_type = v_device_type)
+           and (v_browser is null or browser = v_browser)
+           and (v_os is null or os = v_os)
+           and (v_country is null or country_code = v_country)
+           and (v_region is null or region = v_region)
+           and (v_city is null or city = v_city)
          group by device_type
          order by count desc
       ) as t;
@@ -1386,6 +1422,12 @@ begin
          where created_at between v_start and v_end
            and browser is not null
            and (not v_exclude_bots or is_bot = false)
+           and (v_device_type is null or device_type = v_device_type)
+           and (v_browser is null or browser = v_browser)
+           and (v_os is null or os = v_os)
+           and (v_country is null or country_code = v_country)
+           and (v_region is null or region = v_region)
+           and (v_city is null or city = v_city)
          group by browser
          order by count desc
          limit 20
@@ -1400,6 +1442,12 @@ begin
          where created_at between v_start and v_end
            and os is not null
            and (not v_exclude_bots or is_bot = false)
+           and (v_device_type is null or device_type = v_device_type)
+           and (v_browser is null or browser = v_browser)
+           and (v_os is null or os = v_os)
+           and (v_country is null or country_code = v_country)
+           and (v_region is null or region = v_region)
+           and (v_city is null or city = v_city)
          group by os
          order by count desc
          limit 20
@@ -1429,26 +1477,72 @@ declare
     v_start timestamptz;
     v_end timestamptz;
     v_exclude_bots boolean;
+    v_device_type text;
+    v_browser text;
+    v_os text;
+    v_country text;
+    v_region text;
+    v_city text;
     v_top_sessions jsonb;
     v_return_visitors jsonb;
     v_session_stats jsonb;
+    v_scroll_depth jsonb;
 begin
     v_start := coalesce((p_filters->>'start_date')::timestamptz, now() - interval '30 days');
     v_end := coalesce((p_filters->>'end_date')::timestamptz, now());
     v_exclude_bots := coalesce((p_filters->>'exclude_bots')::boolean, true);
+    v_device_type := p_filters->>'device_type';
+    v_browser := p_filters->>'browser';
+    v_os := p_filters->>'os';
+    v_country := p_filters->>'country_code';
+    v_region := p_filters->>'region';
+    v_city := p_filters->>'city';
 
     -- session-level stats
     select jsonb_build_object(
         'avg_pages_per_session', coalesce(round(avg(page_count), 1), 0),
+        'avg_session_duration', coalesce(round(avg(duration_seconds), 1), 0),
         'total_sessions', count(*)
     ) into v_session_stats
     from (
-        select session_id, count(*) as page_count
+        select session_id,
+               count(*) as page_count,
+               extract(epoch from max(created_at) - min(created_at))::numeric as duration_seconds
           from internal.page_views
          where created_at between v_start and v_end
            and (not v_exclude_bots or is_bot = false)
+           and (v_device_type is null or device_type = v_device_type)
+           and (v_browser is null or browser = v_browser)
+           and (v_os is null or os = v_os)
+           and (v_country is null or country_code = v_country)
+           and (v_region is null or region = v_region)
+           and (v_city is null or city = v_city)
          group by session_id
     ) as s;
+
+    -- avg scroll depth (max depth per session, then average)
+    select jsonb_build_object(
+        'avg_scroll_depth', coalesce(round(avg(max_depth), 1), 0)
+    ) into v_scroll_depth
+    from (
+        select ve.session_id, max((ve.event_data->>'depth')::numeric) as max_depth
+          from internal.visitor_events as ve
+         where ve.event_type = 'scroll'
+           and ve.created_at between v_start and v_end
+           and exists (
+               select 1 from internal.page_views as pv
+                where pv.session_id = ve.session_id
+                  and pv.created_at between v_start and v_end
+                  and (not v_exclude_bots or pv.is_bot = false)
+                  and (v_device_type is null or pv.device_type = v_device_type)
+                  and (v_browser is null or pv.browser = v_browser)
+                  and (v_os is null or pv.os = v_os)
+                  and (v_country is null or pv.country_code = v_country)
+                  and (v_region is null or pv.region = v_region)
+                  and (v_city is null or pv.city = v_city)
+           )
+         group by ve.session_id
+    ) as sd;
 
     -- top sessions by page count
     select coalesce(jsonb_agg(row_to_json(t)::jsonb), '[]')
@@ -1464,6 +1558,12 @@ begin
           from internal.page_views as pv
          where pv.created_at between v_start and v_end
            and (not v_exclude_bots or pv.is_bot = false)
+           and (v_device_type is null or pv.device_type = v_device_type)
+           and (v_browser is null or pv.browser = v_browser)
+           and (v_os is null or pv.os = v_os)
+           and (v_country is null or pv.country_code = v_country)
+           and (v_region is null or pv.region = v_region)
+           and (v_city is null or pv.city = v_city)
          group by pv.session_id, pv.visitor_hash
          order by page_count desc
          limit 50
@@ -1482,13 +1582,19 @@ begin
           from internal.page_views
          where created_at between v_start and v_end
            and (not v_exclude_bots or is_bot = false)
+           and (v_device_type is null or device_type = v_device_type)
+           and (v_browser is null or browser = v_browser)
+           and (v_os is null or os = v_os)
+           and (v_country is null or country_code = v_country)
+           and (v_region is null or region = v_region)
+           and (v_city is null or city = v_city)
          group by visitor_hash
         having count(distinct date(created_at)) > 1
          order by days_visited desc
          limit 50
       ) as t;
 
-    return v_session_stats || jsonb_build_object(
+    return v_session_stats || v_scroll_depth || jsonb_build_object(
         'top_sessions', v_top_sessions,
         'return_visitors', v_return_visitors,
         'date_range', jsonb_build_object('start', v_start, 'end', v_end)
@@ -1498,7 +1604,7 @@ $$ language plpgsql stable
 security definer;
 
 comment on function api.get_analytics_visitors(jsonb) is
-    'Visitor-level analytics: session page counts, duration, return visitor detection.';
+    'Visitor-level analytics: session page counts, duration, scroll depth, return visitor detection.';
 
 
 -- api.get_analytics_geo(p_filters jsonb)
@@ -1509,6 +1615,12 @@ declare
     v_start timestamptz;
     v_end timestamptz;
     v_exclude_bots boolean;
+    v_device_type text;
+    v_browser text;
+    v_os text;
+    v_country text;
+    v_region text;
+    v_city text;
     v_countries jsonb;
     v_regions jsonb;
     v_cities jsonb;
@@ -1516,6 +1628,12 @@ begin
     v_start := coalesce((p_filters->>'start_date')::timestamptz, now() - interval '30 days');
     v_end := coalesce((p_filters->>'end_date')::timestamptz, now());
     v_exclude_bots := coalesce((p_filters->>'exclude_bots')::boolean, true);
+    v_device_type := p_filters->>'device_type';
+    v_browser := p_filters->>'browser';
+    v_os := p_filters->>'os';
+    v_country := p_filters->>'country_code';
+    v_region := p_filters->>'region';
+    v_city := p_filters->>'city';
 
     -- by country
     select coalesce(jsonb_agg(row_to_json(t)::jsonb), '[]')
@@ -1526,6 +1644,12 @@ begin
          where created_at between v_start and v_end
            and country_code is not null
            and (not v_exclude_bots or is_bot = false)
+           and (v_device_type is null or device_type = v_device_type)
+           and (v_browser is null or browser = v_browser)
+           and (v_os is null or os = v_os)
+           and (v_country is null or country_code = v_country)
+           and (v_region is null or region = v_region)
+           and (v_city is null or city = v_city)
          group by country_code, country_name
          order by views desc
          limit 50
@@ -1540,6 +1664,12 @@ begin
          where created_at between v_start and v_end
            and region is not null
            and (not v_exclude_bots or is_bot = false)
+           and (v_device_type is null or device_type = v_device_type)
+           and (v_browser is null or browser = v_browser)
+           and (v_os is null or os = v_os)
+           and (v_country is null or country_code = v_country)
+           and (v_region is null or region = v_region)
+           and (v_city is null or city = v_city)
          group by country_code, region
          order by views desc
          limit 50
@@ -1554,6 +1684,12 @@ begin
          where created_at between v_start and v_end
            and city is not null
            and (not v_exclude_bots or is_bot = false)
+           and (v_device_type is null or device_type = v_device_type)
+           and (v_browser is null or browser = v_browser)
+           and (v_os is null or os = v_os)
+           and (v_country is null or country_code = v_country)
+           and (v_region is null or region = v_region)
+           and (v_city is null or city = v_city)
          group by country_code, region, city
          order by views desc
          limit 50
@@ -1581,11 +1717,23 @@ declare
     v_start timestamptz;
     v_end timestamptz;
     v_exclude_bots boolean;
+    v_device_type text;
+    v_browser text;
+    v_os text;
+    v_country text;
+    v_region text;
+    v_city text;
     v_daily jsonb;
 begin
     v_start := coalesce((p_filters ->> 'start_date')::timestamptz, now() - interval '30 days');
     v_end := coalesce((p_filters ->> 'end_date')::timestamptz, now());
     v_exclude_bots := coalesce((p_filters ->> 'exclude_bots')::boolean, true);
+    v_device_type := p_filters->>'device_type';
+    v_browser := p_filters->>'browser';
+    v_os := p_filters->>'os';
+    v_country := p_filters->>'country_code';
+    v_region := p_filters->>'region';
+    v_city := p_filters->>'city';
 
     select coalesce(jsonb_agg(row_to_json(t)::jsonb order by t.date), '[]')
       into v_daily
@@ -1596,6 +1744,12 @@ begin
           from internal.page_views
          where created_at between v_start and v_end
            and (not v_exclude_bots or is_bot = false)
+           and (v_device_type is null or device_type = v_device_type)
+           and (v_browser is null or browser = v_browser)
+           and (v_os is null or os = v_os)
+           and (v_country is null or country_code = v_country)
+           and (v_region is null or region = v_region)
+           and (v_city is null or city = v_city)
          group by date(created_at)
       ) as t;
 

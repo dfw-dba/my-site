@@ -4,22 +4,6 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 
 ---
 
-## Sprint 52: GeoIP Log Run Tracking
-
-### Implementation
-- [x] 52.1 Create migration `010_geoip_log_run_tracking.sql` (add run_id + last_message columns, recreate query function)
-- [x] 52.2 Track `last_message` in `ProgressLogger`, include both columns in INSERT (`update.py`)
-- [x] 52.3 Update `GeoipUpdateLog` TypeScript type with new nullable fields
-- [x] 52.4 Add Run and Last Message columns to Update History table (`GeoDataTab.tsx`)
-- [x] 52.5 Bump CDK migration version 20 → 21
-
-### Verification
-- [x] 52.6 Backend lint + tests pass (41/41)
-- [x] 52.7 Frontend type check + tests pass (25/25)
-- [x] 52.8 CDK TypeScript compiles
-
----
-
 ## Sprint 53: GeoIP Table Consolidation + Schedule Management
 
 ### Database
@@ -78,6 +62,32 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 - [x] 54.5 Update README.md (feature toggles, new workflow, cost update)
 - [x] 54.6 CDK synth verification (toggle on/off, staging/prod isolation)
 - [x] 54.7 Security audit (no CRITICAL/HIGH; 2 LOW — runtime type validation on JSON, direct-to-prod access by design)
+
+---
+
+## Sprint 55: Analytics Interactive Filtering + New Metrics
+
+### Database
+- [x] 55.1 Add dimensional filter variables + WHERE clauses to all 4 analytics functions in `03_functions.sql`
+- [x] 55.2 Add avg_session_duration to `get_analytics_visitors` session_stats sub-query
+- [x] 55.3 Add avg_scroll_depth to `get_analytics_visitors` (new sub-query against visitor_events)
+- [x] 55.4 Bump CDK migration version 22 → 23
+
+### Backend
+- [x] 55.5 Add 6 filter query params to all 4 analytics endpoints in `admin.py`
+
+### Frontend
+- [x] 55.6 Add `AnalyticsFilters` type + update `AnalyticsVisitors` in `types/index.ts`
+- [x] 55.7 Refactor API methods in `api.ts` to use generic filter params
+- [x] 55.8 Update hooks in `useAdminApi.ts` to accept `AnalyticsFilters`
+- [x] 55.9 Add `onSegmentClick`/`activeSegment` to `DonutChart.tsx`
+- [x] 55.10 Add `onBarClick`/`activeBar` to `HorizontalBarChart.tsx`
+- [x] 55.11 Wire filter state, new StatCards, active filters bar, chart/table click handlers in `VisitorAnalyticsTab.tsx`
+
+### Verification
+- [x] 55.12 Backend lint + tests pass (41/41)
+- [x] 55.13 Frontend type check + tests pass (25/25)
+- [x] 55.14 Security audit (no CRITICAL/HIGH; 1 LOW — max-length on filter params, mitigated by admin-only + rate limit)
 
 ---
 
