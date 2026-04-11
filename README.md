@@ -306,19 +306,6 @@ The `MySiteData` stack deploys a bastion host (t4g.nano) that you can reach via 
 
 **Prerequisites:** AWS CLI v2 and the [Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html).
 
-**IAM access control:** The stack creates a managed policy (`mysite-bastion-access`) that scopes `ssm:StartSession` to the bastion instance only. Attach it to your IAM user or role after deploying:
-
-```bash
-# Get the policy ARN from stack outputs
-POLICY_ARN=$(aws cloudformation describe-stacks --stack-name MySiteData \
-  --query 'Stacks[0].Outputs[?OutputKey==`BastionAccessPolicyArnOutput`].OutputValue' --output text)
-
-# Attach to your IAM user
-aws iam attach-user-policy --user-name <YOUR_IAM_USER> --policy-arn "$POLICY_ARN"
-```
-
-Then remove any broader `ssm:StartSession` permissions from your user to ensure access is scoped to this bastion only.
-
 **Interactive shell on the bastion:**
 
 ```bash
