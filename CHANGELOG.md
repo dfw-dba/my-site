@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.0](https://github.com/dfw-dba/my-site/compare/v1.17.0...v1.18.0) (2026-04-11)
+
+
+### Features
+
+* add scoped IAM policy for bastion SSM access ([#199](https://github.com/dfw-dba/my-site/issues/199)) ([08b85c4](https://github.com/dfw-dba/my-site/commit/08b85c4fdfbc4c5bfe56e29eff6e8374abf22956))
+
 ## [1.17.0](https://github.com/dfw-dba/my-site/compare/v1.16.0...v1.17.0) (2026-04-10)
 
 
