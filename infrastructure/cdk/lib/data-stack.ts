@@ -362,41 +362,6 @@ export class DataStack extends cdk.Stack {
       value: bastion.instanceId,
     });
 
-    // Scoped IAM policy for SSM access — attach to your IAM user/role post-deploy
-    const bastionAccessPolicy = new iam.ManagedPolicy(
-      this,
-      "BastionAccessPolicy",
-      {
-        managedPolicyName: `${isStaging ? "stage-" : ""}mysite-bastion-access`,
-        description:
-          "Grants SSM Session Manager access to the mysite bastion host only",
-        statements: [
-          new iam.PolicyStatement({
-            sid: "AllowSSMSessionToBastion",
-            actions: ["ssm:StartSession"],
-            resources: [
-              `arn:aws:ec2:${this.region}:${this.account}:instance/${bastion.instanceId}`,
-              `arn:aws:ssm:${this.region}::document/AWS-StartPortForwardingSessionToRemoteHost`,
-            ],
-          }),
-          new iam.PolicyStatement({
-            sid: "AllowSSMSessionTermination",
-            actions: ["ssm:TerminateSession", "ssm:ResumeSession"],
-            resources: ["arn:aws:ssm:*:*:session/${aws:username}-*"],
-          }),
-        ],
-      },
-    );
-
-    new ssm.StringParameter(this, "BastionAccessPolicyArn", {
-      parameterName: `${ssmPrefix}/bastion-access-policy-arn`,
-      stringValue: bastionAccessPolicy.managedPolicyArn,
-    });
-
-    new cdk.CfnOutput(this, "BastionAccessPolicyArnOutput", {
-      value: bastionAccessPolicy.managedPolicyArn,
-    });
-
     // --- GeoIP Auto-Update (ECS Fargate + EventBridge) ---
 
     const geoipLogGroup = new logs.LogGroup(this, "GeoipUpdateLogGroup", {
