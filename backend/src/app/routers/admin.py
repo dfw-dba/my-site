@@ -1,5 +1,6 @@
 import time
 from typing import Any
+from zoneinfo import available_timezones
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile, status
 
@@ -272,6 +273,7 @@ async def get_analytics_summary(
     country_code: str | None = None,
     region: str | None = None,
     city: str | None = None,
+    timezone: str | None = None,
 ) -> Any:
     """Fetch visitor analytics summary dashboard data."""
     filters: dict[str, Any] = {"exclude_bots": exclude_bots}
@@ -279,6 +281,8 @@ async def get_analytics_summary(
         filters["start_date"] = start_date
     if end_date:
         filters["end_date"] = end_date
+    if timezone and timezone in available_timezones():
+        filters["timezone"] = timezone
     if page_path:
         filters["page_path"] = page_path
     for key in ("device_type", "browser", "os", "country_code", "region", "city"):
@@ -302,6 +306,7 @@ async def get_analytics_visitors(
     country_code: str | None = None,
     region: str | None = None,
     city: str | None = None,
+    timezone: str | None = None,
 ) -> Any:
     """Fetch visitor-level analytics: sessions, return visitors."""
     filters: dict[str, Any] = {"exclude_bots": exclude_bots}
@@ -309,6 +314,8 @@ async def get_analytics_visitors(
         filters["start_date"] = start_date
     if end_date:
         filters["end_date"] = end_date
+    if timezone and timezone in available_timezones():
+        filters["timezone"] = timezone
     for key in ("device_type", "browser", "os", "country_code", "region", "city"):
         val = locals()[key]
         if val:
@@ -330,6 +337,7 @@ async def get_analytics_geo(
     country_code: str | None = None,
     region: str | None = None,
     city: str | None = None,
+    timezone: str | None = None,
 ) -> Any:
     """Fetch geographic breakdown of visitors."""
     filters: dict[str, Any] = {"exclude_bots": exclude_bots}
@@ -337,6 +345,8 @@ async def get_analytics_geo(
         filters["start_date"] = start_date
     if end_date:
         filters["end_date"] = end_date
+    if timezone and timezone in available_timezones():
+        filters["timezone"] = timezone
     for key in ("device_type", "browser", "os", "country_code", "region", "city"):
         val = locals()[key]
         if val:
@@ -358,6 +368,7 @@ async def get_analytics_timeseries(
     country_code: str | None = None,
     region: str | None = None,
     city: str | None = None,
+    timezone: str | None = None,
 ) -> Any:
     """Fetch daily page view and unique visitor time series."""
     filters: dict[str, Any] = {"exclude_bots": exclude_bots}
@@ -365,6 +376,8 @@ async def get_analytics_timeseries(
         filters["start_date"] = start_date
     if end_date:
         filters["end_date"] = end_date
+    if timezone and timezone in available_timezones():
+        filters["timezone"] = timezone
     for key in ("device_type", "browser", "os", "country_code", "region", "city"):
         val = locals()[key]
         if val:

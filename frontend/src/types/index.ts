@@ -280,6 +280,7 @@ export interface FunctionStatsResponse {
 export interface AnalyticsFilters {
   start_date?: string;
   end_date?: string;
+  timezone?: string;
   page_path?: string;
   exclude_bots?: boolean;
   device_type?: string;

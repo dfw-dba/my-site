@@ -4,23 +4,6 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 
 ---
 
-## Sprint 54: Database Insights Advanced + Feature Toggle System
-
-### Config
-- [x] 54.1 Create `infrastructure/cdk/config/features.json` with staging/production sections
-- [x] 54.2 Update `infrastructure/cdk/config/index.ts` — add features loader and interfaces
-
-### Infrastructure
-- [x] 54.3 Update `infrastructure/cdk/lib/data-stack.ts` — conditional Database Insights Advanced on RDS
-- [x] 54.4 Create `.github/workflows/toggle-features.yml` — lightweight feature toggle deploy workflow
-
-### Documentation & Verification
-- [x] 54.5 Update README.md (feature toggles, new workflow, cost update)
-- [x] 54.6 CDK synth verification (toggle on/off, staging/prod isolation)
-- [x] 54.7 Security audit (no CRITICAL/HIGH; 2 LOW — runtime type validation on JSON, direct-to-prod access by design)
-
----
-
 ## Sprint 55: Analytics Interactive Filtering + New Metrics
 
 ### Database
@@ -65,6 +48,29 @@ _Completed sprints are archived in `todo-archive.md`. Only the last 3 completed 
 ### Verification
 - [x] 56.7 Backend lint + tests pass (41/41)
 - [x] 56.8 Frontend type check + tests pass (25/25)
+
+---
+
+## Sprint 57: Fix Analytics Date Filter + Timezone Support
+
+### Database
+- [x] 57.1 Fix date range in all 4 analytics functions: `BETWEEN` -> half-open `>= / <`, add `v_tz` timezone variable
+- [x] 57.2 Fix timeseries grouping to use `date(created_at at time zone v_tz)`
+- [x] 57.3 Bump CDK migration version 23 -> 24
+
+### Backend
+- [x] 57.4 Add `timezone` param to `_build_analytics_filters` in `analytics.py`
+- [x] 57.5 Add `timezone` query param to all 4 public analytics endpoints
+- [x] 57.6 Add `timezone` query param to all 4 admin analytics endpoints in `admin.py`
+
+### Frontend
+- [x] 57.7 Add `timezone` to `AnalyticsFilters` type
+- [x] 57.8 Fix `defaultDateRange()` to use local dates (not UTC) in both pages
+- [x] 57.9 Send `timezone` from `Intl.DateTimeFormat` in both pages
+
+### Verification
+- [x] 57.10 Backend lint + tests pass (41/41)
+- [x] 57.11 Frontend type check + tests pass (25/25)
 
 ---
 

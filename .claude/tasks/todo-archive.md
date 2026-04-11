@@ -4,6 +4,23 @@ _Completed sprints moved from `todo.md`. For current work, see `todo.md`._
 
 ---
 
+## Sprint 54: Database Insights Advanced + Feature Toggle System
+
+### Config
+- [x] 54.1 Create `infrastructure/cdk/config/features.json` with staging/production sections
+- [x] 54.2 Update `infrastructure/cdk/config/index.ts` — add features loader and interfaces
+
+### Infrastructure
+- [x] 54.3 Update `infrastructure/cdk/lib/data-stack.ts` — conditional Database Insights Advanced on RDS
+- [x] 54.4 Create `.github/workflows/toggle-features.yml` — lightweight feature toggle deploy workflow
+
+### Documentation & Verification
+- [x] 54.5 Update README.md (feature toggles, new workflow, cost update)
+- [x] 54.6 CDK synth verification (toggle on/off, staging/prod isolation)
+- [x] 54.7 Security audit (no CRITICAL/HIGH; 2 LOW — runtime type validation on JSON, direct-to-prod access by design)
+
+---
+
 ## Sprint 52: GeoIP Log Run Tracking
 
 ### Implementation

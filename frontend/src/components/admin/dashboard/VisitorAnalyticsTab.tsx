@@ -11,13 +11,20 @@ import TimeSeriesChart from "../charts/TimeSeriesChart";
 import DonutChart from "../charts/DonutChart";
 import HorizontalBarChart from "../charts/HorizontalBarChart";
 
+function toLocalDateString(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function defaultDateRange() {
   const end = new Date();
   const start = new Date();
   start.setDate(start.getDate() - 30);
   return {
-    start_date: start.toISOString().slice(0, 10),
-    end_date: end.toISOString().slice(0, 10),
+    start_date: toLocalDateString(start),
+    end_date: toLocalDateString(end),
   };
 }
 
@@ -72,7 +79,12 @@ export default function VisitorAnalyticsTab() {
   const activeFilterKeys = Object.keys(filters) as (keyof DimensionalFilters)[];
   const hasActiveFilters = activeFilterKeys.length > 0;
 
-  const params: AnalyticsFilters = { start_date: startDate, end_date: endDate, ...filters };
+  const params: AnalyticsFilters = {
+    start_date: startDate,
+    end_date: endDate,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    ...filters,
+  };
 
   const { data: summary, isLoading: summaryLoading } = useAnalyticsSummary(params);
   const { data: visitors } = useAnalyticsVisitors(params);
