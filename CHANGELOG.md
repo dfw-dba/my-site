@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.20.0](https://github.com/dfw-dba/my-site/compare/v1.19.0...v1.20.0) (2026-04-11)
+
+
+### Features
+
+* add public visitor analytics page accessible from hamburger menu ([#205](https://github.com/dfw-dba/my-site/issues/205)) ([a270057](https://github.com/dfw-dba/my-site/commit/a270057d227679dd9523eb17209a10df43741f52))
+
 ## [1.19.0](https://github.com/dfw-dba/my-site/compare/v1.18.1...v1.19.0) (2026-04-11)
 
 
