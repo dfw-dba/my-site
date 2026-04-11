@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.20.1](https://github.com/dfw-dba/my-site/compare/v1.20.0...v1.20.1) (2026-04-11)
+
+
+### Bug Fixes
+
+* analytics date filter excludes end date and ignores user timezone ([#207](https://github.com/dfw-dba/my-site/issues/207)) ([0f5bf55](https://github.com/dfw-dba/my-site/commit/0f5bf558107442eb135a6394589580a1f57b997d))
+
 ## [1.20.0](https://github.com/dfw-dba/my-site/compare/v1.19.0...v1.20.0) (2026-04-11)
 
 
