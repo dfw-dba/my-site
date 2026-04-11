@@ -8,6 +8,7 @@ import type {
   ResumeContactCreate,
   ResumeRecommendationsReplace,
   PerformanceReviewCreate,
+  AnalyticsFilters,
 } from "../types";
 
 function onMutationError(error: Error) {
@@ -124,28 +125,28 @@ export function useCaptureMetrics() {
 
 // ── Visitor Analytics ───────────────────────────────────────────────────────
 
-export function useAnalyticsSummary(params: { start_date?: string; end_date?: string; page_path?: string; exclude_bots?: boolean } = {}) {
+export function useAnalyticsSummary(params: AnalyticsFilters = {}) {
   return useQuery({
     queryKey: ["admin-analytics-summary", params],
     queryFn: () => api.admin.analytics.summary(params),
   });
 }
 
-export function useAnalyticsVisitors(params: { start_date?: string; end_date?: string; exclude_bots?: boolean } = {}) {
+export function useAnalyticsVisitors(params: AnalyticsFilters = {}) {
   return useQuery({
     queryKey: ["admin-analytics-visitors", params],
     queryFn: () => api.admin.analytics.visitors(params),
   });
 }
 
-export function useAnalyticsGeo(params: { start_date?: string; end_date?: string; exclude_bots?: boolean } = {}) {
+export function useAnalyticsGeo(params: AnalyticsFilters = {}) {
   return useQuery({
     queryKey: ["admin-analytics-geo", params],
     queryFn: () => api.admin.analytics.geo(params),
   });
 }
 
-export function useAnalyticsTimeseries(params: { start_date?: string; end_date?: string; exclude_bots?: boolean } = {}) {
+export function useAnalyticsTimeseries(params: AnalyticsFilters = {}) {
   return useQuery({
     queryKey: ["admin-analytics-timeseries", params],
     queryFn: () => api.admin.analytics.timeseries(params),

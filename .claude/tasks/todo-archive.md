@@ -4,6 +4,22 @@ _Completed sprints moved from `todo.md`. For current work, see `todo.md`._
 
 ---
 
+## Sprint 52: GeoIP Log Run Tracking
+
+### Implementation
+- [x] 52.1 Create migration `010_geoip_log_run_tracking.sql` (add run_id + last_message columns, recreate query function)
+- [x] 52.2 Track `last_message` in `ProgressLogger`, include both columns in INSERT (`update.py`)
+- [x] 52.3 Update `GeoipUpdateLog` TypeScript type with new nullable fields
+- [x] 52.4 Add Run and Last Message columns to Update History table (`GeoDataTab.tsx`)
+- [x] 52.5 Bump CDK migration version 20 → 21
+
+### Verification
+- [x] 52.6 Backend lint + tests pass (41/41)
+- [x] 52.7 Frontend type check + tests pass (25/25)
+- [x] 52.8 CDK TypeScript compiles
+
+---
+
 ## Sprint 51: Fix GeoIP Silent Timeout — S3 Status Feedback
 
 ### Docker

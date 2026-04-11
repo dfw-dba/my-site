@@ -266,6 +266,12 @@ async def get_analytics_summary(
     end_date: str | None = None,
     page_path: str | None = None,
     exclude_bots: bool = True,
+    device_type: str | None = None,
+    browser: str | None = None,
+    os: str | None = None,
+    country_code: str | None = None,
+    region: str | None = None,
+    city: str | None = None,
 ) -> Any:
     """Fetch visitor analytics summary dashboard data."""
     filters: dict[str, Any] = {"exclude_bots": exclude_bots}
@@ -275,6 +281,10 @@ async def get_analytics_summary(
         filters["end_date"] = end_date
     if page_path:
         filters["page_path"] = page_path
+    for key in ("device_type", "browser", "os", "country_code", "region", "city"):
+        val = locals()[key]
+        if val:
+            filters[key] = val
     return await db.get_analytics_summary(filters)
 
 
@@ -286,6 +296,12 @@ async def get_analytics_visitors(
     start_date: str | None = None,
     end_date: str | None = None,
     exclude_bots: bool = True,
+    device_type: str | None = None,
+    browser: str | None = None,
+    os: str | None = None,
+    country_code: str | None = None,
+    region: str | None = None,
+    city: str | None = None,
 ) -> Any:
     """Fetch visitor-level analytics: sessions, return visitors."""
     filters: dict[str, Any] = {"exclude_bots": exclude_bots}
@@ -293,6 +309,10 @@ async def get_analytics_visitors(
         filters["start_date"] = start_date
     if end_date:
         filters["end_date"] = end_date
+    for key in ("device_type", "browser", "os", "country_code", "region", "city"):
+        val = locals()[key]
+        if val:
+            filters[key] = val
     return await db.get_analytics_visitors(filters)
 
 
@@ -304,6 +324,12 @@ async def get_analytics_geo(
     start_date: str | None = None,
     end_date: str | None = None,
     exclude_bots: bool = True,
+    device_type: str | None = None,
+    browser: str | None = None,
+    os: str | None = None,
+    country_code: str | None = None,
+    region: str | None = None,
+    city: str | None = None,
 ) -> Any:
     """Fetch geographic breakdown of visitors."""
     filters: dict[str, Any] = {"exclude_bots": exclude_bots}
@@ -311,6 +337,10 @@ async def get_analytics_geo(
         filters["start_date"] = start_date
     if end_date:
         filters["end_date"] = end_date
+    for key in ("device_type", "browser", "os", "country_code", "region", "city"):
+        val = locals()[key]
+        if val:
+            filters[key] = val
     return await db.get_analytics_geo(filters)
 
 
@@ -322,6 +352,12 @@ async def get_analytics_timeseries(
     start_date: str | None = None,
     end_date: str | None = None,
     exclude_bots: bool = True,
+    device_type: str | None = None,
+    browser: str | None = None,
+    os: str | None = None,
+    country_code: str | None = None,
+    region: str | None = None,
+    city: str | None = None,
 ) -> Any:
     """Fetch daily page view and unique visitor time series."""
     filters: dict[str, Any] = {"exclude_bots": exclude_bots}
@@ -329,6 +365,10 @@ async def get_analytics_timeseries(
         filters["start_date"] = start_date
     if end_date:
         filters["end_date"] = end_date
+    for key in ("device_type", "browser", "os", "country_code", "region", "city"):
+        val = locals()[key]
+        if val:
+            filters[key] = val
     return await db.get_analytics_timeseries(filters)
 
 
