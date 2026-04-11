@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.1](https://github.com/dfw-dba/my-site/compare/v1.18.0...v1.18.1) (2026-04-11)
+
+
+### Reverts
+
+* remove bastion IAM scoping policy ([#201](https://github.com/dfw-dba/my-site/issues/201)) ([25687b8](https://github.com/dfw-dba/my-site/commit/25687b83d98d7446d5c418fe940d4322d0cc0d6c))
+
 ## [1.18.0](https://github.com/dfw-dba/my-site/compare/v1.17.0...v1.18.0) (2026-04-11)
 
 
