@@ -27,7 +27,7 @@ export default function HorizontalBarChart({ data, color = "#3b82f6", height = 3
           dataKey="value"
           fill={color}
           radius={[0, 4, 4, 0]}
-          onClick={onBarClick ? (entry: { name: string }) => onBarClick(entry.name) : undefined}
+          onClick={onBarClick ? (entry) => { if (entry.name) onBarClick(entry.name); } : undefined}
         >
           {data.map((entry, i) => (
             <Cell
