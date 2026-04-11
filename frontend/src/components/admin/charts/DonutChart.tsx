@@ -25,7 +25,7 @@ export default function DonutChart({ data, colors = DEFAULT_COLORS, height = 250
           innerRadius={50}
           outerRadius={80}
           paddingAngle={2}
-          onClick={onSegmentClick ? (_, index) => onSegmentClick(data[index].name) : undefined}
+          onClick={onSegmentClick ? (_, index) => { if (index !== undefined) onSegmentClick(data[index].name); } : undefined}
           style={onSegmentClick ? { cursor: "pointer" } : undefined}
         >
           {data.map((entry, i) => (
