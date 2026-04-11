@@ -1310,6 +1310,7 @@ comment on function api.insert_visitor_event(jsonb) is
 create or replace function api.get_analytics_summary(p_filters jsonb default '{}')
 returns jsonb as $$
 declare
+    v_tz text;
     v_start timestamptz;
     v_end timestamptz;
     v_page_path text;
@@ -1327,8 +1328,15 @@ declare
     v_browsers jsonb;
     v_os_breakdown jsonb;
 begin
-    v_start := coalesce((p_filters->>'start_date')::timestamptz, now() - interval '30 days');
-    v_end := coalesce((p_filters->>'end_date')::timestamptz, now());
+    v_tz := coalesce(p_filters->>'timezone', 'UTC');
+    v_start := coalesce(
+        ((p_filters->>'start_date')::date::timestamp at time zone v_tz),
+        now() - interval '30 days'
+    );
+    v_end := coalesce(
+        (((p_filters->>'end_date')::date + 1)::timestamp at time zone v_tz),
+        now()
+    );
     v_page_path := p_filters->>'page_path';
     v_exclude_bots := coalesce((p_filters->>'exclude_bots')::boolean, true);
     v_device_type := p_filters->>'device_type';
@@ -1345,7 +1353,7 @@ begin
         'unique_sessions', count(distinct session_id)
     ) into v_totals
     from internal.page_views
-    where created_at between v_start and v_end
+    where created_at >= v_start and created_at < v_end
       and (v_page_path is null or page_path = v_page_path)
       and (not v_exclude_bots or is_bot = false)
       and (v_device_type is null or device_type = v_device_type)
@@ -1361,7 +1369,7 @@ begin
       from (
         select page_path, count(*) as views, count(distinct visitor_hash) as unique_visitors
           from internal.page_views
-         where created_at between v_start and v_end
+         where created_at >= v_start and created_at < v_end
            and (not v_exclude_bots or is_bot = false)
            and (v_device_type is null or device_type = v_device_type)
            and (v_browser is null or browser = v_browser)
@@ -1380,7 +1388,7 @@ begin
       from (
         select referrer, count(*) as views
           from internal.page_views
-         where created_at between v_start and v_end
+         where created_at >= v_start and created_at < v_end
            and referrer is not null and referrer != ''
            and (not v_exclude_bots or is_bot = false)
            and (v_device_type is null or device_type = v_device_type)
@@ -1400,7 +1408,7 @@ begin
       from (
         select device_type, count(*) as count
           from internal.page_views
-         where created_at between v_start and v_end
+         where created_at >= v_start and created_at < v_end
            and device_type is not null
            and (not v_exclude_bots or is_bot = false)
            and (v_device_type is null or device_type = v_device_type)
@@ -1419,7 +1427,7 @@ begin
       from (
         select browser, count(*) as count
           from internal.page_views
-         where created_at between v_start and v_end
+         where created_at >= v_start and created_at < v_end
            and browser is not null
            and (not v_exclude_bots or is_bot = false)
            and (v_device_type is null or device_type = v_device_type)
@@ -1439,7 +1447,7 @@ begin
       from (
         select os, count(*) as count
           from internal.page_views
-         where created_at between v_start and v_end
+         where created_at >= v_start and created_at < v_end
            and os is not null
            and (not v_exclude_bots or is_bot = false)
            and (v_device_type is null or device_type = v_device_type)
@@ -1474,6 +1482,7 @@ comment on function api.get_analytics_summary(jsonb) is
 create or replace function api.get_analytics_visitors(p_filters jsonb default '{}')
 returns jsonb as $$
 declare
+    v_tz text;
     v_start timestamptz;
     v_end timestamptz;
     v_exclude_bots boolean;
@@ -1488,8 +1497,15 @@ declare
     v_session_stats jsonb;
     v_scroll_depth jsonb;
 begin
-    v_start := coalesce((p_filters->>'start_date')::timestamptz, now() - interval '30 days');
-    v_end := coalesce((p_filters->>'end_date')::timestamptz, now());
+    v_tz := coalesce(p_filters->>'timezone', 'UTC');
+    v_start := coalesce(
+        ((p_filters->>'start_date')::date::timestamp at time zone v_tz),
+        now() - interval '30 days'
+    );
+    v_end := coalesce(
+        (((p_filters->>'end_date')::date + 1)::timestamp at time zone v_tz),
+        now()
+    );
     v_exclude_bots := coalesce((p_filters->>'exclude_bots')::boolean, true);
     v_device_type := p_filters->>'device_type';
     v_browser := p_filters->>'browser';
@@ -1509,7 +1525,7 @@ begin
                count(*) as page_count,
                extract(epoch from max(created_at) - min(created_at))::numeric as duration_seconds
           from internal.page_views
-         where created_at between v_start and v_end
+         where created_at >= v_start and created_at < v_end
            and (not v_exclude_bots or is_bot = false)
            and (v_device_type is null or device_type = v_device_type)
            and (v_browser is null or browser = v_browser)
@@ -1528,11 +1544,11 @@ begin
         select ve.session_id, max((ve.event_data->>'depth')::numeric) as max_depth
           from internal.visitor_events as ve
          where ve.event_type = 'scroll'
-           and ve.created_at between v_start and v_end
+           and ve.created_at >= v_start and ve.created_at < v_end
            and exists (
                select 1 from internal.page_views as pv
                 where pv.session_id = ve.session_id
-                  and pv.created_at between v_start and v_end
+                  and pv.created_at >= v_start and pv.created_at < v_end
                   and (not v_exclude_bots or pv.is_bot = false)
                   and (v_device_type is null or pv.device_type = v_device_type)
                   and (v_browser is null or pv.browser = v_browser)
@@ -1556,7 +1572,7 @@ begin
             max(pv.created_at) as last_view,
             extract(epoch from max(pv.created_at) - min(pv.created_at))::int as duration_seconds
           from internal.page_views as pv
-         where pv.created_at between v_start and v_end
+         where pv.created_at >= v_start and pv.created_at < v_end
            and (not v_exclude_bots or pv.is_bot = false)
            and (v_device_type is null or pv.device_type = v_device_type)
            and (v_browser is null or pv.browser = v_browser)
@@ -1580,7 +1596,7 @@ begin
             min(created_at) as first_seen,
             max(created_at) as last_seen
           from internal.page_views
-         where created_at between v_start and v_end
+         where created_at >= v_start and created_at < v_end
            and (not v_exclude_bots or is_bot = false)
            and (v_device_type is null or device_type = v_device_type)
            and (v_browser is null or browser = v_browser)
@@ -1612,6 +1628,7 @@ comment on function api.get_analytics_visitors(jsonb) is
 create or replace function api.get_analytics_geo(p_filters jsonb default '{}')
 returns jsonb as $$
 declare
+    v_tz text;
     v_start timestamptz;
     v_end timestamptz;
     v_exclude_bots boolean;
@@ -1625,8 +1642,15 @@ declare
     v_regions jsonb;
     v_cities jsonb;
 begin
-    v_start := coalesce((p_filters->>'start_date')::timestamptz, now() - interval '30 days');
-    v_end := coalesce((p_filters->>'end_date')::timestamptz, now());
+    v_tz := coalesce(p_filters->>'timezone', 'UTC');
+    v_start := coalesce(
+        ((p_filters->>'start_date')::date::timestamp at time zone v_tz),
+        now() - interval '30 days'
+    );
+    v_end := coalesce(
+        (((p_filters->>'end_date')::date + 1)::timestamp at time zone v_tz),
+        now()
+    );
     v_exclude_bots := coalesce((p_filters->>'exclude_bots')::boolean, true);
     v_device_type := p_filters->>'device_type';
     v_browser := p_filters->>'browser';
@@ -1641,7 +1665,7 @@ begin
       from (
         select country_code, country_name, count(*) as views, count(distinct visitor_hash) as unique_visitors
           from internal.page_views
-         where created_at between v_start and v_end
+         where created_at >= v_start and created_at < v_end
            and country_code is not null
            and (not v_exclude_bots or is_bot = false)
            and (v_device_type is null or device_type = v_device_type)
@@ -1661,7 +1685,7 @@ begin
       from (
         select country_code, region, count(*) as views, count(distinct visitor_hash) as unique_visitors
           from internal.page_views
-         where created_at between v_start and v_end
+         where created_at >= v_start and created_at < v_end
            and region is not null
            and (not v_exclude_bots or is_bot = false)
            and (v_device_type is null or device_type = v_device_type)
@@ -1681,7 +1705,7 @@ begin
       from (
         select country_code, region, city, count(*) as views, count(distinct visitor_hash) as unique_visitors
           from internal.page_views
-         where created_at between v_start and v_end
+         where created_at >= v_start and created_at < v_end
            and city is not null
            and (not v_exclude_bots or is_bot = false)
            and (v_device_type is null or device_type = v_device_type)
@@ -1714,6 +1738,7 @@ comment on function api.get_analytics_geo(jsonb) is
 create or replace function api.get_analytics_timeseries(p_filters jsonb default '{}')
 returns jsonb as $$
 declare
+    v_tz text;
     v_start timestamptz;
     v_end timestamptz;
     v_exclude_bots boolean;
@@ -1725,8 +1750,15 @@ declare
     v_city text;
     v_daily jsonb;
 begin
-    v_start := coalesce((p_filters ->> 'start_date')::timestamptz, now() - interval '30 days');
-    v_end := coalesce((p_filters ->> 'end_date')::timestamptz, now());
+    v_tz := coalesce(p_filters ->> 'timezone', 'UTC');
+    v_start := coalesce(
+        ((p_filters ->> 'start_date')::date::timestamp at time zone v_tz),
+        now() - interval '30 days'
+    );
+    v_end := coalesce(
+        (((p_filters ->> 'end_date')::date + 1)::timestamp at time zone v_tz),
+        now()
+    );
     v_exclude_bots := coalesce((p_filters ->> 'exclude_bots')::boolean, true);
     v_device_type := p_filters->>'device_type';
     v_browser := p_filters->>'browser';
@@ -1738,11 +1770,11 @@ begin
     select coalesce(jsonb_agg(row_to_json(t)::jsonb order by t.date), '[]')
       into v_daily
       from (
-        select date(created_at) as date,
+        select date(created_at at time zone v_tz) as date,
                count(*) as views,
                count(distinct visitor_hash) as unique_visitors
           from internal.page_views
-         where created_at between v_start and v_end
+         where created_at >= v_start and created_at < v_end
            and (not v_exclude_bots or is_bot = false)
            and (v_device_type is null or device_type = v_device_type)
            and (v_browser is null or browser = v_browser)
@@ -1750,7 +1782,7 @@ begin
            and (v_country is null or country_code = v_country)
            and (v_region is null or region = v_region)
            and (v_city is null or city = v_city)
-         group by date(created_at)
+         group by date(created_at at time zone v_tz)
       ) as t;
 
     return jsonb_build_object('daily', v_daily);
