@@ -85,6 +85,41 @@ export const api = {
     timeline: () => request<ProfessionalEntry[]>("/api/resume/timeline"),
   },
 
+  analytics: {
+    summary: (params: AnalyticsFilters = {}) => {
+      const qs = new URLSearchParams();
+      for (const [key, val] of Object.entries(params)) {
+        if (val !== undefined && val !== null) qs.set(key, String(val));
+      }
+      const query = qs.toString();
+      return request<AnalyticsSummary>(`/api/analytics/summary${query ? `?${query}` : ""}`);
+    },
+    visitors: (params: AnalyticsFilters = {}) => {
+      const qs = new URLSearchParams();
+      for (const [key, val] of Object.entries(params)) {
+        if (val !== undefined && val !== null) qs.set(key, String(val));
+      }
+      const query = qs.toString();
+      return request<AnalyticsVisitors>(`/api/analytics/visitors${query ? `?${query}` : ""}`);
+    },
+    geo: (params: AnalyticsFilters = {}) => {
+      const qs = new URLSearchParams();
+      for (const [key, val] of Object.entries(params)) {
+        if (val !== undefined && val !== null) qs.set(key, String(val));
+      }
+      const query = qs.toString();
+      return request<AnalyticsGeo>(`/api/analytics/geo${query ? `?${query}` : ""}`);
+    },
+    timeseries: (params: AnalyticsFilters = {}) => {
+      const qs = new URLSearchParams();
+      for (const [key, val] of Object.entries(params)) {
+        if (val !== undefined && val !== null) qs.set(key, String(val));
+      }
+      const query = qs.toString();
+      return request<AnalyticsTimeseries>(`/api/analytics/timeseries${query ? `?${query}` : ""}`);
+    },
+  },
+
   admin: {
     logs: {
       list: async (params: { level?: string; search?: string; client_ip?: string; limit?: number; offset?: number } = {}) => {
