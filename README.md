@@ -134,7 +134,7 @@ Before deploying, complete the AWS account setup:
 1. **[AWS Account Setup Guide](docs/aws-setup.md)** — Create your AWS account(s), configure IAM Identity Center, register a domain, set up GitHub OIDC authentication, create the deploy IAM role, bootstrap CDK, and configure GitHub secrets/variables. If you want a staging environment (optional), the guide also covers creating a separate staging account with AWS Organizations.
 
 2. **Local tools required:**
-   - Node.js 22+ and npm
+   - Node.js 22 and npm 10+ (pinned via `.nvmrc` — run `nvm use` in the repo root)
    - AWS CLI v2 installed and configured (covered in the setup guide)
    - Docker installed (for building Lambda images)
 
