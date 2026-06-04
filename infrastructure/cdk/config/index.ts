@@ -11,7 +11,7 @@
  *   CDK_DB_INSTANCE_CLASS, CDK_LAMBDA_MEMORY_MB,
  *   CDK_API_THROTTLE_RATE, CDK_API_THROTTLE_BURST, CDK_BUDGET_LIMIT_USD
  *
- * Feature toggles are in features.json (per-environment, checked into repo).
+ * Feature toggles are in features.json (checked into repo).
  */
 
 import * as fs from "fs";
@@ -22,7 +22,6 @@ interface FeatureToggles {
 }
 
 interface FeaturesConfig {
-  staging: FeatureToggles;
   production: FeatureToggles;
 }
 
@@ -32,8 +31,7 @@ function loadFeatures(): FeatureToggles {
     "utf-8",
   );
   const all: FeaturesConfig = JSON.parse(raw);
-  const env = process.env.CDK_IS_STAGING === "true" ? "staging" : "production";
-  return all[env];
+  return all.production;
 }
 
 function required(name: string, ...fallbacks: string[]): string {
@@ -67,7 +65,6 @@ export const config = {
   apiThrottleBurst: Number(optional("CDK_API_THROTTLE_BURST", "50")),
   budgetLimitUsd: Number(optional("CDK_BUDGET_LIMIT_USD", "10")),
   budgetAlertEmail: required("CDK_BUDGET_EMAIL"),
-  isStaging: process.env.CDK_IS_STAGING === "true",
   autoGenerateBucketNames: optional("CDK_AUTO_BUCKET_NAMES", "true") === "true",
   features: loadFeatures(),
 };

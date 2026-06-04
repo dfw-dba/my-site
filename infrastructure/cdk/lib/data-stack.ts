@@ -31,7 +31,6 @@ export class DataStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: DataStackProps) {
     super(scope, id, props);
 
-    const isStaging = config.isStaging;
     const ssmPrefix = "/mysite";
 
     // Use default VPC to avoid NAT Gateway costs
@@ -66,10 +65,10 @@ export class DataStack extends cdk.Stack {
       allocatedStorage: 20,
       maxAllocatedStorage: 20,
       multiAz: false,
-      backupRetention: isStaging ? cdk.Duration.days(1) : cdk.Duration.days(30),
+      backupRetention: cdk.Duration.days(30),
       iamAuthentication: true,
-      deletionProtection: !isStaging,
-      removalPolicy: isStaging ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN,
+      deletionProtection: true,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
       storageEncrypted: true,
       // Database Insights Advanced (~$5-6/month on t4g.micro with 2 vCPUs).
       // Adds anomaly detection, recommendations, and 15-month PI retention.
@@ -223,7 +222,7 @@ export class DataStack extends cdk.Stack {
       },
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
       deletionProtection: true,
-      removalPolicy: isStaging ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
     const userPoolClient = userPool.addClient("SpaClient", {
@@ -372,7 +371,7 @@ export class DataStack extends cdk.Stack {
 
     const geoipCluster = new ecs.Cluster(this, "GeoipCluster", {
       vpc: this.vpc,
-      clusterName: `mysite-geoip${isStaging ? "-stage" : ""}`,
+      clusterName: "mysite-geoip",
     });
 
     const geoipTaskDef = new ecs.FargateTaskDefinition(this, "GeoipTaskDef", {
@@ -433,7 +432,7 @@ export class DataStack extends cdk.Stack {
     // at deploy time (custom resource) and at runtime (S3 trigger from admin UI).
     // This prevents CDK deploys from overwriting runtime schedule changes.
 
-    const geoipScheduleRuleName = `mysite-geoip-schedule${isStaging ? "-stage" : ""}`;
+    const geoipScheduleRuleName = "mysite-geoip-schedule";
 
     // Explicit IAM role for EventBridge → ECS (the schedule manager Lambda
     // configures EventBridge to assume this role when triggering ECS tasks)
@@ -457,7 +456,7 @@ export class DataStack extends cdk.Stack {
     );
 
     const geoipScheduleFn = new lambda.Function(this, "GeoipScheduleFn", {
-      functionName: `mysite-geoip-schedule${isStaging ? "-stage" : ""}`,
+      functionName: "mysite-geoip-schedule",
       runtime: lambda.Runtime.PYTHON_3_12,
       handler: "index.handler",
       code: lambda.Code.fromInline(`
@@ -610,7 +609,7 @@ def handler(event, context):
     this.geoipTriggerBucket = geoipTriggerBucket;
 
     const geoipTriggerFn = new lambda.Function(this, "GeoipTriggerFn", {
-      functionName: `mysite-geoip-trigger${isStaging ? "-stage" : ""}`,
+      functionName: "mysite-geoip-trigger",
       runtime: lambda.Runtime.PYTHON_3_12,
       handler: "index.handler",
       code: lambda.Code.fromInline(`

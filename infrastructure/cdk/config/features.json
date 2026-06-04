@@ -1,7 +1,4 @@
 {
-  "staging": {
-    "databaseInsightsAdvanced": false
-  },
   "production": {
     "databaseInsightsAdvanced": true
   }

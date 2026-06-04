@@ -26,11 +26,11 @@ You are an infrastructure/DevOps engineer for a personal website/PWA. The app ru
 ## CI/CD
 
 - `.github/workflows/ci.yml` — two jobs: `backend` (uv install + ruff + pytest) and `frontend` (npm ci + vitest)
-- `.github/workflows/deploy.yml` — combined deploy pipeline (stage → prod)
+- `.github/workflows/deploy.yml` — production deploy pipeline
 
 ### Deploy workflow structure
 
-Both deploy workflows follow this sequence:
+The deploy workflow follows this sequence:
 1. **Pre-flight validation** — checks OIDC provider, CDK bootstrap
 2. **Failed stack cleanup** — auto-deletes ROLLBACK_COMPLETE/ROLLBACK_FAILED/DELETE_FAILED stacks
 3. **Phase 1 deploy** — deploys `MySiteDns` only
@@ -39,14 +39,14 @@ Both deploy workflows follow this sequence:
 6. **Frontend build + S3 sync + CloudFront invalidation**
 7. **Post-deploy validation** — runs PR test plan commands
 
-## AWS Stack (per environment)
+## AWS Stack
 
-Each environment (prod and staging) is a fully self-contained deployment in its own AWS account:
+The production environment is a fully self-contained deployment in its own AWS account:
 
-- Route 53 hosted zone (prod: `example.com`, staging: `stage.example.com` via subdomain delegation from prod Route 53 zone or external registrar)
+- Route 53 hosted zone (`example.com`)
 - ACM wildcard certificate (DNS-validated)
 - RDS PostgreSQL with IAM auth
-- Cognito user pool (separate per account)
+- Cognito user pool
 - VPC endpoints (Cognito IDP, S3 Gateway)
 - Bastion host (t4g.nano, SSM Session Manager)
 - API Gateway + Lambda for backend
@@ -60,14 +60,6 @@ Controlled by `CDK_AUTO_BUCKET_NAMES` env var (default: `true`):
 - `true`: CDK auto-generates globally unique names (recommended for new deployments)
 - `false`: uses explicit `${domainName}-frontend` / `${domainName}-media` names (for existing deployments)
 
-## Staging Environment
-
-- Staging deploys the **same 4 CDK stacks** (`MySiteDns`, `MySiteCert`, `MySiteData`, `MySiteApp`) to a separate AWS account
-- Configuration differences are driven by env vars (`CDK_IS_STAGING=true`, `CDK_DOMAIN_NAME=stage.example.com`)
-- Staging has relaxed operational parameters: 1-day DB backup, no deletion protection, DESTROY removal policies
-- DNS: subdomain delegation from prod Route 53 zone (or external registrar if prod isn't deployed yet) → staging Route 53 zone
-- Staging domains: `stage.example.com` (frontend), `api.stage.example.com` (API)
-
 ## Environment Variables
 
 - Backend: `DATABASE_URL`, `ADMIN_API_KEY`, `STORAGE_*` vars
@@ -80,5 +72,5 @@ Controlled by `CDK_AUTO_BUCKET_NAMES` env var (default: `true`):
 - `docker/backend/Dockerfile` — backend container
 - `docker/frontend/Dockerfile` — frontend container
 - `.github/workflows/ci.yml` — CI pipeline
-- `.github/workflows/deploy.yml` — combined deploy pipeline (stage → prod)
+- `.github/workflows/deploy.yml` — production deploy pipeline
 - `.env.example` — environment variable template

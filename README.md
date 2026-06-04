@@ -19,44 +19,39 @@ A fork-friendly, full-stack personal site with a "database as API" architecture 
 
 ## Architecture
 
-Production and staging are fully isolated in separate AWS accounts. Each account deploys the same 4 CDK stacks with environment-specific configuration.
+The full stack deploys as 4 CDK stacks in a single AWS account.
 
 ```
-  Production Account                          Staging Account
-  ─────────────────                           ───────────────
-  Route 53: yourdomain.com                    Route 53: stage.yourdomain.com
-    │  NS delegation: stage ──────────────►     (delegated zone)
+  Route 53: yourdomain.com
     │
-    ├── A → CloudFront (SPA + media)          ├── A → CloudFront (SPA + media)
-    │        S3 + OAC                         │        S3 + OAC
-    │                                         │
-    ├── A → API Gateway v2                    ├── A → API Gateway v2
-    │        api.yourdomain.com               │        api.stage.yourdomain.com
-    │        │                                │        │
-    │        ▼                                │        ▼
-    │     Lambda (FastAPI+Mangum)             │     Lambda (FastAPI+Mangum)
-    │        │                                │        │
-    │   ┌────┼────┐                           │   ┌────┼────┐
-    │   ▼    ▼    ▼                           │   ▼    ▼    ▼
-    │  RDS Cognito S3                         │  RDS Cognito S3
-    │  PG17 Pool  (media)                     │  PG17 Pool  (media)
-    │   │                                     │   │
-    │  Bastion (SSM)                          │  Bastion (SSM)
-    │                                         │
-    │  ECS Fargate (GeoIP refresh)            │  ECS Fargate (GeoIP refresh)
-    │    EventBridge: Wed+Sat 06:00 UTC       │    EventBridge: Wed+Sat 06:00 UTC
-    │    S3 trigger → Lambda → RunTask        │    S3 trigger → Lambda → RunTask
-    │                                         │
-    ├── VPC endpoints (Cognito, S3)           ├── VPC endpoints (Cognito, S3)
-    ├── ACM wildcard cert                     ├── ACM wildcard cert
-    └── Budget alarm                          └── Budget alarm
+    ├── A → CloudFront (SPA + media)
+    │        S3 + OAC
+    │
+    ├── A → API Gateway v2
+    │        api.yourdomain.com
+    │        │
+    │        ▼
+    │     Lambda (FastAPI+Mangum)
+    │        │
+    │   ┌────┼────┐
+    │   ▼    ▼    ▼
+    │  RDS Cognito S3
+    │  PG17 Pool  (media)
+    │   │
+    │  Bastion (SSM)
+    │
+    │  ECS Fargate (GeoIP refresh)
+    │    EventBridge: Wed+Sat 06:00 UTC
+    │    S3 trigger → Lambda → RunTask
+    │
+    ├── VPC endpoints (Cognito, S3)
+    ├── ACM wildcard cert
+    └── Budget alarm
 ```
 
 > **[View interactive architecture diagram](docs/architecture.md)** — detailed Mermaid diagrams showing all resources, request flows, and stack dependencies.
 
 ## Cost Estimate
-
-**Production account:**
 
 | Service | Year 1/month | After free tier |
 |---------|-------------|-----------------|
@@ -70,20 +65,7 @@ Production and staging are fully isolated in separate AWS accounts. Each account
 
 > Database Insights Advanced is disabled by default. When enabled via `features.json`, it adds ~$5.50/month for Performance Insights with 15-month retention and anomaly detection. See [Feature Toggles](#feature-toggles).
 
-**Staging account (optional, separate AWS account):**
-
-| Service | Year 1/month | After free tier |
-|---------|-------------|-----------------|
-| Route 53 hosted zone | $0.50 | $0.50 |
-| RDS db.t4g.micro | $0.00 | $12.50 |
-| VPC endpoint (cognito-idp) | $7.20 | $7.20 |
-| Bastion host (t4g.nano) | ~$3.00 | ~$3.00 |
-| CloudFront / S3 / Lambda / API GW / Cognito / ACM | ~$0 | ~$0 |
-| GeoIP refresh (Fargate + Secrets Manager) | ~$0.45 | ~$0.45 |
-| Database Insights Advanced (optional) | ~$5.50 | ~$5.50 |
-| **Total** | **~$11/month** | **~$24/month** |
-
-Built-in cost safeguards: API Gateway throttling (10 req/s), Lambda reserved concurrency (5), and a configurable budget alarm (per account).
+Built-in cost safeguards: API Gateway throttling (10 req/s), Lambda reserved concurrency (5), and a configurable budget alarm.
 
 ## Running Locally
 
@@ -131,7 +113,7 @@ This section walks you through deploying your own instance from a fork. The enti
 
 Before deploying, complete the AWS account setup:
 
-1. **[AWS Account Setup Guide](docs/aws-setup.md)** — Create your AWS account(s), configure IAM Identity Center, register a domain, set up GitHub OIDC authentication, create the deploy IAM role, bootstrap CDK, and configure GitHub secrets/variables. If you want a staging environment (optional), the guide also covers creating a separate staging account with AWS Organizations.
+1. **[AWS Account Setup Guide](docs/aws-setup.md)** — Create your AWS account, configure IAM Identity Center, register a domain, set up GitHub OIDC authentication, create the deploy IAM role, bootstrap CDK, and configure GitHub secrets/variables.
 
 2. **Local tools required:**
    - Node.js 22 and npm 10+ (pinned via `.nvmrc` — run `nvm use` in the repo root)
@@ -219,8 +201,6 @@ This creates 4 CloudFormation stacks:
 - **MySiteCert** — ACM wildcard certificate (us-east-1, DNS-validated)
 - **MySiteData** — RDS PostgreSQL, Cognito user pool, VPC endpoints, bastion host
 - **MySiteApp** — S3 + CloudFront, Lambda, API Gateway, Route 53 records, budget alarm
-
-Staging deploys the same 4 stacks to a separate AWS account (see [Staging Environment](#staging-environment-optional) below).
 
 Takes ~10–15 minutes (RDS is the slow part). Note the outputs — you'll need them for the next steps.
 
@@ -471,16 +451,15 @@ aws rds start-db-instance --db-instance-identifier $RDS_ID
 
 ## Continuous Deployment
 
-Deployment uses a **single combined workflow** (`deploy.yml`) with a 6-job chain:
+Deployment uses a **single workflow** (`deploy.yml`) with a 3-job chain:
 
 ```
-Merge to main → CI → deploy-stage-infra → deploy-stage-frontend → stage-post-deploy-validation → deploy-infra → deploy-frontend → post-deploy-validation
+Merge to main → CI → deploy-infra → deploy-frontend → post-deploy-validation
 ```
 
 1. Push to `main` (or merge a PR)
 2. CI runs (lint, type check, tests)
-3. On CI success, the **Deploy** workflow runs automatically — staging first, then production
-4. When staging is not enabled (`DEPLOY_STAGING` not set), staging jobs are skipped and production runs directly
+3. On CI success, the **Deploy** workflow runs automatically
 
 Each deploy phase includes:
 - **Pre-flight validation**: checks OIDC provider and CDK bootstrap status before deploying
@@ -493,62 +472,9 @@ Each deploy phase includes:
 > This avoids wasting CI minutes on documentation-only PRs and release-please merges.
 > Use `workflow_dispatch` to manually trigger CI if needed.
 
-### Staging Environment (Optional)
-
-Staging deploys to a **separate AWS account** with full environment isolation. It uses the same 4 CDK stacks as production, configured via environment-specific variables.
-
-When `DEPLOY_STAGING=true` is set as a GitHub Actions variable, the staging jobs in the **Deploy** workflow (`deploy.yml`) run automatically after CI succeeds on `main`. Staging validation includes:
-- **Regression tests**: public endpoint checks (health, resume, auth enforcement, frontend)
-- **Admin regression tests**: full CRUD against all admin endpoints (resume entries, reviews, recommendations, sections, profile image, logs) — requires `REGRESSION_TEST_API_KEY` secret. Tests create data, verify via public API, then clean up.
-- **PR-specific validation**: extracts commands from the PR's `## Stage Test Plan` section
-
-Results are commented on the PR, and table items are automatically marked as passed/failed.
-
-Trigger manually via **Actions → Deploy → Run workflow**.
-
-**What staging deploys:** A fully self-contained infrastructure in its own AWS account — Route 53 hosted zone, ACM certificate, RDS, Cognito user pool, VPC endpoints, bastion host, S3 buckets, CloudFront, Lambda, API Gateway, and budget alarm. Staging has no dependencies on the production account.
-
-**Staging domains:**
-- Frontend: `stage.<domain>` (e.g., `stage.example.com`)
-- API: `api.stage.<domain>` (e.g., `api.stage.example.com`)
-
-**Operational differences from production:**
-- RDS: 1-day backup retention (vs 30 days), no deletion protection
-- All resources: DESTROY removal policy (easy teardown)
-- Cognito: separate user pool (staging admin created independently)
-
-**Setup:**
-
-1. Create or identify a staging AWS account
-2. Create GitHub OIDC identity provider in the staging account:
-   ```bash
-   aws iam create-open-id-connect-provider \
-     --url https://token.actions.githubusercontent.com \
-     --client-id-list sts.amazonaws.com \
-     --thumbprint-list 6938fd4d98bab03faadb97b34396831e3780aea1
-   ```
-3. Create IAM deploy role (same trust policy and permissions as production — see [Step 6](#6-create-iam-role-for-github-actions))
-4. Bootstrap CDK in the staging account:
-   ```bash
-   npx cdk bootstrap aws://<STAGING_ACCOUNT_ID>/us-east-1
-   ```
-5. Add GitHub secrets and variables (see [Step 7](#7-set-github-repository-secrets-and-variables)):
-   - Secrets: `AWS_STAGE_DEPLOY_ROLE_ARN`, `AWS_STAGE_ACCOUNT_ID`, `CDK_STAGE_BUDGET_EMAIL`, `REGRESSION_TEST_API_KEY` (64-char random hex for admin regression tests)
-   - Variables: `CDK_STAGE_DOMAIN_NAME` (e.g., `stage.example.com`), `DEPLOY_STAGING` = `true`
-
-> **S3 bucket naming:** By default, CDK auto-generates globally unique bucket names (recommended for new deployments). If you already have deployed stacks with explicit bucket names (e.g., `yourdomain.com-frontend`), set the GitHub Actions variable `CDK_AUTO_BUCKET_NAMES` = `false` to preserve them. See [aws-setup.md](docs/aws-setup.md#set-github-repository-secrets-and-variables) for details.
-6. Trigger **Deploy** manually — this creates the Route 53 hosted zone for `stage.example.com`
-7. Set up DNS delegation so ACM can validate the staging certificate:
-   - **If prod is deployed:** create an NS record in the prod Route 53 zone (Name=`stage`, Values=4 staging nameservers)
-   - **If prod is NOT deployed yet:** add 4 NS records at your domain registrar (e.g., Namecheap) for Host=`stage` pointing to the staging nameservers — see [aws-setup.md Step 5](docs/aws-setup.md#5-first-staging-deploy-and-dns-delegation) for details
-8. Re-trigger **Deploy** — ACM certificate DNS validation will now succeed
-9. Create a staging admin user in the new Cognito user pool (see [Step 13](#13-create-cognito-admin-user))
-
-**Without staging:** When `DEPLOY_STAGING` is not set (or not `true`), staging jobs are skipped and production jobs run directly within the same workflow.
-
 ### Production Deployment
 
-Production runs automatically after staging succeeds (or immediately if staging is skipped) within the same **Deploy** workflow. The production jobs deploy infrastructure, build and sync the frontend, and run post-deploy validation.
+Production runs automatically within the **Deploy** workflow. The production jobs deploy infrastructure, build and sync the frontend, and run post-deploy validation.
 
 Production validation extracts commands from the PR's `## Prod-Post-deploy validation` section (with `${API_URL}` pointing to the production API). Results are commented on the PR.
 
@@ -556,13 +482,10 @@ To manually trigger the full pipeline: **Actions → Deploy → Run workflow**.
 
 ## Feature Toggles
 
-Infrastructure features can be independently enabled or disabled per environment via `infrastructure/cdk/config/features.json`:
+Infrastructure features can be independently enabled or disabled via `infrastructure/cdk/config/features.json`:
 
 ```json
 {
-  "staging": {
-    "databaseInsightsAdvanced": false
-  },
   "production": {
     "databaseInsightsAdvanced": false
   }
@@ -575,7 +498,7 @@ Infrastructure features can be independently enabled or disabled per environment
 
 To toggle a feature:
 
-1. Edit `features.json` — set the feature to `true` or `false` for the target environment
+1. Edit `features.json` — set the feature to `true` or `false`
 2. Commit and push to `main` (deploys via the normal CI/CD pipeline), **or**
 3. Use the **Toggle Features** workflow for a fast, targeted deploy
 
@@ -583,9 +506,7 @@ To toggle a feature:
 
 The **Toggle Features** workflow (`.github/workflows/toggle-features.yml`) deploys only the `MySiteData` stack — no DNS, certificates, frontend build, or validation jobs. This makes feature toggles fast (~2-3 minutes) compared to the full deploy pipeline (~10+ minutes).
 
-**Usage:** Actions → Toggle Features → Run workflow → Select environment (`staging`, `production`, or `both`).
-
-When `both` is selected, staging deploys first. If staging fails, production is skipped.
+**Usage:** Actions → Toggle Features → Run workflow.
 
 ## Database Performance Monitoring
 
