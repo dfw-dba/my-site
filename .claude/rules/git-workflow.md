@@ -19,11 +19,10 @@
 
 ## PR Sections (REQUIRED)
 
-PRs must have **three checklist sections** using table format:
+PRs must have **two checklist sections** using table format:
 
-1. `## Pre Deploy Checklist` — CI status and any pre-deploy manual checks. Applies to both stage and prod. Auto-marked as passed by the Deploy Stage workflow when it runs (since it only triggers after CI succeeds).
-2. `## Stage Test Plan` — Manual staging verification items AND automated bash validation items (run against the **staging** API, `${API_URL}` points to staging). Staging validation failures are reported but do **not** block production — Claude verifies results before triggering prod (see Prod Deploy Gate below).
-3. `## Prod-Post-deploy validation` — Automated bash validation items run against the **production** API (`${API_URL}` points to production).
+1. `## Pre Deploy Checklist` — CI status and any pre-deploy manual checks. Marked as passed by Claude before merge (see Pre-merge Workflow below).
+2. `## Prod-Post-deploy validation` — Automated bash validation items run against the **production** API (`${API_URL}` points to production).
 
 ## Table Format for Checklist Items
 
@@ -88,23 +87,6 @@ Docker, nginx.conf) and write validation items accordingly.
 |--------|--------|------|
 | | | CI workflow passes |
 
-## Stage Test Plan
-
-| Passed | Failed | Item |
-|--------|--------|------|
-| | | Verify health endpoint responds on staging |
-| | | Verify new feature works on staging |
-
-<!-- validate: Verify health endpoint responds on staging -->
-```bash
-curl -sf "${API_URL}/api/health"
-```
-
-<!-- validate: Verify new feature works on staging -->
-```bash
-curl -sf "${API_URL}/api/new-feature"
-```
-
 ## Prod-Post-deploy validation
 
 | Passed | Failed | Item |
@@ -127,38 +109,28 @@ curl -sf "${API_URL}/api/new-feature"
 
 ## Deploy Workflow
 
-Deployment uses a **single combined workflow** (`deploy.yml`) with a 6-job chain:
+Deployment uses a **single workflow** (`deploy.yml`) with a 3-job chain:
 
 ```
-deploy-stage-infra → deploy-stage-frontend → stage-post-deploy-validation → deploy-infra → deploy-frontend → post-deploy-validation
+deploy-infra → deploy-frontend → post-deploy-validation
 ```
 
 - **Triggers**: Automatically on CI success (main branch) or via `workflow_dispatch`.
-- **Staging jobs** (1-3): Run when `DEPLOY_STAGING=true`. When not set, staging is skipped and production jobs run directly.
-- **Production jobs** (4-6): Run after staging succeeds or is skipped. The `deploy-infra` job uses `always() && !cancelled()` so it evaluates even when staging is skipped.
-- **Stage validation**: Auto-marks Pre Deploy Checklist items and runs commands from `## Stage Test Plan`.
 - **Prod validation**: Runs commands from `## Prod-Post-deploy validation`.
 
 Results are commented on the PR and table items are automatically marked as passed/failed.
-
-## Staging Environment
-
-Staging deploys to a **separate AWS account** using `AWS_STAGE_DEPLOY_ROLE_ARN`, `AWS_STAGE_ACCOUNT_ID`, and `CDK_STAGE_DOMAIN_NAME`. Staging stacks are the same 4 as prod (`MySiteDns`, `MySiteCert`, `MySiteData`, `MySiteApp`). The `CDK_IS_STAGING` env var controls operational differences (backup retention, deletion protection).
 
 ## Prod Deploy Gate (MANDATORY)
 
 > **Claude MUST follow this process after every PR merge. No exceptions. The entire flow runs autonomously without user confirmation.**
 
 After merging a PR:
-1. Monitor the **Deploy** workflow run to completion (staging and production run as a single workflow).
-2. Verify all staging jobs completed **without errors** (if staging is enabled).
-3. Verify **all Stage Test Plan items** in the PR table are marked as passed (`:white_check_mark:` in the Passed column).
-4. **If staging fails**: notify the user with specific details. Production jobs will not run because staging failed (the `deploy-infra` job requires staging success or skip).
-5. Verify all production jobs completed successfully and all **Prod-Post-deploy validation** items pass.
-6. **If production fails**: notify the user with specific details.
-7. To re-trigger the full pipeline manually: `gh workflow run deploy.yml`.
-8. After the Deploy workflow completes successfully (both stages), check for an open release-please PR (title matches `chore(main): release my-site *`). If one exists, merge it via `gh pr merge --squash --admin`. This triggers the `release-please.yml` workflow which creates the GitHub Release and version tag. Do not trigger Deploy again — the release-please merge only updates version metadata files which are excluded from CI via `paths-ignore`.
-9. **End-of-cycle cleanup**: Check for open Dependabot PRs and handle them per the Dependabot section below. Then switch to main and pull: `git checkout main && git pull`.
+1. Monitor the **Deploy** workflow run to completion.
+2. Verify all production jobs completed successfully and all **Prod-Post-deploy validation** items pass.
+3. **If production fails**: notify the user with specific details.
+4. To re-trigger the pipeline manually: `gh workflow run deploy.yml`.
+5. After the Deploy workflow completes successfully, check for an open release-please PR (title matches `chore(main): release my-site *`). If one exists, merge it via `gh pr merge --squash --admin`. This triggers the `release-please.yml` workflow which creates the GitHub Release and version tag. Do not trigger Deploy again — the release-please merge only updates version metadata files which are excluded from CI via `paths-ignore`.
+6. **End-of-cycle cleanup**: Check for open Dependabot PRs and handle them per the Dependabot section below. Then switch to main and pull: `git checkout main && git pull`.
 
 ## Pre-merge Workflow (MANDATORY)
 

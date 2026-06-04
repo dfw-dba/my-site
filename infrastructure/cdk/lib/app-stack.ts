@@ -35,8 +35,6 @@ export class AppStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: AppStackProps) {
     super(scope, id, props);
 
-    const isStaging = config.isStaging;
-    const namePrefix = isStaging ? "stage-" : "";
     const frontendDomain = config.domainName;
     const apiDomainName = `api.${config.domainName}`;
 
@@ -51,10 +49,7 @@ export class AppStack extends cdk.Stack {
       autoDeleteObjects: true,
     });
     cdk.Tags.of(frontendBucket).add("Purpose", "frontend-hosting");
-    cdk.Tags.of(frontendBucket).add(
-      "Environment",
-      isStaging ? "staging" : "production",
-    );
+    cdk.Tags.of(frontendBucket).add("Environment", "production");
 
     const securityHeaders = new cloudfront.ResponseHeadersPolicy(
       this,
@@ -129,11 +124,9 @@ export class AppStack extends cdk.Stack {
         ? undefined
         : `${config.domainName}-media`,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      versioned: !isStaging,
-      removalPolicy: isStaging
-        ? cdk.RemovalPolicy.DESTROY
-        : cdk.RemovalPolicy.RETAIN,
-      autoDeleteObjects: isStaging,
+      versioned: true,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      autoDeleteObjects: false,
       cors: [
         {
           allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT],
@@ -148,20 +141,15 @@ export class AppStack extends cdk.Stack {
           maxAge: 3600,
         },
       ],
-      lifecycleRules: isStaging
-        ? undefined
-        : [
-            {
-              noncurrentVersionExpiration: cdk.Duration.days(30),
-              enabled: true,
-            },
-          ],
+      lifecycleRules: [
+        {
+          noncurrentVersionExpiration: cdk.Duration.days(30),
+          enabled: true,
+        },
+      ],
     });
     cdk.Tags.of(mediaBucket).add("Purpose", "media-storage");
-    cdk.Tags.of(mediaBucket).add(
-      "Environment",
-      isStaging ? "staging" : "production",
-    );
+    cdk.Tags.of(mediaBucket).add("Environment", "production");
 
     // Cache policy for media: includes query strings in cache key so that
     // ?v={timestamp} busts the CDN cache after re-uploads (avoids needing
@@ -219,7 +207,7 @@ export class AppStack extends cdk.Stack {
     const repoRoot = path.resolve(__dirname, "..", "..", "..");
 
     const backendFn = new lambda.DockerImageFunction(this, "BackendFunction", {
-      functionName: isStaging ? "mysite-stage-backend" : "mysite-backend",
+      functionName: "mysite-backend",
       code: lambda.DockerImageCode.fromImageAsset(repoRoot, {
         file: "docker/backend/Dockerfile.lambda",
         platform: ecr_assets.Platform.LINUX_AMD64,
@@ -257,9 +245,6 @@ export class AppStack extends cdk.Stack {
         DB_NAME: "mysite",
         AWS_LWA_INVOKE_MODE: "BUFFERED",
         GEOIP_TRIGGER_BUCKET: props.geoipTriggerBucket.bucketName,
-        ...(isStaging && process.env.REGRESSION_TEST_API_KEY
-          ? { REGRESSION_TEST_API_KEY: process.env.REGRESSION_TEST_API_KEY }
-          : {}),
       },
     });
 
@@ -289,7 +274,7 @@ export class AppStack extends cdk.Stack {
     // --- Scheduled Log Maintenance (daily at 03:00 UTC) ---
 
     new events.Rule(this, "LogMaintenanceSchedule", {
-      ruleName: `${namePrefix}mysite-log-maintenance`,
+      ruleName: "mysite-log-maintenance",
       description: "Daily purge of app_logs older than 14 days + VACUUM",
       schedule: events.Schedule.cron({ hour: "3", minute: "0" }),
       targets: [new eventsTargets.LambdaFunction(backendFn)],
@@ -298,7 +283,7 @@ export class AppStack extends cdk.Stack {
     // --- Scheduled Metrics Capture (hourly) ---
 
     new events.Rule(this, "MetricsCaptureSchedule", {
-      ruleName: `${namePrefix}mysite-metrics-capture`,
+      ruleName: "mysite-metrics-capture",
       description: "Hourly database performance metrics snapshot",
       schedule: events.Schedule.rate(cdk.Duration.hours(1)),
       targets: [new eventsTargets.LambdaFunction(backendFn, {
@@ -318,7 +303,7 @@ export class AppStack extends cdk.Stack {
     });
 
     const httpApi = new apigatewayv2.HttpApi(this, "HttpApi", {
-      apiName: isStaging ? "mysite-stage-api" : "mysite-api",
+      apiName: "mysite-api",
       disableExecuteApiEndpoint: true,
       corsPreflight: {
         allowOrigins: [`https://${frontendDomain}`],
@@ -351,11 +336,9 @@ export class AppStack extends cdk.Stack {
 
     // API Gateway access logging
     const apiAccessLog = new logs.LogGroup(this, "ApiAccessLog", {
-      logGroupName: `/mysite/${namePrefix}api-access`,
+      logGroupName: "/mysite/api-access",
       retention: logs.RetentionDays.ONE_MONTH,
-      removalPolicy: isStaging
-        ? cdk.RemovalPolicy.DESTROY
-        : cdk.RemovalPolicy.RETAIN,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
     // Throttling and access logging via stage

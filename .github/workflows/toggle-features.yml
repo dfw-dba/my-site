@@ -2,16 +2,6 @@ name: Toggle Features
 
 on:
   workflow_dispatch:
-    inputs:
-      environment:
-        description: "Target environment"
-        required: true
-        type: choice
-        options:
-          - staging
-          - production
-          - both
-        default: staging
 
 permissions:
   id-token: write
@@ -21,63 +11,7 @@ env:
   AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
 
 jobs:
-  deploy-staging:
-    if: inputs.environment == 'staging' || inputs.environment == 'both'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Configure AWS credentials (staging)
-        uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37 # v6.1.0
-        with:
-          role-to-assume: ${{ secrets.AWS_STAGE_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Setup Node
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: infrastructure/cdk/package-lock.json
-
-      - name: Install CDK dependencies
-        run: npm ci
-        working-directory: infrastructure/cdk
-
-      - name: Show feature config (staging)
-        run: |
-          echo "Feature toggles for staging:"
-          cat infrastructure/cdk/config/features.json | python3 -c "import sys,json; print(json.dumps(json.load(sys.stdin)['staging'], indent=2))"
-
-      - name: CDK diff (MySiteData)
-        run: npx cdk diff MySiteData 2>&1 || true
-        working-directory: infrastructure/cdk
-        env:
-          CDK_DOMAIN_NAME: ${{ vars.CDK_STAGE_DOMAIN_NAME }}
-          CDK_ACCOUNT_ID: ${{ secrets.AWS_STAGE_ACCOUNT_ID }}
-          CDK_REGION: ${{ env.AWS_REGION }}
-          CDK_BUDGET_EMAIL: ${{ secrets.CDK_STAGE_BUDGET_EMAIL || secrets.CDK_BUDGET_EMAIL }}
-          CDK_IS_STAGING: "true"
-          CDK_AUTO_BUCKET_NAMES: ${{ vars.CDK_AUTO_BUCKET_NAMES || 'true' }}
-
-      - name: CDK deploy MySiteData
-        run: npx cdk deploy MySiteData --require-approval never
-        working-directory: infrastructure/cdk
-        env:
-          CDK_DOMAIN_NAME: ${{ vars.CDK_STAGE_DOMAIN_NAME }}
-          CDK_ACCOUNT_ID: ${{ secrets.AWS_STAGE_ACCOUNT_ID }}
-          CDK_REGION: ${{ env.AWS_REGION }}
-          CDK_BUDGET_EMAIL: ${{ secrets.CDK_STAGE_BUDGET_EMAIL || secrets.CDK_BUDGET_EMAIL }}
-          CDK_IS_STAGING: "true"
-          CDK_AUTO_BUCKET_NAMES: ${{ vars.CDK_AUTO_BUCKET_NAMES || 'true' }}
-
   deploy-production:
-    if: >-
-      always() &&
-      !cancelled() &&
-      (inputs.environment == 'production' ||
-       (inputs.environment == 'both' && needs.deploy-staging.result == 'success'))
-    needs: [deploy-staging]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

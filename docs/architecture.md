@@ -1,8 +1,6 @@
 # Architecture Diagram
 
-Interactive diagram of the production AWS infrastructure. Each account (production and staging) deploys the same 4 CDK stacks with environment-specific configuration.
-
-> Staging deploys an identical stack structure in a separate AWS account with reduced retention, deletion protection disabled, and its own domain (`stage.yourdomain.com`).
+Interactive diagram of the production AWS infrastructure, which deploys 4 CDK stacks.
 
 ## Infrastructure Overview
 
